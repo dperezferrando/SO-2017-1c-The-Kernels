@@ -1,6 +1,49 @@
-02:02:12 **** Incremental Build of configuration Debug for project Kernel ****
+14:44:33 **** Incremental Build of configuration Debug for project Kernel ****
 make all 
-make: No se hace nada para «all».
+Building file: ../src/Listen.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/Listen.d" -MT"src/Listen.d" -o "src/Listen.o" "../src/Listen.c"
+../src/Listen.c: In function ‘handler’:
+../src/Listen.c:11:15: warning: ‘sHandlerMaster’ is used uninitialized in this function [-Wuninitialized]
+  addReadSocket(listener,sHandlerMaster);
+               ^
+Finished building: ../src/Listen.c
+ 
+Building file: ../src/SocketLibrary.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/SocketLibrary.d" -MT"src/SocketLibrary.d" -o "src/SocketLibrary.o" "../src/SocketLibrary.c"
+../src/SocketLibrary.c: In function ‘lAccept’:
+../src/SocketLibrary.c:30:65: warning: passing argument 3 of ‘accept’ makes pointer from integer without a cast [enabled by default]
+  errorIfEqual(newSocket= accept(sockListener,addr,sizeof(struct sockaddr)),-1,"accept");
+                                                                 ^
+In file included from ../src/SocketLibrary.h:4:0,
+                 from ../src/SocketLibrary.c:1:
+/usr/include/i386-linux-gnu/sys/socket.h:243:12: note: expected ‘socklen_t * __restrict__’ but argument is of type ‘unsigned int’
+ extern int accept (int __fd, __SOCKADDR_ARG __addr,
+            ^
+../src/SocketLibrary.c: In function ‘handleResults’:
+../src/SocketLibrary.c:57:5: warning: format ‘%s’ expects argument of type ‘char *’, but argument 2 has type ‘int’ [-Wformat=]
+     printf("Data Recibida: %s",*((char*) data));
+     ^
+../src/SocketLibrary.c: In function ‘lAccept’:
+../src/SocketLibrary.c:30:14: warning: ‘addr’ is used uninitialized in this function [-Wuninitialized]
+  errorIfEqual(newSocket= accept(sockListener,addr,sizeof(struct sockaddr)),-1,"accept");
+              ^
+../src/SocketLibrary.c: In function ‘lRecv’:
+../src/SocketLibrary.c:36:14: warning: ‘header’ is used uninitialized in this function [-Wuninitialized]
+  internalRecv(reciever,header,sizeof(Header));
+              ^
+../src/SocketLibrary.c: In function ‘handleResults’:
+../src/SocketLibrary.c:56:10: warning: ‘data’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+     lRecv(p,data);
+          ^
+Finished building: ../src/SocketLibrary.c
+ 
+Building target: Kernel
+Invoking: GCC C Linker
+gcc  -o "Kernel"  ./src/InternalSocketFunctions.o ./src/Kernel.o ./src/Listen.o ./src/SocketLibrary.o   
+Finished building target: Kernel
+ 
 
-02:02:12 Build Finished (took 72ms)
+14:44:34 Build Finished (took 540ms)
 

@@ -1,0 +1,15 @@
+15:03:38 **** Incremental Build of configuration Debug for project ClientePrueba ****
+make all 
+Building file: ../src/ClientePrueba.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/ClientePrueba.d" -MT"src/ClientePrueba.d" -o "src/ClientePrueba.o" "../src/ClientePrueba.c"
+Finished building: ../src/ClientePrueba.c
+ 
+Building target: ClientePrueba
+Invoking: GCC C Linker
+gcc  -o "ClientePrueba"  ./src/ClientePrueba.o ./src/InternalSocketFunctions.o ./src/SocketLibrary.o   
+Finished building target: ClientePrueba
+ 
+
+15:03:38 Build Finished (took 166ms)
+
