@@ -1,6 +1,3 @@
-typedef struct addrinfo addrInfo;
-typedef struct sockadrr sockAddr;
-
 int getBindedSocket(char*, char*);
 int getConnectedSocket(char*, char*);
 void lListen(int,int);
