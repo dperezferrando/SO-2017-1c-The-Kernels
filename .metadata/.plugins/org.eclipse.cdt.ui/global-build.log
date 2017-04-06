@@ -1,0 +1,100 @@
+01:58:51 **** Incremental Build of configuration Debug for project Kernel ****
+make all 
+Building file: ../src/InternalSocketFunctions.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/InternalSocketFunctions.d" -MT"src/InternalSocketFunctions.d" -o "src/InternalSocketFunctions.o" "../src/InternalSocketFunctions.c"
+../src/InternalSocketFunctions.c: In function ‘internalSocket’:
+../src/InternalSocketFunctions.c:27:2: warning: implicit declaration of function ‘_getFirstSocket’ [-Wimplicit-function-declaration]
+  int s= _getFirstSocket(addr,action);
+  ^
+../src/InternalSocketFunctions.c:28:2: warning: passing argument 2 of ‘errorIfEqual’ makes integer from pointer without a cast [enabled by default]
+  errorIfEqual(s,NULL,"socket");
+  ^
+In file included from ../src/InternalSocketFunctions.c:8:0:
+../src/InternalSocketFunctions.h:17:6: note: expected ‘int’ but argument is of type ‘void *’
+ void errorIfEqual(int, int, char*);
+      ^
+../src/InternalSocketFunctions.c: In function ‘_getFirstSocket’:
+../src/InternalSocketFunctions.c:43:3: warning: implicit declaration of function ‘close’ [-Wimplicit-function-declaration]
+   if(action(s,p->ai_addr,p->ai_addrlen)==-1){close(s);continue;};
+   ^
+../src/InternalSocketFunctions.c: In function ‘_getHigherFileDescriptor’:
+../src/InternalSocketFunctions.c:61:7: warning: assignment from incompatible pointer type [enabled by default]
+  for(p= handler.readSockets ; p != NULL ;p++){
+       ^
+../src/InternalSocketFunctions.c:62:12: warning: comparison between pointer and integer [enabled by default]
+   if(higher<p)higher=p;
+            ^
+../src/InternalSocketFunctions.c:62:21: warning: assignment makes integer from pointer without a cast [enabled by default]
+   if(higher<p)higher=p;
+                     ^
+Finished building: ../src/InternalSocketFunctions.c
+ 
+Building file: ../src/Listen.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/Listen.d" -MT"src/Listen.d" -o "src/Listen.o" "../src/Listen.c"
+Finished building: ../src/Listen.c
+ 
+Building file: ../src/SocketLibrary.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/SocketLibrary.d" -MT"src/SocketLibrary.d" -o "src/SocketLibrary.o" "../src/SocketLibrary.c"
+../src/SocketLibrary.c: In function ‘lAccept’:
+../src/SocketLibrary.c:30:65: warning: passing argument 2 of ‘accept’ from incompatible pointer type [enabled by default]
+  errorIfEqual(newSocket= accept(sockListener,addr,sizeof(struct sockaddr)),-1,"accept");
+                                                                 ^
+In file included from ../src/SocketLibrary.h:4:0,
+                 from ../src/SocketLibrary.c:1:
+/usr/include/i386-linux-gnu/sys/socket.h:243:12: note: expected ‘struct sockaddr * __restrict__’ but argument is of type ‘struct sockAddr *’
+ extern int accept (int __fd, __SOCKADDR_ARG __addr,
+            ^
+../src/SocketLibrary.c:30:65: warning: passing argument 3 of ‘accept’ makes pointer from integer without a cast [enabled by default]
+  errorIfEqual(newSocket= accept(sockListener,addr,sizeof(struct sockaddr)),-1,"accept");
+                                                                 ^
+In file included from ../src/SocketLibrary.h:4:0,
+                 from ../src/SocketLibrary.c:1:
+/usr/include/i386-linux-gnu/sys/socket.h:243:12: note: expected ‘socklen_t * __restrict__’ but argument is of type ‘unsigned int’
+ extern int accept (int __fd, __SOCKADDR_ARG __addr,
+            ^
+../src/SocketLibrary.c: In function ‘handleResults’:
+../src/SocketLibrary.c:57:5: warning: format ‘%s’ expects argument of type ‘char *’, but argument 2 has type ‘int’ [-Wformat=]
+     printf("Data Recibida: %s",*((char*) data));
+     ^
+../src/SocketLibrary.c: In function ‘lAccept’:
+../src/SocketLibrary.c:30:14: warning: ‘addr’ is used uninitialized in this function [-Wuninitialized]
+  errorIfEqual(newSocket= accept(sockListener,addr,sizeof(struct sockaddr)),-1,"accept");
+              ^
+../src/SocketLibrary.c: In function ‘lRecv’:
+../src/SocketLibrary.c:36:14: warning: ‘header’ is used uninitialized in this function [-Wuninitialized]
+  internalRecv(reciever,header,sizeof(Header));
+              ^
+../src/SocketLibrary.c: In function ‘handleResults’:
+../src/SocketLibrary.c:56:10: warning: ‘data’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+     lRecv(p,data);
+          ^
+Finished building: ../src/SocketLibrary.c
+ 
+Building target: Kernel
+Invoking: GCC C Linker
+gcc  -o "Kernel"  ./src/InternalSocketFunctions.o ./src/Kernel.o ./src/Listen.o ./src/SocketLibrary.o   
+Finished building target: Kernel
+ 
+02:01:58 **** Incremental Build of configuration Debug for project Kernel ****
+make all 
+Building file: ../src/Kernel.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/Kernel.d" -MT"src/Kernel.d" -o "src/Kernel.o" "../src/Kernel.c"
+Finished building: ../src/Kernel.c
+ 
+Building file: ../src/Listen.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/Listen.d" -MT"src/Listen.d" -o "src/Listen.o" "../src/Listen.c"
+Finished building: ../src/Listen.c
+ 
+Building target: Kernel
+Invoking: GCC C Linker
+gcc  -o "Kernel"  ./src/InternalSocketFunctions.o ./src/Kernel.o ./src/Listen.o ./src/SocketLibrary.o   
+Finished building target: Kernel
+ 
+02:02:12 **** Incremental Build of configuration Debug for project Kernel ****
+make all 
+make: No se hace nada para «all».

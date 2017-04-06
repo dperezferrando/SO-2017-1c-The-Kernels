@@ -10,8 +10,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "Listen.h"
 
 int main(void) {
 	puts("!!!Hello Kernel!!!"); /* prints !!!Hello World!!! */
+	handler();
 	return EXIT_SUCCESS;
 }

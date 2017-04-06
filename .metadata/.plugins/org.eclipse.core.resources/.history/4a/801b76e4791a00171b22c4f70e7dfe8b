@@ -1,0 +1,31 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netdb.h>
+
+#include "Header.h"
+#include "InternalSocketFunctions.h"
+
+typedef struct socketHandler{
+	fd_set* readSockets;
+	fd_set* writeSockets;
+}socketHandler;
+
+int getBindedSocket(char*, char*);
+int getConnectedSocket(char*, char*);
+void lListen(int,int);
+int lAccept(int, sockAddr*);
+void lRecv(int, void*);
+void lSend(int, const void*, int);
+socketHandler lSelect(socketHandler, int);
+void addReadSocket(int, socketHandler);
+void addWriteSocket(int, socketHandler);
+void rmvReadSocket(int, socketHandler);
+void rmvWriteSocket(int, socketHandler);
+void clrReaders(socketHandler);
+void clrWriters(socketHandler);
+void clrHandler(socketHandler);
+int isReading(int, socketHandler);
+int isWriting(int, socketHandler);

@@ -1,0 +1,20 @@
+#include "SocketLibrary.h"
+
+#define PUERTO "7171"
+#define PUERTO2 "7172"
+#define LOCALHOST "127.0.0.1"
+#define BACKLOG 10
+
+void handler(){
+	socketHandler sHandlerMaster;
+	socketHandler sHandlerAux;
+	int listener= getBindedSocket(LOCALHOST,PUERTO);
+	int listener2= getBindedSocket(LOCALHOST,PUERTO2);
+	lListen(listener,BACKLOG);
+	lListen(listener2,BACKLOG);
+	addReadSocket(listener,sHandler);
+	addReadSocket(listener2,sHandler);
+	while(1){
+		lSelect();
+	}
+}
