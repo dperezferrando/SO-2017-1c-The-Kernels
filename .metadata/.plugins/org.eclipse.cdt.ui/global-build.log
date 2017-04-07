@@ -1,12 +1,42 @@
-15:03:38 **** Incremental Build of configuration Debug for project ClientePrueba ****
+00:17:16 **** Incremental Build of configuration Debug for project Kernel ****
 make all 
-Building file: ../src/ClientePrueba.c
+Building file: ../src/SocketLibrary.c
 Invoking: GCC C Compiler
-gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/ClientePrueba.d" -MT"src/ClientePrueba.d" -o "src/ClientePrueba.o" "../src/ClientePrueba.c"
-Finished building: ../src/ClientePrueba.c
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/SocketLibrary.d" -MT"src/SocketLibrary.d" -o "src/SocketLibrary.o" "../src/SocketLibrary.c"
+../src/SocketLibrary.c: In function ‘lAccept’:
+../src/SocketLibrary.c:31:2: warning: passing argument 2 of ‘accept’ from incompatible pointer type [enabled by default]
+  errorIfEqual(newSocket= accept(sockListener,&addr,&size),-1,"Accept");
+  ^
+In file included from ../src/SocketLibrary.h:4:0,
+                 from ../src/SocketLibrary.c:1:
+/usr/include/i386-linux-gnu/sys/socket.h:243:12: note: expected ‘struct sockaddr * __restrict__’ but argument is of type ‘struct sockaddr_storage **’
+ extern int accept (int __fd, __SOCKADDR_ARG __addr,
+            ^
+../src/SocketLibrary.c:31:2: warning: pointer targets in passing argument 3 of ‘accept’ differ in signedness [-Wpointer-sign]
+  errorIfEqual(newSocket= accept(sockListener,&addr,&size),-1,"Accept");
+  ^
+In file included from ../src/SocketLibrary.h:4:0,
+                 from ../src/SocketLibrary.c:1:
+/usr/include/i386-linux-gnu/sys/socket.h:243:12: note: expected ‘socklen_t * __restrict__’ but argument is of type ‘int *’
+ extern int accept (int __fd, __SOCKADDR_ARG __addr,
+            ^
+../src/SocketLibrary.c: In function ‘lSend’:
+../src/SocketLibrary.c:56:2: warning: passing argument 2 of ‘internalSend’ discards ‘const’ qualifier from pointer target type [enabled by default]
+  internalSend(sender,msg,len);
+  ^
+In file included from ../src/SocketLibrary.h:11:0,
+                 from ../src/SocketLibrary.c:1:
+../src/InternalSocketFunctions.h:21:6: note: expected ‘void *’ but argument is of type ‘const void *’
+ void internalSend(int, void*, int);
+      ^
+../src/SocketLibrary.c: In function ‘handleResults’:
+../src/SocketLibrary.c:73:10: warning: ‘data’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+     lRecv(p,data);
+          ^
+Finished building: ../src/SocketLibrary.c
  
-Building target: ClientePrueba
+Building target: Kernel
 Invoking: GCC C Linker
-gcc  -o "ClientePrueba"  ./src/ClientePrueba.o ./src/InternalSocketFunctions.o ./src/SocketLibrary.o   
-Finished building target: ClientePrueba
+gcc  -o "Kernel"  ./src/InternalSocketFunctions.o ./src/Kernel.o ./src/Listen.o ./src/SocketLibrary.o   
+Finished building target: Kernel
  

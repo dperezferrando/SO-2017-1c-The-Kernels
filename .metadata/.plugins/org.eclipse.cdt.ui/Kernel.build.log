@@ -1,40 +1,36 @@
-14:44:33 **** Incremental Build of configuration Debug for project Kernel ****
+00:17:16 **** Incremental Build of configuration Debug for project Kernel ****
 make all 
-Building file: ../src/Listen.c
-Invoking: GCC C Compiler
-gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/Listen.d" -MT"src/Listen.d" -o "src/Listen.o" "../src/Listen.c"
-../src/Listen.c: In function ‘handler’:
-../src/Listen.c:11:15: warning: ‘sHandlerMaster’ is used uninitialized in this function [-Wuninitialized]
-  addReadSocket(listener,sHandlerMaster);
-               ^
-Finished building: ../src/Listen.c
- 
 Building file: ../src/SocketLibrary.c
 Invoking: GCC C Compiler
 gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/SocketLibrary.d" -MT"src/SocketLibrary.d" -o "src/SocketLibrary.o" "../src/SocketLibrary.c"
 ../src/SocketLibrary.c: In function ‘lAccept’:
-../src/SocketLibrary.c:30:65: warning: passing argument 3 of ‘accept’ makes pointer from integer without a cast [enabled by default]
-  errorIfEqual(newSocket= accept(sockListener,addr,sizeof(struct sockaddr)),-1,"accept");
-                                                                 ^
+../src/SocketLibrary.c:31:2: warning: passing argument 2 of ‘accept’ from incompatible pointer type [enabled by default]
+  errorIfEqual(newSocket= accept(sockListener,&addr,&size),-1,"Accept");
+  ^
 In file included from ../src/SocketLibrary.h:4:0,
                  from ../src/SocketLibrary.c:1:
-/usr/include/i386-linux-gnu/sys/socket.h:243:12: note: expected ‘socklen_t * __restrict__’ but argument is of type ‘unsigned int’
+/usr/include/i386-linux-gnu/sys/socket.h:243:12: note: expected ‘struct sockaddr * __restrict__’ but argument is of type ‘struct sockaddr_storage **’
  extern int accept (int __fd, __SOCKADDR_ARG __addr,
             ^
+../src/SocketLibrary.c:31:2: warning: pointer targets in passing argument 3 of ‘accept’ differ in signedness [-Wpointer-sign]
+  errorIfEqual(newSocket= accept(sockListener,&addr,&size),-1,"Accept");
+  ^
+In file included from ../src/SocketLibrary.h:4:0,
+                 from ../src/SocketLibrary.c:1:
+/usr/include/i386-linux-gnu/sys/socket.h:243:12: note: expected ‘socklen_t * __restrict__’ but argument is of type ‘int *’
+ extern int accept (int __fd, __SOCKADDR_ARG __addr,
+            ^
+../src/SocketLibrary.c: In function ‘lSend’:
+../src/SocketLibrary.c:56:2: warning: passing argument 2 of ‘internalSend’ discards ‘const’ qualifier from pointer target type [enabled by default]
+  internalSend(sender,msg,len);
+  ^
+In file included from ../src/SocketLibrary.h:11:0,
+                 from ../src/SocketLibrary.c:1:
+../src/InternalSocketFunctions.h:21:6: note: expected ‘void *’ but argument is of type ‘const void *’
+ void internalSend(int, void*, int);
+      ^
 ../src/SocketLibrary.c: In function ‘handleResults’:
-../src/SocketLibrary.c:57:5: warning: format ‘%s’ expects argument of type ‘char *’, but argument 2 has type ‘int’ [-Wformat=]
-     printf("Data Recibida: %s",*((char*) data));
-     ^
-../src/SocketLibrary.c: In function ‘lAccept’:
-../src/SocketLibrary.c:30:14: warning: ‘addr’ is used uninitialized in this function [-Wuninitialized]
-  errorIfEqual(newSocket= accept(sockListener,addr,sizeof(struct sockaddr)),-1,"accept");
-              ^
-../src/SocketLibrary.c: In function ‘lRecv’:
-../src/SocketLibrary.c:36:14: warning: ‘header’ is used uninitialized in this function [-Wuninitialized]
-  internalRecv(reciever,header,sizeof(Header));
-              ^
-../src/SocketLibrary.c: In function ‘handleResults’:
-../src/SocketLibrary.c:56:10: warning: ‘data’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+../src/SocketLibrary.c:73:10: warning: ‘data’ may be used uninitialized in this function [-Wmaybe-uninitialized]
      lRecv(p,data);
           ^
 Finished building: ../src/SocketLibrary.c
@@ -45,5 +41,5 @@ gcc  -o "Kernel"  ./src/InternalSocketFunctions.o ./src/Kernel.o ./src/Listen.o 
 Finished building target: Kernel
  
 
-14:44:34 Build Finished (took 540ms)
+00:17:16 Build Finished (took 159ms)
 

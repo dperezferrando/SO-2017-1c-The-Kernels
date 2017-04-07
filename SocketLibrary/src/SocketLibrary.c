@@ -1,6 +1,7 @@
 #include "SocketLibrary.h"
 
 
+void handleData(char*);
 /*int getSocket(char* ip, char* port){
 	return internalSocket(ip,port,*empty);
 }
@@ -25,17 +26,29 @@ void lListen(int socket,int backlog){//hay que cambiarle el nombre
 }
 
 int lAccept(int sockListener){
-	int newSocket;
-	sockAddr* addr;
-	errorIfEqual(newSocket= accept(sockListener,addr,sizeof(struct sockaddr)),-1,"accept");
+	int newSocket,size=sizeof(struct sockaddr);
+	struct sockaddr_storage* addr;
+	errorIfEqual(newSocket= accept(sockListener,&addr,&size),-1,"Accept");
+	if(newSocket<0)errorIfEqual(0,0,"Accept");
 	return newSocket;
 }
 
 void lRecv(int reciever, void* buf){
-	Header* header;
-	internalRecv(reciever,header,sizeof(Header));
-	buf=malloc(header->tamanio);
+	Header* header=malloc(sizeof(Header));
+	header->tamanio=0;
+	header->tipoProceso=0;
+	recieveHeader(reciever,header);
+	buf=malloc(sizeof(header->tamanio));
 	internalRecv(reciever,buf,header->tamanio);
+	free(header);
+}
+
+void recieveHeader(int socket, Header* header){
+	puts("RecieveHeader");
+	internalRecv(socket,header,sizeof(Header));
+	puts("Header recibido");
+	//Header header= *((Header*)buf);
+	//printf("tamanio header: %d\n",header->tamanio);
 }
 
 void lSend(int sender, const void* msg, int len){
@@ -43,70 +56,80 @@ void lSend(int sender, const void* msg, int len){
 	internalSend(sender,msg,len);
 }
 
-void handleResults(int listener, int listener2,socketHandler list, socketHandler result){//agregarle una lista al Handler que tenga los listeners
+void handleResults(int listener, socketHandler* list, socketHandler* result){//agregarle una lista al Handler que tenga los listeners
 	int p;
-	void* data;
-	for(p=0;p<_getHigherFileDescriptor(list);p++){//checkear bien esta funcion _getHigher...
+	for(p=0;p<list->nfds;p++){
+		puts("Entro al for\n");
 		if(isReading(p,result)){
-			if(p==listener || p==listener2){
+			puts("esta leyendo\n");
+			if(p==listener){
+				puts("Es listener\n");
 				addReadSocket(lAccept(p),list);
-				printf("new connection");
+				puts("new connection");
 			}
 			else{
+				puts("No es Listener\n");
+				char* data;
 				lRecv(p,data);
-				printf("Data Recibida: %s",*((char*) data));
+				handleData(data);
+				if (data!=NULL)free(data);
 			}
-		free(data);
 		}
 	}
 }
 
-socketHandler lSelect(socketHandler handler, int duration){
-	timeVal time= _setTimeVal(duration,0);
-	int higherFD= _getHigherFileDescriptor(handler);
-	int status= select(higherFD,handler.readSockets,handler.writeSockets,NULL,&time);
-	errorIfEqual(status,-1,"select");
-	return handler;
+void handleData(char* data){
+	printf("La data es: %s",data);
+	getchar();
 }
 
+socketHandler lSelect(socketHandler* handler, int duration){
+	timeVal time= _setTimeVal(duration,0);
+	int status= select(handler->nfds,handler->readSockets,handler->writeSockets,NULL,&time);
+	errorIfEqual(status,-1,"select");
+	return *handler;
+}
 
 //---------------------------------------------------------------------------------------------//
 
-void addReadSocket(int reader,socketHandler handler){
-	FD_SET(reader,handler.readSockets);
+void addReadSocket(int reader,socketHandler* handler){
+	if((handler->nfds-1) < reader) (handler->nfds) = reader+1;
+	FD_SET(reader,handler->readSockets);
 }
 
-void addWriteSocket(int writer, socketHandler handler){
-	FD_SET(writer,handler.writeSockets);
+void addWriteSocket(int writer, socketHandler* handler){
+	if(handler->nfds-1<writer)handler->nfds=writer+1;
+	FD_SET(writer,handler->writeSockets);
 }
 
-void rmvReadSocket(int reader, socketHandler handler){
-	FD_CLR(reader,handler.readSockets);
+void rmvReadSocket(int reader, socketHandler* handler){
+	FD_CLR(reader,handler->readSockets);
 }
 
-void rmvWriteSocket(int writer, socketHandler handler){
-	FD_CLR(writer,handler.writeSockets);
+void rmvWriteSocket(int writer, socketHandler* handler){
+	FD_CLR(writer,handler->writeSockets);
 }
 
-void clrReaders(socketHandler handler){
-	FD_ZERO(handler.readSockets);
+void clrReaders(socketHandler* handler){
+	FD_ZERO(handler->readSockets);
 }
 
-void clrWriters(socketHandler handler){
-	FD_ZERO(handler.writeSockets);
+void clrWriters(socketHandler* handler){
+	FD_ZERO(handler->writeSockets);
 }
 
-void clrHandler(socketHandler handler){
+void clrHandler(socketHandler* handler){
 	clrReaders(handler);
 	clrWriters(handler);
+	handler->nfds=0;
 }
 
-int isReading(int reader, socketHandler handler){
-	return FD_ISSET(reader,handler.readSockets);
+int isReading(int reader, socketHandler* handler){
+	return FD_ISSET(reader,handler->readSockets);
 }
 
-int isWriting(int writer, socketHandler handler){
-	return FD_ISSET(writer,handler.writeSockets);
+int isWriting(int writer, socketHandler* handler){
+	return FD_ISSET(writer,handler->writeSockets);
 }
 
 

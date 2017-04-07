@@ -50,11 +50,11 @@ int _getFirstSocket(addrInfo* addr, int (*action)(int,const struct sockaddr *,so
 
 void internalRecv(int reciever, void* buf, int size){
 	int status;
-	errorIfEqual(status= recv(reciever,buf,size,0),-1,"Recieve");
+	errorIfEqual(recv(reciever,buf,size,0),-1,"recv");
 	errorIfEqual(status,0,"Connection Closed");
 }
 
-void internalSend(int s, const void* msg, int len){
+void internalSend(int s, void* msg, int len){
 	errorIfEqual(send(s,msg,len,0),-1,"Send");//flags harcodeado en 0 pero se puede agregar de ser necesario
 }
 

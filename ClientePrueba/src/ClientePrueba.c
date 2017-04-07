@@ -19,8 +19,12 @@
 int main(void) {
 
 	int s= getConnectedSocket(LOCALHOST,PUERTO);
-	void* msg= "Me conecté";
-	lSend(s,msg,sizeof(msg));
-
+	char mensaje[5];
+	strcpy(mensaje,"Hola");
+	Header header;
+	header.tipoProceso=1;
+	header.tamanio=sizeof(mensaje);
+	send(s,&header,sizeof(Header),0);
+	send(s,mensaje,sizeof(mensaje),0);
 	return EXIT_SUCCESS;
 }

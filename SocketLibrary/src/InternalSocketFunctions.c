@@ -1,15 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netdb.h>
 #include "Header.h"
 #include "InternalSocketFunctions.h"
 
 int optval= 1;
 
-addrInfo getaddrinfocall(char* ip, char* port) {
+addrInfo* getaddrinfocall(char* ip, char* port) {
 
 	addrInfo hints;
 	addrInfo *servinfo;
@@ -19,22 +13,22 @@ addrInfo getaddrinfocall(char* ip, char* port) {
 	hints.ai_socktype= SOCK_STREAM;
 	hints.ai_flags=AI_PASSIVE;
 	errorIfNotEqual(getaddrinfo(ip,port,&hints,&servinfo),0,"getaddrinfo");
-	return *servinfo;
+	return servinfo;
 }
 
 int internalSocket(char* ip, char* port,int (*action)(int,const struct sockaddr *,socklen_t)){
-	addrInfo addr= getaddrinfocall(ip,port);
+	addrInfo* addr= getaddrinfocall(ip,port);
 	int s= _getFirstSocket(addr,action);
 	errorIfEqual(s,NULL,"socket");
-	freeaddrinfo(&addr);
+	freeaddrinfo(addr);
 	return s;
 }
 
-int _getFirstSocket(addrInfo addr, int (*action)(int,struct sockaddr *,socklen_t)){
+int _getFirstSocket(addrInfo* addr, int (*action)(int,const struct sockaddr *,socklen_t)){
 	int s=NULL;
 	addrInfo* p;
 
-	for	(p=&addr; (p != NULL) ; p= p->ai_next){
+	for	(p=addr; (p != NULL) ; p= p->ai_next){
 
 		if((s=socket(p->ai_family,p->ai_socktype,p->ai_protocol))<0)continue;
 
@@ -54,23 +48,13 @@ int _getFirstSocket(addrInfo addr, int (*action)(int,struct sockaddr *,socklen_t
 	return s;
 }
 
-
-int _getHigherFileDescriptor(socketHandler handler){//esto no estoy seguro
-	int higher=0;
-	int* p;
-	for(p= handler.readSockets ; p != NULL ;p++){
-		if(higher<p)higher=p;
-	}
-	return higher;
-}
-
 void internalRecv(int reciever, void* buf, int size){
 	int status;
-	errorIfEqual(status= recv(reciever,buf,size,0),-1,"Recieve");
+	errorIfEqual(recv(reciever,buf,size,0),-1,"recv");
 	errorIfEqual(status,0,"Connection Closed");
 }
 
-void internalSend(int s, const void* msg, int len){
+void internalSend(int s, void* msg, int len){
 	errorIfEqual(send(s,msg,len,0),-1,"Send");//flags harcodeado en 0 pero se puede agregar de ser necesario
 }
 
