@@ -1,0 +1,15 @@
+23:59:35 **** Incremental Build of configuration Debug for project Kernel ****
+make all 
+Building file: ../src/Listen.c
+Invoking: GCC C Compiler
+gcc -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/Listen.d" -MT"src/Listen.d" -o "src/Listen.o" "../src/Listen.c"
+Finished building: ../src/Listen.c
+ 
+Building target: Kernel
+Invoking: GCC C Linker
+gcc  -o "Kernel"  ./src/ConnectionCore.o ./src/InternalSocketFunctions.o ./src/Kernel.o ./src/Listen.o ./src/SocketLibrary.o   
+Finished building target: Kernel
+ 
+00:01:38 **** Incremental Build of configuration Debug for project Kernel ****
+make all 
+make: No se hace nada para «all».

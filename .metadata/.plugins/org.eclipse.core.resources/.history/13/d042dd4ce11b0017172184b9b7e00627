@@ -1,0 +1,4 @@
+typedef struct Header {
+	int tipoMensaje;
+	int tamanio;
+} Header;

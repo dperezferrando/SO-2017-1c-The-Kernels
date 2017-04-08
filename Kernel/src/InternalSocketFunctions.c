@@ -90,7 +90,7 @@ void _sendHeader(int sender,int tipoProceso,int len){
 
 Header _createHeader(int tp,int size){
 	Header header;
-	header.tipoProceso= tp;
+	header.tipoOperacion= tp;
 	header.tamanio= size;
 	return header;
 }

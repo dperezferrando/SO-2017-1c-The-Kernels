@@ -1,0 +1,23 @@
+#include "ConnectionCore.h"
+
+void handleResults(int listener, socketHandler* list, socketHandler* result){//agregarle una lista al Handler que tenga los listeners
+	int p;
+	for(p=0;p<list->nfds;p++){
+		puts("Entro al for\n");
+		if(isReading(p,result)){
+			puts("esta leyendo\n");
+			if(p==listener){
+				puts("Es listener\n");
+				addReadSocket(lAccept(p),list);
+				puts("new connection");
+			}
+			else{
+				int tipoOperacion;
+				puts("No es Listener\n");
+				char* data= lRecv(p,&tipoOperacion);
+				handleData(data);
+				if (data!=NULL)free(data);
+			}
+		}
+	}
+}

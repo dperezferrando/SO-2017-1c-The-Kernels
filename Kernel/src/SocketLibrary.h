@@ -12,7 +12,7 @@
 
 int lAccept(int);
 int getBindedSocket(char*, char*);
-int isReading(int, socketHandler*);
+int isReading(int, socketHandler);
 int isWriting(int, socketHandler*);
 int getConnectedSocket(char*, char*);
 
@@ -20,7 +20,7 @@ int getConnectedSocket(char*, char*);
 //-----------------------------------------------------//
 
 void lListen(int,int);
-void lRecv(int, void* buf);
+void* lRecv(int, int*);
 void clrReaders(socketHandler*);
 void clrWriters(socketHandler*);
 void clrHandler(socketHandler*);
@@ -30,10 +30,9 @@ void addReadSocket(int, socketHandler*);
 void rmvReadSocket(int, socketHandler*);
 void addWriteSocket(int, socketHandler*);
 void rmvWriteSocket(int, socketHandler*);
-void handleResults(int,socketHandler*,socketHandler*);//agregarle una lista al Handler que tenga los listeners
 
 //-----------------------------------------------------//
-socketHandler lSelect(socketHandler*, int);
+socketHandler lSelect(socketHandler, int);
 
 
 
