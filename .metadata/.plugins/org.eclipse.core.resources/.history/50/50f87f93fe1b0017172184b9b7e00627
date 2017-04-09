@@ -1,3 +1,0 @@
-#include "SocketLibrary.h"
-
-void handleResults(int, socketHandler*, socketHandler*);

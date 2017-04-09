@@ -24,10 +24,9 @@ typedef struct {
 	int retardo_memoria;
 } configFile;
 
-configFile leerArchivoConfig(char path[])
+configFile leerArchivoConfig(t_config* configHandler)
 {
 	configFile config;
-	t_config* configHandler = config_create(path);
 	config.puerto = config_get_int_value(configHandler, "PUERTO");
 	config.marcos = config_get_int_value(configHandler, "MARCOS");
 	config.marco_size = config_get_int_value(configHandler, "MARCO_SIZE");
@@ -48,8 +47,45 @@ void imprimirConfig(configFile config)
 	puts("--------PROCESO MEMORIA--------");
 }
 
+bool archivoConfigCompleto(t_config* configHandler)
+{
+	char* keys[7] = {"PUERTO", "MARCOS", "MARCO_SIZE", "ENTRADAS_CACHE", "CACHE_X_PROC", "REEMPLAZO_CACHE", "RETARDO_MEMORIA"};
+	bool archivoValido = true;
+	int i = 0;
+	for(i = 0;i<7;i++)
+	{
+		if(!config_has_property(configHandler, keys[i]))
+		{
+			archivoValido = false;
+			puts("ERROR: ARCHIVO DE CONFIGURACION INCOMPLETO");
+			i = 7;
+		}
+	}
+	return archivoValido;
+}
+
+bool rutaCorrecta(t_config* configHandler)
+{
+	if(configHandler == NULL)
+	{
+		puts("ERROR: RUTA INCORRECTA PARA ARCHIVO DE CONFIGURACION");
+		return false;
+	}
+	else return true;
+}
+
+bool archivoConfigValido(t_config* configHandler)
+{
+	return rutaCorrecta(configHandler) && archivoConfigCompleto(configHandler);
+
+}
+
+
 int main(int argc, char** argsv) {
-	configFile config = leerArchivoConfig(CONFIG_FILE); //argsv[1]
+	t_config* configHandler = config_create(argsv[1]);
+	if(!archivoConfigValido(configHandler))
+		return EXIT_FAILURE;
+	configFile config = leerArchivoConfig(configHandler);
 	imprimirConfig(config);
 	return EXIT_SUCCESS;
 }
