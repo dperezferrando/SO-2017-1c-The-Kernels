@@ -40,7 +40,7 @@ void* lRecv(int reciever, int* tipoOperacion){
 	recieveHeader(reciever,header);
 	void* buf=malloc(header->tamanio);
 	internalRecv(reciever,buf,header->tamanio);
-	tipoOperacion= &header->tipoOperacion;
+	*tipoOperacion= header->tipoOperacion;
 	free(header);
 	return buf;
 }
