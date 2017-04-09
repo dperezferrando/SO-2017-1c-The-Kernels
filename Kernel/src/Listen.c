@@ -22,4 +22,4 @@ void handler(){
 		free(sHandlerResult.readSockets);
 		free(sHandlerResult.writeSockets);
 }
-
+//aa
