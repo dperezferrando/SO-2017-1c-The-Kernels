@@ -39,10 +39,15 @@ void* lRecv(int reciever, int* tipoOperacion){
 	header->tipoOperacion=0;
 	recieveHeader(reciever,header);
 	void* buf=malloc(header->tamanio);
-	internalRecv(reciever,buf,header->tamanio);
+	int status= internalRecv(reciever,buf,header->tamanio);
 	*tipoOperacion= header->tipoOperacion;
 	free(header);
-	return buf;
+	if(status!=0)return buf;else return NULL;
+}
+
+void closeConnection(int s,socketHandler* master){
+	close(s);
+	FD_CLR(s,master->readSockets);
 }
 
 void recieveHeader(int socket, Header* header){
@@ -64,7 +69,7 @@ void handleData(char* data){
 
 socketHandler lSelect(socketHandler handler, int duration){
 	timeVal time= _setTimeVal(duration,0);
-	socketHandler result= handler;
+	socketHandler result= copySocketHandler(handler);
 	int status= select(result.nfds,result.readSockets,result.writeSockets,NULL,&time);
 	errorIfEqual(status,-1,"select");
 	return result;
@@ -112,5 +117,21 @@ int isWriting(int writer, socketHandler* handler){
 	return FD_ISSET(writer,handler->writeSockets);
 }
 
+socketHandler initializeSocketHandler(){
+	socketHandler b;
+	b.nfds=0;
+	b.readSockets=malloc(250*sizeof(fd_set));
+	b.writeSockets=malloc(250*sizeof(fd_set));
+	return b;
+}
+
+
+socketHandler copySocketHandler(socketHandler handler){
+	socketHandler result=initializeSocketHandler();
+	*(result.readSockets)= *(handler.readSockets);
+	*(result.writeSockets)= *(handler.writeSockets);
+	result.nfds=handler.nfds;
+	return result;
+}
 
 

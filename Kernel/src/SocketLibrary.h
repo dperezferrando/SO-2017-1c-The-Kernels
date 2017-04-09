@@ -28,11 +28,15 @@ void recieveHeader(int, Header*);
 void lSend(int, const void*, int);
 void addReadSocket(int, socketHandler*);
 void rmvReadSocket(int, socketHandler*);
+void closeConnection(int,socketHandler*);
 void addWriteSocket(int, socketHandler*);
 void rmvWriteSocket(int, socketHandler*);
 
 //-----------------------------------------------------//
+
+socketHandler initializeSocketHandler();
 socketHandler lSelect(socketHandler, int);
+socketHandler copySocketHandler(socketHandler);
 
 
 

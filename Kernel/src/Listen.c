@@ -1,22 +1,11 @@
 #include "Listen.h"
 #include "ConnectionCore.h"
 
-socketHandler a();
-
-socketHandler a(){
-	socketHandler b;
-	b.nfds=0;
-	b.readSockets=malloc(250*sizeof(fd_set));
-	b.writeSockets=malloc(250*sizeof(fd_set));
-	return b;
-}
-
-
 
 void handler(){
-	socketHandler sHandlerMaster= a();
+	socketHandler sHandlerMaster= initializeSocketHandler();
 	//socketHandler sHandlerControl;
-	socketHandler sHandlerResult=a();
+	socketHandler sHandlerResult=initializeSocketHandler();
 	int listener= getBindedSocket(LOCALHOST,PUERTO);
 	lListen(listener,BACKLOG);
 	addReadSocket(listener,&sHandlerMaster);
@@ -26,7 +15,7 @@ void handler(){
 		handleSockets(listener,&sHandlerMaster,sHandlerResult);
 		free(sHandlerResult.readSockets);
 		free(sHandlerResult.writeSockets);
-		sHandlerResult=a();
+		sHandlerResult=initializeSocketHandler();
 	}
 		free(sHandlerMaster.readSockets);
 		free(sHandlerMaster.writeSockets);

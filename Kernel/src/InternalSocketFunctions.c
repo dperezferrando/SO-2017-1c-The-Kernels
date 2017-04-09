@@ -48,10 +48,10 @@ int _getFirstSocket(addrInfo* addr, int (*action)(int,const struct sockaddr *,so
 	return s;
 }
 
-void internalRecv(int reciever, void* buf, int size){
-	int status =0;
-	errorIfEqual(recv(reciever,buf,size,0),-1,"recv");
-	errorIfEqual(status,0,"Connection Closed");
+int internalRecv(int reciever, void* buf, int size){
+	int status;
+	errorIfEqual(status=recv(reciever,buf,size,0),-1,"recv");
+	return status;
 }
 
 void internalSend(int s, void* msg, int len){
