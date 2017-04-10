@@ -17,7 +17,7 @@ typedef struct socketHandler{
 }socketHandler;
 
 int internalSocket(char*, char*,int (int,const struct sockaddr *,socklen_t));
-void internalRecv(int, void*, int);
+int internalRecv(int, void*, int);
 void internalSend(int, void*, int);
 void _errorIf(int (int,int), int, int, char*);
 struct addrinfo _getaddrinfocall(char*, char*);

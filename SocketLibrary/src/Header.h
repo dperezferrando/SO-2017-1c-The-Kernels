@@ -1,4 +1,4 @@
 typedef struct Header {
-	int tipoProceso;
+	int tipoOperacion;
 	int tamanio;
 } Header;

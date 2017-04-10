@@ -11,10 +11,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "Listen.h"
+#include "KernelConfiguration.h"
 
 
-int main(void) {
+int main(int argc, char** argsv) {
 	puts("!!!Hello Kernel!!!\n"); /* prints !!!Hello World!!! */
+	configKernel(argsv[1]);
 	handler();
 	puts("Todo ok\n");
 	return 0;

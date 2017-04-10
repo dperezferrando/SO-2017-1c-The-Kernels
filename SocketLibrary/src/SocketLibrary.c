@@ -33,20 +33,26 @@ int lAccept(int sockListener){
 	return newSocket;
 }
 
-void lRecv(int reciever, void* buf){
+void* lRecv(int reciever, int* tipoOperacion){
 	Header* header=malloc(sizeof(Header));
 	header->tamanio=0;
-	header->tipoProceso=0;
+	header->tipoOperacion=0;
 	recieveHeader(reciever,header);
-	buf=malloc(sizeof(header->tamanio));
-	internalRecv(reciever,buf,header->tamanio);
+	void* buf=malloc(header->tamanio);
+	int status= internalRecv(reciever,buf,header->tamanio);
+	*tipoOperacion= header->tipoOperacion;
 	free(header);
+	if(status!=0)return buf;else return NULL;
+}
+
+void closeConnection(int s,socketHandler* master){
+	close(s);
+	FD_CLR(s,master->readSockets);
 }
 
 void recieveHeader(int socket, Header* header){
-	puts("RecieveHeader");
 	internalRecv(socket,header,sizeof(Header));
-	puts("Header recibido");
+	puts("Header recibido\n");
 	//Header header= *((Header*)buf);
 	//printf("tamanio header: %d\n",header->tamanio);
 }
@@ -56,38 +62,17 @@ void lSend(int sender, const void* msg, int len){
 	internalSend(sender,msg,len);
 }
 
-void handleResults(int listener, socketHandler* list, socketHandler* result){//agregarle una lista al Handler que tenga los listeners
-	int p;
-	for(p=0;p<list->nfds;p++){
-		puts("Entro al for\n");
-		if(isReading(p,result)){
-			puts("esta leyendo\n");
-			if(p==listener){
-				puts("Es listener\n");
-				addReadSocket(lAccept(p),list);
-				puts("new connection");
-			}
-			else{
-				puts("No es Listener\n");
-				char* data;
-				lRecv(p,data);
-				handleData(data);
-				if (data!=NULL)free(data);
-			}
-		}
-	}
-}
-
 void handleData(char* data){
-	printf("La data es: %s",data);
+	printf("La data es: %s\n",data);
 	getchar();
 }
 
-socketHandler lSelect(socketHandler* handler, int duration){
+socketHandler lSelect(socketHandler handler, int duration){
 	timeVal time= _setTimeVal(duration,0);
-	int status= select(handler->nfds,handler->readSockets,handler->writeSockets,NULL,&time);
+	socketHandler result= copySocketHandler(handler);
+	int status= select(result.nfds,result.readSockets,result.writeSockets,NULL,&time);
 	errorIfEqual(status,-1,"select");
-	return *handler;
+	return result;
 }
 
 //---------------------------------------------------------------------------------------------//
@@ -124,13 +109,29 @@ void clrHandler(socketHandler* handler){
 	handler->nfds=0;
 }
 
-int isReading(int reader, socketHandler* handler){
-	return FD_ISSET(reader,handler->readSockets);
+int isReading(int reader, socketHandler handler){
+	return FD_ISSET(reader,handler.readSockets);
 }
 
 int isWriting(int writer, socketHandler* handler){
 	return FD_ISSET(writer,handler->writeSockets);
 }
 
+socketHandler initializeSocketHandler(){
+	socketHandler b;
+	b.nfds=0;
+	b.readSockets=malloc(250*sizeof(fd_set));
+	b.writeSockets=malloc(250*sizeof(fd_set));
+	return b;
+}
+
+
+socketHandler copySocketHandler(socketHandler handler){
+	socketHandler result=initializeSocketHandler();
+	*(result.readSockets)= *(handler.readSockets);
+	*(result.writeSockets)= *(handler.writeSockets);
+	result.nfds=handler.nfds;
+	return result;
+}
 
 
