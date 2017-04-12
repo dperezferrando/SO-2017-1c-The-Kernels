@@ -16,7 +16,7 @@
 
 int main(int argc, char** argsv) {
 	puts("!!!Hello Kernel!!!\n"); /* prints !!!Hello World!!! */
-	configKernel(argsv[1]);
+	configKernel("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/Kernel/Debug/config.conf");
 	handler();
 	puts("Todo ok\n");
 	return 0;

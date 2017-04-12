@@ -1,6 +1,5 @@
 #include "Configuration.h"
 
-
 bool archivoConfigCompleto(t_config* configHandler, char* keys[])
 {
 	bool archivoValido = true;
@@ -33,10 +32,10 @@ bool archivoConfigValido(t_config* configHandler, char* keys[])
 
 }
 
-bool configurate(char* ruta,void(*handleConfigFile)(t_config*), char* keys[]) {
+void configurate(char* ruta,void(*handleConfigFile)(t_config*), char* keys[]) {
 	t_config* configHandler = config_create(ruta);
 	if(!archivoConfigValido(configHandler,keys))
-		return EXIT_FAILURE;
+		abort();
 	handleConfigFile(configHandler);
-	return EXIT_SUCCESS;
+
 }

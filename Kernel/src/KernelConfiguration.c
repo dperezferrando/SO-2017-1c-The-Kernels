@@ -2,7 +2,8 @@
 
 
 bool configKernel(char* ruta){
-	return configurate(ruta,&readConfigFile);
+	char** keys[] = {"PUERTO_PROG", "PUERTO_CPU", "IP_MEMORIA", "PUERTO_MEMORIA", "IP_FS", "PUERTO_FS", "QUANTUM", "QUANTUM_SLEEP", "ALGORITMO", "GRADO_MULTIPROG", "SEM_IDS", "SEM_INIT", "SHARED_VARS", "STACK_SIZE"};
+	return configurate(ruta,&readConfigFile, keys);
 }
 
 void handleConfigFile(t_config* configHandler){
@@ -34,9 +35,9 @@ configFile readConfigFile(t_config* configHandler)//la unica manera de generaliz
 	configFile config;
 	config.PUERTO_PROG = config_get_int_value(configHandler, "PUERTO_PROG");
 	config.PUERTO_CPU = config_get_int_value(configHandler, "PUERTO_CPU");
-	config.IP_MEMORIA = config_get_int_value(configHandler, "IP_MEMORIA");
+	config.IP_MEMORIA = config_get_string_value(configHandler, "IP_MEMORIA");
 	config.PUERTO_MEMORIA = config_get_int_value(configHandler, "PUERTO_MEMORIA");
-	config.IP_FS = config_get_int_value(configHandler, "IP_FS");
+	config.IP_FS = config_get_string_value(configHandler, "IP_FS");
 	config.PUERTO_FS = config_get_int_value(configHandler, "PUERTO_FS");
 	config.QUANTUM = config_get_int_value(configHandler, "QUANTUM");
 	config.QUANTUM_SLEEP = config_get_int_value(configHandler, "QUANTUM_SLEEP");
