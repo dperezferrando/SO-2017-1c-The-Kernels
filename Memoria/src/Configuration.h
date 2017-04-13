@@ -8,5 +8,5 @@
 bool rutaCorrecta(t_config* configHandler);
 bool archivoConfigValido(t_config* configHandler,char* []);
 bool archivoConfigCompleto(t_config* configHandler, char* []);
-void configurate(char* ,void(t_config*), char* []);
+void* configurate(char* ,void*(t_config*), char* []);
 

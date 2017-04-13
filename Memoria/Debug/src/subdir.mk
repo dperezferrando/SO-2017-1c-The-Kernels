@@ -5,15 +5,21 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
 ../src/Configuration.c \
-../src/Memoria.c 
+../src/InternalSocketFunctions.c \
+../src/Memoria.c \
+../src/SocketLibrary.c 
 
 OBJS += \
 ./src/Configuration.o \
-./src/Memoria.o 
+./src/InternalSocketFunctions.o \
+./src/Memoria.o \
+./src/SocketLibrary.o 
 
 C_DEPS += \
 ./src/Configuration.d \
-./src/Memoria.d 
+./src/InternalSocketFunctions.d \
+./src/Memoria.d \
+./src/SocketLibrary.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

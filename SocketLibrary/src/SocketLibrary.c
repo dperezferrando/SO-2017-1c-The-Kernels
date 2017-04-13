@@ -11,6 +11,33 @@ void empty(int a, sockAddr b, int c){}*/
 
 //-----------------------------------------MAIN FUNCTIONS-------------------------------------------------------------------//
 
+int enviarHandShake(int socket, int id)
+{
+	int* idProceso = malloc(sizeof(int));
+	*idProceso = id;
+	lSend(socket, 0, idProceso, sizeof(id));
+	free(idProceso);
+	int i;
+	return (int)lRecv(socket, &i);
+
+
+}
+
+int recibirHandShake(int socket)
+{
+	int op;
+
+	int* idProceso = (int*)lRecv(socket, &op);
+	int id = (*idProceso);
+	free(idProceso);
+	if(op == 0)
+		return id;
+	else
+		return -1;
+}
+
+
+
 int getBindedSocket(char* ip, char* port){
 	int(*action)(int,const struct sockaddr*,socklen_t)=&bind;
 	return internalSocket(ip,port,action);
@@ -57,8 +84,8 @@ void recieveHeader(int socket, Header* header){
 	//printf("tamanio header: %d\n",header->tamanio);
 }
 
-void lSend(int sender, const void* msg, int len){
-	_sendHeader(sender,1,len);//tipo de proceso hardcodeado, hay que ver de donde pija se saca
+void lSend(int sender, int tipoOperacion, const void* msg, int len){
+	_sendHeader(sender,tipoOperacion, len);//tipo de proceso hardcodeado, hay que ver de donde pija se saca
 	internalSend(sender,msg,len);
 }
 

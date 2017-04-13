@@ -12,13 +12,23 @@
 #include <stdlib.h>
 #include "Listen.h"
 #include "KernelConfiguration.h"
+const char* keys[15] = {"PUERTO_PROG", "PUERTO_CPU", "IP_MEMORIA", "PUERTO_MEMORIA", "IP_FS", "PUERTO_FS", "QUANTUM", "QUANTUM_SLEEP", "ALGORITMO", "GRADO_MULTIPROG", "SEM_IDS", "SEM_INIT", "SHARED_VARS", "STACK_SIZE", "NULL"};
 
 
 int main(int argc, char** argsv) {
 	puts("!!!Hello Kernel!!!\n"); /* prints !!!Hello World!!! */
-	configKernel("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/Kernel/Debug/config.conf");
-	handler();
-	puts("Todo ok\n");
+	configFile* config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/Kernel/Debug/config.conf", readConfigFile, keys);
+	int socket = getConnectedSocket(config->IP_MEMORIA, config->PUERTO_MEMORIA);
+	if(enviarHandShake(socket, 0)) // Todo OK
+	{
+		char mensaje[5];
+		strcpy(mensaje, "hola");
+		lSend(socket, 1, mensaje, sizeof(mensaje));
+		//handler();
+		puts("Todo ok\n");
+	}
+	else puts("Se cerro la conexion"); // Not K
+	destruirConfig(config);
 	return 0;
 }
 

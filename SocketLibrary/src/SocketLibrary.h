@@ -15,6 +15,8 @@ int getBindedSocket(char*, char*);
 int isReading(int, socketHandler);
 int isWriting(int, socketHandler*);
 int getConnectedSocket(char*, char*);
+int enviarHandShake(int, int);
+int recibirHandShake(int);
 
 
 //-----------------------------------------------------//
@@ -25,7 +27,7 @@ void clrReaders(socketHandler*);
 void clrWriters(socketHandler*);
 void clrHandler(socketHandler*);
 void recieveHeader(int, Header*);
-void lSend(int, const void*, int);
+void lSend(int, int, const void*, int);
 void addReadSocket(int, socketHandler*);
 void rmvReadSocket(int, socketHandler*);
 void closeConnection(int,socketHandler*);

@@ -1,26 +1,40 @@
-#import "KernelConfiguration.h"
+#include "KernelConfiguration.h"
 
 
-bool configKernel(char* ruta){
-	char** keys[] = {"PUERTO_PROG", "PUERTO_CPU", "IP_MEMORIA", "PUERTO_MEMORIA", "IP_FS", "PUERTO_FS", "QUANTUM", "QUANTUM_SLEEP", "ALGORITMO", "GRADO_MULTIPROG", "SEM_IDS", "SEM_INIT", "SHARED_VARS", "STACK_SIZE"};
-	return configurate(ruta,&readConfigFile, keys);
-}
+/*void handleConfigFile(t_config* configHandler){
+	configFile* config = readConfigFile(configHandler);
 
-void handleConfigFile(t_config* configHandler){
-	configFile config = readConfigFile(configHandler);
-	imprimirConfig(config);
-}
+}*/
 
-void imprimirConfig(configFile config)
+void imprimirConfig(configFile* config)
 {
-	puts("--------PROCESO MEMORIA--------");
-	printf("PUERTO PROGRAMA: %i | PUERTO CPU: %i \n", config.PUERTO_PROG, config.PUERTO_CPU);
-	printf("IP MEMORIA: %i | PUERTO MEMORIA: %i \n", config.IP_MEMORIA, config.PUERTO_MEMORIA);
-	printf("IP FILE SYSTEM: %i | PUERTO FILE SYSTEM: %i \n", config.IP_FS, config.PUERTO_FS);
-	printf("QUANTUM: %i | QUANTUM SLEEP: %i | ALGORITMO: %i \n", config.QUANTUM, config.QUANTUM_SLEEP,config.ALGORITMO);
-	printf("GRADO MULTIPGROG: %i | SEM IDS: %i | SEM INIT: %i \n", config.GRADO_MULTIPROG, config.SEM_IDS,config.SEM_INIT);
-	printf("SHARED VARS: %i | STACK_SIZE: %i \n", config.SHARED_VARS, config.STACK_SIZE);
-	puts("--------PROCESO MEMORIA--------");
+	puts("--------PROCESO KERNEL--------");
+	printf("PUERTO PROGRAMA: %s | PUERTO CPU: %s \n", config->PUERTO_PROG, config->PUERTO_CPU);
+	printf("IP MEMORIA: %s | PUERTO MEMORIA: %s \n", config->IP_MEMORIA, config->PUERTO_MEMORIA);
+	printf("IP FILE SYSTEM: %s | PUERTO FILE SYSTEM: %s \n", config->IP_FS, config->PUERTO_FS);
+	printf("QUANTUM: %i | QUANTUM SLEEP: %i | ALGORITMO: %s \n", config->QUANTUM, config->QUANTUM_SLEEP,config->ALGORITMO);
+	printf("GRADO MULTIPGROG: %i | SEM IDS: %i | SEM INIT: %i \n", config->GRADO_MULTIPROG, config->SEM_IDS,config->SEM_INIT);
+	printf("SHARED VARS: %i | STACK_SIZE: %i \n", config->SHARED_VARS, config->STACK_SIZE);
+	puts("--------PROCESO KERNEL--------");
+}
+
+void destruirArray(char** arr)
+{
+	int i = 0;
+	while(arr[i] != NULL)
+	{
+		free(arr[i]);
+		i++;
+	}
+	free(arr);
+}
+
+void destruirConfig(configFile* config)
+{
+	destruirArray(config->SEM_IDS);
+	destruirArray(config->SHARED_VARS);
+	destruirArray(config->SEM_INIT);
+	free(config);
 }
 
 /*
@@ -30,22 +44,25 @@ imprimirConfig(config);
  */
 
 
-configFile readConfigFile(t_config* configHandler)//la unica manera de generalizar esto es muy chota y seria incluyendo el tipo de dato ademas del nombre en un array
+
+configFile* readConfigFile(t_config* configHandler)//la unica manera de generalizar esto es muy chota y seria incluyendo el tipo de dato ademas del nombre en un array
 {
-	configFile config;
-	config.PUERTO_PROG = config_get_int_value(configHandler, "PUERTO_PROG");
-	config.PUERTO_CPU = config_get_int_value(configHandler, "PUERTO_CPU");
-	config.IP_MEMORIA = config_get_string_value(configHandler, "IP_MEMORIA");
-	config.PUERTO_MEMORIA = config_get_int_value(configHandler, "PUERTO_MEMORIA");
-	config.IP_FS = config_get_string_value(configHandler, "IP_FS");
-	config.PUERTO_FS = config_get_int_value(configHandler, "PUERTO_FS");
-	config.QUANTUM = config_get_int_value(configHandler, "QUANTUM");
-	config.QUANTUM_SLEEP = config_get_int_value(configHandler, "QUANTUM_SLEEP");
-	strcpy(config.ALGORITMO,config_get_string_value(configHandler, "ALGORITMO"));
-	config.GRADO_MULTIPROG = config_get_int_value(configHandler, "GRADO_MULTIPROG");
-	config.SEM_IDS= config_get_array_value(configHandler, "SEM_IDS");
-	config.SEM_INIT= config_get_array_value(configHandler, "SEM_INIT");
-	config.SHARED_VARS= config_get_array_value(configHandler, "SHARED_VARS");
+	configFile* config = malloc(sizeof(configFile));
+	strcpy(config->PUERTO_PROG, config_get_string_value(configHandler, "PUERTO_PROG"));
+	strcpy(config->PUERTO_CPU, config_get_string_value(configHandler, "PUERTO_CPU"));
+	strcpy(config->IP_MEMORIA, config_get_string_value(configHandler, "IP_MEMORIA"));
+	strcpy(config->PUERTO_MEMORIA, config_get_string_value(configHandler, "PUERTO_MEMORIA"));
+	strcpy(config->IP_FS, config_get_string_value(configHandler, "IP_FS"));
+	strcpy(config->PUERTO_FS, config_get_string_value(configHandler, "PUERTO_FS"));
+	config->QUANTUM = config_get_int_value(configHandler, "QUANTUM");
+	config->QUANTUM_SLEEP = config_get_int_value(configHandler, "QUANTUM_SLEEP");
+	strcpy(config->ALGORITMO,config_get_string_value(configHandler, "ALGORITMO"));
+	config->GRADO_MULTIPROG = config_get_int_value(configHandler, "GRADO_MULTIPROG");
+	config->SEM_IDS= config_get_array_value(configHandler, "SEM_IDS");
+	config->SEM_INIT= config_get_array_value(configHandler, "SEM_INIT");
+	config->SHARED_VARS= config_get_array_value(configHandler, "SHARED_VARS");
+	config->STACK_SIZE=config_get_int_value(configHandler, "STACK_SIZE");
 	config_destroy(configHandler);
+	imprimirConfig(config);
 	return config;
 }

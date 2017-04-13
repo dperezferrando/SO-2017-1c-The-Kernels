@@ -1,10 +1,19 @@
 #include "Configuration.h"
 
-bool archivoConfigCompleto(t_config* configHandler, char* keys[])
+int cantKeysALeer(char** keys)
+{
+	int i = 0;
+	while(strcmp(keys[i], "NULL"))
+		i++;
+	return i;
+}
+
+
+bool archivoConfigCompleto(t_config* configHandler, char** keys)
 {
 	bool archivoValido = true;
 	int i = 0;
-	for(i = 0;i<config_keys_amount(configHandler);i++)
+	for(i = 0;i<cantKeysALeer(keys);i++)
 	{
 		if(!config_has_property(configHandler, keys[i]))
 		{
@@ -32,10 +41,10 @@ bool archivoConfigValido(t_config* configHandler, char* keys[])
 
 }
 
-void configurate(char* ruta,void(*handleConfigFile)(t_config*), char* keys[]) {
+void* configurate(char* ruta, void*(*handleConfigFile)(t_config*), char* keys[]) {
 	t_config* configHandler = config_create(ruta);
 	if(!archivoConfigValido(configHandler,keys))
 		abort();
-	handleConfigFile(configHandler);
+	return handleConfigFile(configHandler);
 
 }
