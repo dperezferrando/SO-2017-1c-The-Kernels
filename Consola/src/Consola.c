@@ -18,7 +18,6 @@ typedef struct {
 	char ip_kernel[16];
 	char puerto_kernel[5];
 
-
 } configFile;
 
 void imprimirConfig(configFile* config) {
@@ -43,12 +42,15 @@ configFile* leerArchivoConfig(t_config* configHandler)
 
 int main(void) {
 	configFile* config;
-	config = configurate("/home/dario/Desarrollo/tp-2017-1c-The-Kernels/Consola/Debug/consola.conf", leerArchivoConfig, keys);
+	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/Consola/Debug/consola.conf", leerArchivoConfig, keys);
 	int socket = getConnectedSocket(config->ip_kernel, config->puerto_kernel);
 	if(enviarHandShake(socket, 4))
 		{
 			char mensaje[25];
+
 			scanf("%s", mensaje);
+			printf("%s", mensaje);
+			//strcpy(mensaje, "hola");
 			lSend(socket, 0, mensaje, sizeof(mensaje));
 			puts("Todo ok\n");
 		} else

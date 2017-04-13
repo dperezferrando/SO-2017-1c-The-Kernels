@@ -2,11 +2,12 @@
 #include "ConnectionCore.h"
 
 
-void handler(){
+
+void handler(configFile* config){
 	socketHandler sHandlerMaster= initializeSocketHandler();
 	//socketHandler sHandlerControl;
 	socketHandler sHandlerResult=initializeSocketHandler();
-	int listener= getBindedSocket(LOCALHOST,PUERTO);
+	int listener= getBindedSocket(LOCALHOST,config->PUERTO_PROG);
 	lListen(listener,BACKLOG);
 	addReadSocket(listener,&sHandlerMaster);
 	puts("Sockets Listos, entramos al while\n");

@@ -16,6 +16,13 @@ void handleSockets(int listener, socketHandler* master, socketHandler result){
 			else{
 				int tipoOperacion;
 				puts("Habemus Data\n");
+				int id = recibirHandShake(p);
+				if(id != 4)
+					closeConnection(p, master);
+				int* confirmacion = malloc(sizeof(int));
+				*confirmacion = 1;
+				lSend(p, 0, confirmacion, sizeof(confirmacion));
+				free(confirmacion);
 				char* data= lRecv(p,&tipoOperacion);
 				if(data==NULL){
 					puts("Se cierra la conexion");
@@ -25,6 +32,7 @@ void handleSockets(int listener, socketHandler* master, socketHandler result){
 					}
 				handleData(data);
 				free(data);
+
 			}
 		}
 	}
