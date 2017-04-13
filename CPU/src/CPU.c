@@ -12,106 +12,44 @@
 #include <stdlib.h>
 #include <string.h>
 #include <commons/config.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/select.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-
-
-#define CONFIG_FILE "cpu.conf"
+#include "Configuration.h"
+const char* keys[5]={"IP_KERNEL", "PUERTO_KERNEL", "IP_MEMORIA", "PUERTO_MEMORIA", "NULL"};
 
 typedef struct configFile{
-	char* ip_Kernel;
-	unsigned short int puerto_Kernel;
-	char* ip_Memoria;
-	unsigned short int puerto_Memoria;
+	char ip_Kernel[16];
+	char puerto_Kernel[5];
+	char ip_Memoria[16];
+	char puerto_Memoria[5];
 } configFile;
 
-configFile leer_archivo_configuracion(char ruta[]){
+configFile* leer_archivo_configuracion(t_config* configHandler){
 
-	configFile c;
-	t_config* configHandler=config_create(ruta);
-	c.puerto_Kernel= config_get_int_value(configHandler, "PUERTO KERNEL");
-	c.puerto_Memoria= config_get_int_value(configHandler, "PUERTO MEMORIA");
-	c.ip_Kernel=config_get_string_value(configHandler, "IP KERNEL");
-	c.ip_Memoria=config_get_string_value(configHandler, "IP MEMORIA");
+	configFile* config = malloc(sizeof(configFile));
+	strcpy(config->puerto_Kernel, config_get_string_value(configHandler, "PUERTO_KERNEL"));
+	strcpy(config->puerto_Memoria, config_get_string_value(configHandler, "PUERTO_MEMORIA"));
+	strcpy(config->ip_Kernel, config_get_string_value(configHandler, "IP_KERNEL"));
+	strcpy(config->ip_Memoria, config_get_string_value(configHandler, "IP_MEMORIA"));
 	config_destroy(configHandler);
-	return c;
+	imprimir(config);
+	return config;
 }
 
-void imprimir(configFile c){
-	puts("PROCESO CPU");
-	printf("IP KERNEL: %s/n", c.ip_Kernel);
-	printf("PUERTO KERNEL: %d/n", c.puerto_Kernel);
-	printf("IP MEMORIA: %s/n", c.ip_Memoria);
-	printf("PUERTO MEMORIA: %d/n", c.puerto_Memoria);
+void imprimir(configFile* c){
+	puts("--------PROCESO CPU--------");
+	printf("IP KERNEL: %s\n", c->ip_Kernel);
+	printf("PUERTO KERNEL: %s\n", c->puerto_Kernel);
+	printf("IP MEMORIA: %s\n", c->ip_Memoria);
+	printf("PUERTO MEMORIA: %s\n", c->puerto_Memoria);
+	puts("--------PROCESO CPU--------");
 
 }
 
-bool chequear_campos_archivo(t_config* handler){
-	char* campos[4]={"IP_KERNEL", "PUERTO_KERNEL", "IP_MEMORIA", "PUERTO_MEMORIA"};
-	bool archivo_correcto;
-	int i;
-	for (i =0; i<4; i++){
-		if(config_has_property(handler, campos[i])){
-			archivo_correcto=true;
-		}
-		else{
-			archivo_correcto=false;
-			puts("Error: Faltan campos en el archivo de configuracion");
-			break;
-		}
-	}
-	return archivo_correcto;
 
-	}
-
-bool chequear_ruta_archivo(t_config* handler){
-
-	bool b= handler->path != NULL;
-	if(!b){
-		puts("Error: ruta invalida");
-	}
-	return b;
-}
-
-bool chequear_archivo_valido(t_config* handler){
-
-	return chequear_campos_archivo(handler) && chequear_ruta_archivo(handler);
-
-}
 
 int main(int argc, char** argsv) {
 
-
-
-	t_config* configHandler = config_create(argsv[1]);
-		if(!chequear_archivo_valido(configHandler)){
-			return EXIT_FAILURE;
-		}
-	configFile config = leer_archivo_configuracion(configHandler->path);
-	imprimir(config);
-
-	/*
-	struct sockaddr_in direccionKernel;
-	direccionKernel.sin_family=AF_INET;
-	direccionKernel.sin_addr.s_addr=inet_addr(DIRECCION_IP_KERNEL);
-	direccionKernel.sin_port=htons(PUERTO_KERNEL);
-
-	struct sockaddr_in direcciónCliente;
-	unsigned int len;
-	int cliente = accept(servidor, (void*) &direcciónCliente, &len);
-
-	printf("Recibí una conexión en %d!!\n", cliente);
-
-
-
-
-
-
-	*/
+	configFile* config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/CPU/Debug/CPU.conf", leer_archivo_configuracion, keys);
+	free(config);
 	return EXIT_SUCCESS;
 
 
