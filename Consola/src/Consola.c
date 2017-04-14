@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <commons/config.h>
+#include "SocketLibrary.h"
 #define CONFIG_FILE "consola.conf"
 const char* keys[3] = {"IP_KERNEL", "PUERTO_KERNEL", "NULL"};
 
@@ -44,7 +45,7 @@ int main(void) {
 	configFile* config;
 	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/Consola/Debug/consola.conf", leerArchivoConfig, keys);
 	int socket = getConnectedSocket(config->ip_kernel, config->puerto_kernel);
-	if(enviarHandShake(socket, 4))
+	if(enviarHandShake(socket, CONSOLA_ID))
 		{
 			char mensaje[25];
 

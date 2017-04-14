@@ -1,6 +1,5 @@
 #include "SocketLibrary.h"
 
-
 void handleData(char*);
 /*int getSocket(char* ip, char* port){
 	return internalSocket(ip,port,*empty);

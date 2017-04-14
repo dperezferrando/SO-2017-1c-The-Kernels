@@ -1,6 +1,5 @@
 #include "SocketLibrary.h"
 
-
 void handleData(char*);
 /*int getSocket(char* ip, char* port){
 	return internalSocket(ip,port,*empty);
@@ -28,6 +27,8 @@ int recibirHandShake(int socket)
 	int op;
 
 	int* idProceso = (int*)lRecv(socket, &op);
+	if(idProceso == NULL)
+		return -1;
 	int id = (*idProceso);
 	free(idProceso);
 	if(op == 0)
@@ -91,7 +92,7 @@ void lSend(int sender, int tipoOperacion, const void* msg, int len){
 
 void handleData(char* data){
 	printf("La data es: %s\n",data);
-	getchar();
+	//getchar();
 }
 
 socketHandler lSelect(socketHandler handler, int duration){

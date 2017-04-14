@@ -9,6 +9,12 @@
 
 #include "Header.h"
 #include "InternalSocketFunctions.h"
+#define KERNEL_ID 0
+#define MEMORIA_ID 1
+#define CPU_ID 2
+#define FS_ID 3
+#define CONSOLA_ID 4
+
 
 int lAccept(int);
 int getBindedSocket(char*, char*);

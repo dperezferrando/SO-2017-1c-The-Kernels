@@ -8,12 +8,14 @@ void handler(configFile* config){
 	//socketHandler sHandlerControl;
 	socketHandler sHandlerResult=initializeSocketHandler();
 	int listener= getBindedSocket(LOCALHOST,config->PUERTO_PROG);
+	int conexionMemoria = conexionNormal(config->IP_MEMORIA, config->PUERTO_MEMORIA, KERNEL_ID);
+	int conexionFS = conexionNormal(config->IP_FS, config->PUERTO_FS, KERNEL_ID);
 	lListen(listener,BACKLOG);
 	addReadSocket(listener,&sHandlerMaster);
 	puts("Sockets Listos, entramos al while\n");
 	while(1){
 		sHandlerResult= lSelect(sHandlerMaster,15);
-		handleSockets(listener,&sHandlerMaster,sHandlerResult);
+		handleSockets(listener,conexionMemoria, conexionFS, &sHandlerMaster,sHandlerResult);
 		free(sHandlerResult.readSockets);
 		free(sHandlerResult.writeSockets);
 		sHandlerResult=initializeSocketHandler();

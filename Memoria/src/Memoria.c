@@ -58,7 +58,7 @@ int main(int argc, char** argsv) {
 	free(config);
 	lListen(socket, 5);
 	int conexion = lAccept(socket);
-	if(recibirHandShake(conexion) != 0)
+	if(recibirHandShake(conexion) != KERNEL_ID)
 	{
 		close(conexion);
 		puts("Proceso equivocado");
@@ -70,9 +70,10 @@ int main(int argc, char** argsv) {
 		lSend(conexion, 0, confirmacion, sizeof(confirmacion));
 		free(confirmacion);
 		int operacion;
-		char* mensaje = lRecv(conexion, &operacion);
+		char mensaje[25];
+		strcpy(mensaje,lRecv(conexion, &operacion));
 		printf("MENSAJE: %s", mensaje);
-		free(mensaje);
+		//free(mensaje);
 
 	}
 	return EXIT_SUCCESS;
