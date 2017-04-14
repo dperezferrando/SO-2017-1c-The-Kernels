@@ -57,24 +57,10 @@ int main(int argc, char** argsv) {
 	int socket = getBindedSocket("127.0.0.1", config->puerto);
 	free(config);
 	lListen(socket, 5);
-	int conexion = lAccept(socket);
-	if(recibirHandShake(conexion) != KERNEL_ID)
-	{
-		close(conexion);
-		puts("Proceso equivocado");
-	}
-	else
-	{
-		int* confirmacion = malloc(sizeof(int));
-		*confirmacion = 1;
-		lSend(conexion, 0, confirmacion, sizeof(confirmacion));
-		free(confirmacion);
-		int operacion;
-		char mensaje[25];
-		strcpy(mensaje,lRecv(conexion, &operacion));
-		printf("MENSAJE: %s", mensaje);
+	int conexion = lAccept(socket, KERNEL_ID);
+	char mensaje[25];
+	strcpy(mensaje,lRecv(conexion));
+	printf("MENSAJE: %s", mensaje);
 		//free(mensaje);
-
-	}
 	return EXIT_SUCCESS;
 }

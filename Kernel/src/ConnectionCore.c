@@ -10,24 +10,14 @@ void handleSockets(int listener, int conexionMemoria, int conexionFS, socketHand
 			puts("esta leyendo\n");
 			if(p==listener){
 				puts("Es listener\n");
-				addReadSocket(lAccept(p),master);
+				addReadSocket(lAccept(p, CONSOLA_ID),master);
 				puts("new connection\n");
 			}
 			else{
-				int tipoOperacion;
+
 				puts("Habemus Data\n");
-				int id = recibirHandShake(p);
-				if(id != CONSOLA_ID)
-				{
-					closeConnection(p, master);
-					break;
-				}
-				int* confirmacion = malloc(sizeof(int));
-				*confirmacion = 1;
-				lSend(p, 0, confirmacion, sizeof(confirmacion));
-				free(confirmacion);
 				char data[25];
-				strcpy(data,lRecv(p,&tipoOperacion));
+				strcpy(data,lRecv(p));
 				if(data==NULL){
 					puts("Se cierra la conexion");
 					closeConnection(p,master);
@@ -46,6 +36,6 @@ void handleSockets(int listener, int conexionMemoria, int conexionFS, socketHand
 
 void enviarALosDemas(char* data, int conexionMemoria, int conexionFS)
 {
-	lSend(conexionMemoria, 0, data, strlen(data));
-	lSend(conexionFS, 0, data, strlen(data));
+	lSend(conexionMemoria, data, strlen(data));
+	lSend(conexionFS, data, strlen(data));
 }

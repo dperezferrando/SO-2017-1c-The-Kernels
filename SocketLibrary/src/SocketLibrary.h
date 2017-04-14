@@ -16,24 +16,24 @@
 #define CONSOLA_ID 4
 
 
-int lAccept(int);
+int lAccept(int, int);
 int getBindedSocket(char*, char*);
 int isReading(int, socketHandler);
 int isWriting(int, socketHandler*);
-int getConnectedSocket(char*, char*);
+int getConnectedSocket(char*, char*, int);
 int enviarHandShake(int, int);
-int recibirHandShake(int);
+int recibirHandShake(int, int);
 
 
 //-----------------------------------------------------//
 
 void lListen(int,int);
-void* lRecv(int, int*);
+void* lRecv(int);
 void clrReaders(socketHandler*);
 void clrWriters(socketHandler*);
 void clrHandler(socketHandler*);
 void recieveHeader(int, Header*);
-void lSend(int, int, const void*, int);
+void lSend(int, const void*, int);
 void addReadSocket(int, socketHandler*);
 void rmvReadSocket(int, socketHandler*);
 void closeConnection(int,socketHandler*);

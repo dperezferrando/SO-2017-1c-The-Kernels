@@ -44,18 +44,13 @@ configFile* leerArchivoConfig(t_config* configHandler)
 int main(void) {
 	configFile* config;
 	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/Consola/Debug/consola.conf", leerArchivoConfig, keys);
-	int socket = getConnectedSocket(config->ip_kernel, config->puerto_kernel);
-	if(enviarHandShake(socket, CONSOLA_ID))
-		{
-			char mensaje[25];
-
-			scanf("%s", mensaje);
-			printf("%s", mensaje);
-			//strcpy(mensaje, "hola");
-			lSend(socket, 0, mensaje, sizeof(mensaje));
-			puts("Todo ok\n");
-		} else
-			puts("Se cerro la conexion");
+	int socket = getConnectedSocket(config->ip_kernel, config->puerto_kernel, CONSOLA_ID);
+	char mensaje[25];
+	scanf("%s", mensaje);
+	printf("%s", mensaje);
+	//strcpy(mensaje, "hola");
+	lSend(socket, mensaje, sizeof(mensaje));
+	puts("Todo ok\n");
 	free(config);
 	return 0;
 }

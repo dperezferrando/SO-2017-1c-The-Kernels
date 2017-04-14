@@ -83,14 +83,13 @@ int _isNotEqual(int a, int b){
 	return a!=b;
 }
 
-void _sendHeader(int sender,int tipoProceso,int len){
-	Header header= _createHeader(tipoProceso, len);
+void _sendHeader(int sender,int len){
+	Header header= _createHeader(len);
 	internalSend(sender,&header,sizeof(Header));
 }
 
-Header _createHeader(int tp,int size){
+Header _createHeader(int size){
 	Header header;
-	header.tipoOperacion= tp;
 	header.tamanio= size;
 	return header;
 }

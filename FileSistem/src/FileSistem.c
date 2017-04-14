@@ -32,25 +32,14 @@ void imprimirConfig(configFile* config)
 int main(int argc, char** argsv) {
 	configFile* config;
 	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/FileSistem/Debug/filesystem.conf", leerArchivoConfig, keys);
-		int socket = getBindedSocket("127.0.0.1", config->puerto);
-		free(config);
-		lListen(socket, 5);
-		int conexion = lAccept(socket);
-		if(recibirHandShake(conexion) != KERNEL_ID){
-			close(conexion);
-			puts("Proceso equivocado");
-		}
-		else{
-			int* confirmacion = malloc(sizeof(int));
-			*confirmacion = 1;
-			lSend(conexion, 0, confirmacion, sizeof(confirmacion));
-			free(confirmacion);
-			int operacion;
-			char mensaje[25];
-			char* sida = lRecv(conexion, &operacion);
-			strcpy(mensaje,sida);
-			printf("MENSAJE: %s", mensaje);
-			free(sida);
-		}
+	int socket = getBindedSocket("127.0.0.1", config->puerto);
+	free(config);
+	lListen(socket, 5);
+	int conexion = lAccept(socket, KERNEL_ID);
+	char mensaje[25];
+	char* sida = lRecv(conexion);
+	strcpy(mensaje,sida);
+	printf("MENSAJE: %s", mensaje);
+	free(sida);
 	return EXIT_SUCCESS;
 }

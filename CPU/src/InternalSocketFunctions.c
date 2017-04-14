@@ -48,13 +48,13 @@ int _getFirstSocket(addrInfo* addr, int (*action)(int,const struct sockaddr *,so
 	return s;
 }
 
-void internalRecv(int reciever, void* buf, int size){
+int internalRecv(int reciever, void* buf, int size){
 	int status;
-	errorIfEqual(status= recv(reciever,buf,size,0),-1,"Recieve");
-	errorIfEqual(status,0,"Connection Closed");
+	errorIfEqual(status=recv(reciever,buf,size,0),-1,"recv");
+	return status;
 }
 
-void internalSend(int s, const void* msg, int len){
+void internalSend(int s, void* msg, int len){
 	errorIfEqual(send(s,msg,len,0),-1,"Send");//flags harcodeado en 0 pero se puede agregar de ser necesario
 }
 
@@ -83,14 +83,13 @@ int _isNotEqual(int a, int b){
 	return a!=b;
 }
 
-void _sendHeader(int sender,int tipoProceso,int len){
-	Header header= _createHeader(tipoProceso, len);
+void _sendHeader(int sender,int len){
+	Header header= _createHeader(len);
 	internalSend(sender,&header,sizeof(Header));
 }
 
-Header _createHeader(int tp,int size){
+Header _createHeader(int size){
 	Header header;
-	header.tipoProceso= tp;
 	header.tamanio= size;
 	return header;
 }

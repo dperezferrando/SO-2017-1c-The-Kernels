@@ -10,31 +10,31 @@ void empty(int a, sockAddr b, int c){}*/
 
 //-----------------------------------------MAIN FUNCTIONS-------------------------------------------------------------------//
 
-int enviarHandShake(int socket, int id)
+int enviarHandShake(int socket, int idPropia)
 {
 	int* idProceso = malloc(sizeof(int));
-	*idProceso = id;
-	lSend(socket, 0, idProceso, sizeof(id));
+	*idProceso = idPropia;
+	lSend(socket, idProceso, sizeof(idPropia));
 	free(idProceso);
-	int i;
-	return (int)lRecv(socket, &i);
-
+	int* confirmacion = lRecv(socket);
+	return  confirmacion != NULL && (*confirmacion) != 0;
 
 }
 
-int recibirHandShake(int socket)
+int recibirHandShake(int socket, int idEsperada) // bool
 {
-	int op;
-
-	int* idProceso = (int*)lRecv(socket, &op);
+	int* idProceso = (int*)lRecv(socket);
+	int* confirmacion = malloc(sizeof(int));
 	if(idProceso == NULL)
-		return -1;
+		return 0;
 	int id = (*idProceso);
 	free(idProceso);
-	if(op == 0)
-		return id;
-	else
-		return -1;
+	*confirmacion = id == idEsperada;
+	lSend(socket, confirmacion, sizeof(confirmacion));
+	int conf = *confirmacion;
+	free(confirmacion);
+	return conf;
+
 }
 
 
@@ -42,33 +42,38 @@ int recibirHandShake(int socket)
 int getBindedSocket(char* ip, char* port){
 	int(*action)(int,const struct sockaddr*,socklen_t)=&bind;
 	return internalSocket(ip,port,action);
+
 }
 
-int getConnectedSocket(char* ip, char* port){
+int getConnectedSocket(char* ip, char* port, int idPropia){
 	int(*action)(int,const struct sockaddr*,socklen_t)=&connect;
-	return internalSocket(ip,port,action);
+	int socket = internalSocket(ip,port,action);
+	if(!enviarHandShake(socket, idPropia))
+		errorIfEqual(0,0,"El servidor no admite conexiones para este proceso");
+	return socket;
+
 }
 
 void lListen(int socket,int backlog){//hay que cambiarle el nombre
 	errorIfEqual(listen(socket,backlog),-1,"Listen");//cantidad de conexiones que acepta, osea de sockets que voy a manejar
 }
 
-int lAccept(int sockListener){
+int lAccept(int sockListener, int idEsperada){
 	int newSocket,size=sizeof(struct sockaddr);
 	struct sockaddr_storage* addr;
 	errorIfEqual(newSocket= accept(sockListener,&addr,&size),-1,"Accept");
-	if(newSocket<0)errorIfEqual(0,0,"Accept");
+	if(!recibirHandShake(newSocket, idEsperada))
+		newSocket = -1;
+	if(newSocket<0)errorIfEqual(0,0,"Accept - Proceso equivocado u otro error");
 	return newSocket;
 }
 
-void* lRecv(int reciever, int* tipoOperacion){
+void* lRecv(int reciever){
 	Header* header=malloc(sizeof(Header));
 	header->tamanio=0;
-	header->tipoOperacion=0;
 	recieveHeader(reciever,header);
 	void* buf=malloc(header->tamanio);
 	int status= internalRecv(reciever,buf,header->tamanio);
-	*tipoOperacion= header->tipoOperacion;
 	free(header);
 	if(status!=0)return buf;else return NULL;
 }
@@ -85,8 +90,8 @@ void recieveHeader(int socket, Header* header){
 	//printf("tamanio header: %d\n",header->tamanio);
 }
 
-void lSend(int sender, int tipoOperacion, const void* msg, int len){
-	_sendHeader(sender,tipoOperacion, len);//tipo de proceso hardcodeado, hay que ver de donde pija se saca
+void lSend(int sender, const void* msg, int len){
+	_sendHeader(sender,len);//tipo de proceso hardcodeado, hay que ver de donde pija se saca
 	internalSend(sender,msg,len);
 }
 
