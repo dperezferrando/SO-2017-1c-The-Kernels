@@ -19,7 +19,7 @@
 int lAccept(int, int);
 int getBindedSocket(char*, char*);
 int isReading(int, socketHandler);
-int isWriting(int, socketHandler*);
+int isWriting(int, socketHandler);
 int getConnectedSocket(char*, char*, int);
 int enviarHandShake(int, int);
 int recibirHandShake(int, int);
@@ -32,7 +32,7 @@ void* lRecv(int);
 void clrReaders(socketHandler*);
 void clrWriters(socketHandler*);
 void clrHandler(socketHandler*);
-void recieveHeader(int, Header*);
+int recieveHeader(int, Header*);
 void lSend(int, const void*, int);
 void addReadSocket(int, socketHandler*);
 void rmvReadSocket(int, socketHandler*);

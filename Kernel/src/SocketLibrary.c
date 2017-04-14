@@ -17,7 +17,9 @@ int enviarHandShake(int socket, int idPropia)
 	lSend(socket, idProceso, sizeof(idPropia));
 	free(idProceso);
 	int* confirmacion = lRecv(socket);
-	return  confirmacion != NULL && (*confirmacion) != 0;
+	int conf = confirmacion != NULL && (*confirmacion) != 0;
+	free(confirmacion);
+	return  conf;
 
 }
 
@@ -71,11 +73,19 @@ int lAccept(int sockListener, int idEsperada){
 void* lRecv(int reciever){
 	Header* header=malloc(sizeof(Header));
 	header->tamanio=0;
-	recieveHeader(reciever,header);
-	void* buf=malloc(header->tamanio);
-	int status= internalRecv(reciever,buf,header->tamanio);
-	free(header);
-	if(status!=0)return buf;else return NULL;
+	int status= recieveHeader(reciever,header);
+	if(status != 0)
+	{
+		void* buf=malloc(header->tamanio);
+		status= internalRecv(reciever,buf,header->tamanio);
+		free(header);
+		return buf;
+	}
+	else
+	{
+		free(header);
+		return NULL;
+	}
 }
 
 void closeConnection(int s,socketHandler* master){
@@ -83,9 +93,10 @@ void closeConnection(int s,socketHandler* master){
 	FD_CLR(s,master->readSockets);
 }
 
-void recieveHeader(int socket, Header* header){
-	internalRecv(socket,header,sizeof(Header));
+int recieveHeader(int socket, Header* header){
+	int status= internalRecv(socket,header,sizeof(Header));
 	puts("Header recibido\n");
+	return status;
 	//Header header= *((Header*)buf);
 	//printf("tamanio header: %d\n",header->tamanio);
 }
@@ -146,8 +157,8 @@ int isReading(int reader, socketHandler handler){
 	return FD_ISSET(reader,handler.readSockets);
 }
 
-int isWriting(int writer, socketHandler* handler){
-	return FD_ISSET(writer,handler->writeSockets);
+int isWriting(int writer, socketHandler handler){
+	return FD_ISSET(writer,handler.writeSockets);
 }
 
 socketHandler initializeSocketHandler(){

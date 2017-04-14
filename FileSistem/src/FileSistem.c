@@ -36,10 +36,15 @@ int main(int argc, char** argsv) {
 	free(config);
 	lListen(socket, 5);
 	int conexion = lAccept(socket, KERNEL_ID);
-	char mensaje[25];
-	char* sida = lRecv(conexion);
-	strcpy(mensaje,sida);
-	printf("MENSAJE: %s", mensaje);
-	free(sida);
+	char* data = lRecv(conexion);
+	while(data != NULL)
+	{
+		char mensaje[25];
+		strcpy(mensaje,data);
+		printf("MENSAJE: %s\n", mensaje);
+		free(data);
+		data = lRecv(conexion);
+	}
+	free(data);
 	return EXIT_SUCCESS;
 }

@@ -1,1 +1,1 @@
-void handleSockets(int, int, int, socketHandler*, socketHandler);
+void handleSockets(int, int, char**, socketHandler*, socketHandler);

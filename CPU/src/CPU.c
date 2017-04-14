@@ -13,6 +13,7 @@
 #include <string.h>
 #include <commons/config.h>
 #include "Configuration.h"
+#include "SocketLibrary.h"
 const char* keys[5]={"IP_KERNEL", "PUERTO_KERNEL", "IP_MEMORIA", "PUERTO_MEMORIA", "NULL"};
 
 typedef struct configFile{
@@ -49,6 +50,17 @@ void imprimir(configFile* c){
 int main(int argc, char** argsv) {
 
 	configFile* config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/CPU/Debug/CPU.conf", leer_archivo_configuracion, keys);
+	int conexion = getConnectedSocket(config->ip_Kernel, config->puerto_Kernel, CPU_ID);
+	char* data = lRecv(conexion);
+	while(data != NULL)
+	{
+		char mensaje[25];
+		strcpy(mensaje,data);
+		free(data);
+		printf("MENSAJE: %s\n", mensaje);
+		data = lRecv(conexion);
+	}
+	free(data);
 	free(config);
 	return EXIT_SUCCESS;
 

@@ -6,23 +6,39 @@
 void handler(configFile* config){
 	socketHandler sHandlerMaster= initializeSocketHandler();
 	//socketHandler sHandlerControl;
-	socketHandler sHandlerResult=initializeSocketHandler();
-	int listener= getBindedSocket(LOCALHOST,config->PUERTO_PROG);
+	socketHandler sHandlerResult;//=initializeSocketHandler();
+	int conexionConsola= getBindedSocket(LOCALHOST,config->PUERTO_PROG);
+	int conexionCPU = getBindedSocket(LOCALHOST, config->PUERTO_CPU);
 	int conexionMemoria = getConnectedSocket(config->IP_MEMORIA, config->PUERTO_MEMORIA, KERNEL_ID);
 	int conexionFS = getConnectedSocket(config->IP_FS, config->PUERTO_FS, KERNEL_ID);
-	lListen(listener,BACKLOG);
-	addReadSocket(listener,&sHandlerMaster);
+	lListen(conexionConsola,BACKLOG);
+	lListen(conexionCPU, BACKLOG);
+	addReadSocket(conexionConsola,&sHandlerMaster);
+	addReadSocket(conexionCPU, &sHandlerMaster);
+	addWriteSocket(conexionMemoria, &sHandlerMaster);
+	addWriteSocket(conexionFS, &sHandlerMaster);
 	puts("Sockets Listos, entramos al while\n");
-	while(1){
+	char* info = NULL;
+	char c = '0';
+	while(c != 'c'){
 		sHandlerResult= lSelect(sHandlerMaster,15);
-		handleSockets(listener,conexionMemoria, conexionFS, &sHandlerMaster,sHandlerResult);
+		handleSockets(conexionConsola,conexionCPU, &info, &sHandlerMaster,sHandlerResult);
+		FD_ZERO(sHandlerResult.readSockets);
 		free(sHandlerResult.readSockets);
+		FD_ZERO(sHandlerResult.writeSockets);
 		free(sHandlerResult.writeSockets);
-		sHandlerResult=initializeSocketHandler();
+		//sHandlerResult=initializeSocketHandler();
+		c = getchar();
 	}
-		free(sHandlerMaster.readSockets);
-		free(sHandlerMaster.writeSockets);
-		free(sHandlerResult.readSockets);
-		free(sHandlerResult.writeSockets);
+	free(info);
+	FD_ZERO(sHandlerMaster.readSockets);
+	free(sHandlerMaster.readSockets);
+	FD_ZERO(sHandlerMaster.writeSockets);
+	free(sHandlerMaster.writeSockets);
+	FD_ZERO(sHandlerResult.readSockets);
+	free(sHandlerResult.readSockets);
+	FD_ZERO(sHandlerResult.writeSockets);
+	free(sHandlerResult.writeSockets);
+
 }
 //aa

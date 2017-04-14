@@ -1,41 +1,59 @@
 #include "SocketLibrary.h"
 
-void handleSockets(int listener, int conexionMemoria, int conexionFS, socketHandler* master, socketHandler result){
+void handleSockets(int listener, int listener2, char** info, socketHandler* master, socketHandler result){
 	int p;
 	int res=0;
 	puts("Entro al for\n");
 	for(p=0;p<=(result.nfds);p++){
-		if(isReading(p,result)){
+
+		if(isReading(p,result))
+		{
 			res=1;
 			puts("esta leyendo\n");
 			if(p==listener){
 				puts("Es listener\n");
-				addReadSocket(lAccept(p, CONSOLA_ID),master);
+				int unaConsola = lAccept(p, CONSOLA_ID);
+				addReadSocket(unaConsola,master);
+				free(*info);
+				//*info = NULL;
+
 				puts("new connection\n");
+			}
+			else if(p==listener2)
+			{
+				puts("Es listener\n");
+				int unCPU = lAccept(p, CPU_ID);
+				addWriteSocket(unCPU,master);
+				puts("new connection CPU\n");
 			}
 			else{
 
 				puts("Habemus Data\n");
-				char data[25];
-				strcpy(data,lRecv(p));
-				if(data==NULL){
+
+				*info = lRecv(p);
+
+				if(*info==NULL){
 					puts("Se cierra la conexion");
 					closeConnection(p,master);
-					free(data);
 					continue;
 					}
+
 				//handleData(data);
-				enviarALosDemas(data, conexionMemoria, conexionFS);
+				//enviarALosDemas(data, conexionMemoria, conexionFS);
 				//free(data);
 
 			}
+
+		}
+		else if(isWriting(p, result) && *info != NULL)
+		{
+			char data[25];
+			strcpy(data,*info);
+			lSend(p, data, strlen(data)+1);
+			free(*info);
+			//closeConnection(p, master);
 		}
 	}
 	if(!res)puts("No hay sockets interesantes\n");
 }
 
-void enviarALosDemas(char* data, int conexionMemoria, int conexionFS)
-{
-	lSend(conexionMemoria, data, strlen(data));
-	lSend(conexionFS, data, strlen(data));
-}
