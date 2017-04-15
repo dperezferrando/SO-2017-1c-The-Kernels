@@ -5,8 +5,7 @@
 
 void handler(configFile* config){
 	socketHandler sHandlerMaster= initializeSocketHandler();
-	//socketHandler sHandlerControl;
-	socketHandler sHandlerResult;//=initializeSocketHandler();
+	socketHandler sHandlerResult;
 	int conexionConsola= getBindedSocket(LOCALHOST,config->PUERTO_PROG);
 	int conexionCPU = getBindedSocket(LOCALHOST, config->PUERTO_CPU);
 	int conexionMemoria = getConnectedSocket(config->IP_MEMORIA, config->PUERTO_MEMORIA, KERNEL_ID);
@@ -17,28 +16,15 @@ void handler(configFile* config){
 	addReadSocket(conexionCPU, &sHandlerMaster);
 	addWriteSocket(conexionMemoria, &sHandlerMaster);
 	addWriteSocket(conexionFS, &sHandlerMaster);
-	puts("Sockets Listos, entramos al while\n");
 	char* info = NULL;
-	char c = '0';
-	while(c != 'c'){
+	while(1){
 		sHandlerResult= lSelect(sHandlerMaster,15);
 		handleSockets(conexionConsola,conexionCPU, &info, &sHandlerMaster,sHandlerResult);
-		FD_ZERO(sHandlerResult.readSockets);
-		free(sHandlerResult.readSockets);
-		FD_ZERO(sHandlerResult.writeSockets);
-		free(sHandlerResult.writeSockets);
-		//sHandlerResult=initializeSocketHandler();
-		c = getchar();
+		destroySocketHandler(sHandlerResult);
 	}
 	free(info);
-	FD_ZERO(sHandlerMaster.readSockets);
-	free(sHandlerMaster.readSockets);
-	FD_ZERO(sHandlerMaster.writeSockets);
-	free(sHandlerMaster.writeSockets);
-	FD_ZERO(sHandlerResult.readSockets);
-	free(sHandlerResult.readSockets);
-	FD_ZERO(sHandlerResult.writeSockets);
-	free(sHandlerResult.writeSockets);
+	destroySocketHandler(sHandlerMaster);
+
 
 }
 //aa

@@ -12,6 +12,9 @@ typedef struct {
 	char punto_montaje [15];
 } configFile;
 
+void imprimirConfig(configFile*);
+configFile* leerArchivoConfig(t_config*);
+
 configFile* leerArchivoConfig(t_config* configHandler)
 {
 	configFile* config= malloc(sizeof(configFile));
@@ -36,12 +39,13 @@ int main(int argc, char** argsv) {
 	free(config);
 	lListen(socket, 5);
 	int conexion = lAccept(socket, KERNEL_ID);
+	puts("Esperando mensaje del Kernel");
 	char* data = lRecv(conexion);
 	while(data != NULL)
 	{
 		char mensaje[25];
 		strcpy(mensaje,data);
-		printf("MENSAJE: %s\n", mensaje);
+		printf("MENSAJE RECIBIDO: %s\n", mensaje);
 		free(data);
 		data = lRecv(conexion);
 	}

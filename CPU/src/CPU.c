@@ -23,6 +23,9 @@ typedef struct configFile{
 	char puerto_Memoria[5];
 } configFile;
 
+void imprimir(configFile*);
+configFile* leer_archivo_configuracion(t_config*);
+
 configFile* leer_archivo_configuracion(t_config* configHandler){
 
 	configFile* config = malloc(sizeof(configFile));
@@ -51,13 +54,14 @@ int main(int argc, char** argsv) {
 
 	configFile* config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/CPU/Debug/CPU.conf", leer_archivo_configuracion, keys);
 	int conexion = getConnectedSocket(config->ip_Kernel, config->puerto_Kernel, CPU_ID);
+	puts("Esperando el mensaje del Kernel");
 	char* data = lRecv(conexion);
 	while(data != NULL)
 	{
 		char mensaje[25];
 		strcpy(mensaje,data);
 		free(data);
-		printf("MENSAJE: %s\n", mensaje);
+		printf("MENSAJE RECIBIDO: %s\n", mensaje);
 		data = lRecv(conexion);
 	}
 	free(data);

@@ -58,13 +58,14 @@ int main(int argc, char** argsv) {
 	free(config);
 	lListen(socket, 5);
 	int conexion = lAccept(socket, KERNEL_ID);
+	puts("Esperando mensaje del Kernel");
 	char* data = lRecv(conexion);
 	while(data != NULL)
 	{
 		char mensaje[25];
 		strcpy(mensaje,data);
 		free(data);
-		printf("MENSAJE: %s\n", mensaje);
+		printf("MENSAJE RECIBIDO: %s\n", mensaje);
 		data = lRecv(conexion);
 	}
 	free(data);

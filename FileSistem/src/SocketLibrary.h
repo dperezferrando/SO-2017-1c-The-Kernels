@@ -43,6 +43,7 @@ void rmvWriteSocket(int, socketHandler*);
 //-----------------------------------------------------//
 
 socketHandler initializeSocketHandler();
+void destroySocketHandler(socketHandler);
 socketHandler lSelect(socketHandler, int);
 socketHandler copySocketHandler(socketHandler);
 

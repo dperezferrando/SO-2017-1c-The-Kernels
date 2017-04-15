@@ -74,12 +74,18 @@ void* lRecv(int reciever){
 	Header* header=malloc(sizeof(Header));
 	header->tamanio=0;
 	int status= recieveHeader(reciever,header);
-	if(status != 0)
+	if(status > 0)
 	{
 		void* buf=malloc(header->tamanio);
 		status= internalRecv(reciever,buf,header->tamanio);
 		free(header);
-		return buf;
+		if(status > 0)
+			return buf;
+		else
+		{
+			free(buf);
+			return NULL;
+		}
 	}
 	else
 	{
@@ -95,7 +101,7 @@ void closeConnection(int s,socketHandler* master){
 
 int recieveHeader(int socket, Header* header){
 	int status= internalRecv(socket,header,sizeof(Header));
-	puts("Header recibido\n");
+//	puts("Header recibido\n");
 	return status;
 	//Header header= *((Header*)buf);
 	//printf("tamanio header: %d\n",header->tamanio);
@@ -166,7 +172,15 @@ socketHandler initializeSocketHandler(){
 	b.nfds=0;
 	b.readSockets=malloc(250*sizeof(fd_set));
 	b.writeSockets=malloc(250*sizeof(fd_set));
+	FD_ZERO(b.readSockets);
+	FD_ZERO(b.writeSockets);
 	return b;
+}
+
+void destroySocketHandler(socketHandler handler)
+{
+	free(handler.readSockets);
+	free(handler.writeSockets);
 }
 
 
