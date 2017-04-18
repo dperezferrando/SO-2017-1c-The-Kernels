@@ -1,7 +1,7 @@
 #include "SocketLibrary.h"
 
 
-void handleSockets(int listener, int listener2, char** info, socketHandler* master, socketHandler result){
+void handleSockets(char** info, socketHandler* master, socketHandler result){
 	int p;
 //	int res=0;
 //	puts("Entro al for\n");
