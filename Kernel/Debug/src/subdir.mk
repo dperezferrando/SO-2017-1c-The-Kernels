@@ -10,6 +10,7 @@ C_SRCS += \
 ../src/Kernel.c \
 ../src/KernelConfiguration.c \
 ../src/Listen.c \
+../src/Process.c \
 ../src/SocketLibrary.c 
 
 OBJS += \
@@ -19,6 +20,7 @@ OBJS += \
 ./src/Kernel.o \
 ./src/KernelConfiguration.o \
 ./src/Listen.o \
+./src/Process.o \
 ./src/SocketLibrary.o 
 
 C_DEPS += \
@@ -28,6 +30,7 @@ C_DEPS += \
 ./src/Kernel.d \
 ./src/KernelConfiguration.d \
 ./src/Listen.d \
+./src/Process.d \
 ./src/SocketLibrary.d 
 
 

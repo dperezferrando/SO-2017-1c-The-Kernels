@@ -1,7 +1,14 @@
 #include "SocketLibrary.h"
+typedef struct connectionHandler{
+	socketHandler memoria;
+	socketHandler fs;
+	socketHandler cpu;
+	socketHandler consola;
+	int listenCPU;
+	int listenConsola;
+}connHandle;
 
-
-void handleSockets(char** info, socketHandler* master, socketHandler result){
+void handleSockets(char** info, connHandle* master, socketHandler result){
 	int p;
 //	int res=0;
 //	puts("Entro al for\n");
@@ -42,6 +49,9 @@ void handleSockets(char** info, socketHandler* master, socketHandler result){
 		else if(isWriting(p, result) && *info != NULL)
 			lSend(p, *info, strlen(*info)+1);
 	}
+
+	for(p=0;)
+
 
 //	if(!res)puts("No hay sockets interesantes\n");
 }
