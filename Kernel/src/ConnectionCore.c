@@ -1,58 +1,69 @@
 #include "SocketLibrary.h"
-typedef struct connectionHandler{
-	socketHandler memoria;
-	socketHandler fs;
-	socketHandler cpu;
-	socketHandler consola;
-	int listenCPU;
-	int listenConsola;
-}connHandle;
+#include "ConnectionCore.h"
+
 
 void handleSockets(char** info, connHandle* master, socketHandler result){
 	int p;
-//	int res=0;
-//	puts("Entro al for\n");
 	for(p=0;p<=(result.nfds);p++)
 	{
 		if(isReading(p,result))
 		{
-//			res=1;
-//			puts("esta leyendo\n");
-			if(p==listener){
-//				puts("Es listener\n");
+			if(p==master->listenConsola){
 				int unaConsola = lAccept(p, CONSOLA_ID);
-				addReadSocket(unaConsola,master);
-//				puts("new connection\n");
+				addReadSocket(unaConsola,&(master->consola));
 			}
-			else if(p==listener2)
+			else if(p==master->listenCPU)
 			{
-//				puts("Es listener\n");
 				int unCPU = lAccept(p, CPU_ID);
-				addWriteSocket(unCPU,master);
-//				puts("new connection CPU\n");
+				addWriteSocket(unCPU,&(master->cpu));
 			}
 			else{
-
-//				puts("Habemus Data\n");
 				char* data= lRecv(p);
 				if(data == NULL)
 				{
 					free(*info);
 					*info = NULL;
-//					puts("Se cierra la conexion");
 					closeConnection(p,master);
 				}
-				else *info = data;
+				else {
+					*info = data;
+					handleConnection(p,master,data);
+				}
 			}
 
 		}
 		else if(isWriting(p, result) && *info != NULL)
 			lSend(p, *info, strlen(*info)+1);
 	}
-
-	for(p=0;)
-
-
-//	if(!res)puts("No hay sockets interesantes\n");
 }
 
+void handleConnection(int p, connHandle* master, void* msg){
+
+	if(memSock(p,master))memMsg(msg);
+		else if (cpuSock(p,master))cpuMsg(msg);
+			else if (fsSock(p,master))fsMsg(msg);
+				else if (consSock(p,master)) consMsg(msg);
+
+}
+
+
+
+bool memSock(int p, connHandle* master){
+	return FD_ISSET(p,master->memoria.readSockets);
+}
+
+bool cpuSock(int p, connHandle* master){
+	return FD_ISSET(p,master->cpu.readSockets);
+}
+
+bool fsSock(int p, connHandle* master){
+	return FD_ISSET(p,master->fs.readSockets);
+}
+
+bool consSock(int p, connHandle* master){
+	return FD_ISSET(p,master->consola.readSockets);
+}
+
+bool isListener(int p, connHandle master){
+	return ( p==master.listenCPU || p== master.listenConsola );
+}

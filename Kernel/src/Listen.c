@@ -1,5 +1,5 @@
 #include "Listen.h"
-#include "ConnectionCore.h"
+
 
 #define max(a,b) a > b ? a : b
 
@@ -11,11 +11,12 @@ void handler(configFile* config){
 	char* info = NULL;
 	while(1){
 		handleResult= updateSockets(handleMaster);
+		handleResult= lSelect(handleResult,0);
 		handleSockets(&info, &handleMaster, handleResult);
 		destroySocketHandler(handleResult);
 	}
 	free(info);
-	destroySocketHandler(handleMaster);
+	destroyConnHandler(&handleMaster);
 }
 
 connHandle initializeConnectionHandler(){
@@ -32,7 +33,7 @@ socketHandler updateSockets(connHandle master){
 	int maxSocket= max(max(max(master.consola.nfds,master.cpu.nfds),max(master.fs.nfds,master.memoria.nfds)),max(master.listenCPU,master.listenConsola));
 	int p;
 	for(p=0;p<maxSocket;p++){
-		if(memSock(p,master) || cpuSock(p,master) || fsSock(p,master) || consSock(p,master) || isListener(p,master)){
+		if(memSock(p,&master) || cpuSock(p,&master) || fsSock(p,&master) || consSock(p,&master) || isListener(p,master)){
 			FD_SET(p,aux);
 		}
 	}
@@ -54,26 +55,10 @@ void initialize(configFile* config,t_list* procesos, connHandle* handleMaster){
 	lListen(conexionCPU, BACKLOG);
 	handleMaster->listenConsola= conexionConsola;
 	handleMaster->listenCPU= conexionCPU;
-	addWriteSocket(conexionMemoria, handleMaster->memoria->readSockets);
-	addWriteSocket(conexionFS, handleMaster->fs->readSockets);
+	addReadSocket(conexionMemoria, &handleMaster->memoria);
+	addReadSocket(conexionFS, &handleMaster->fs);
 }
 
-bool memSock(int p, connHandle master){
-	return FD_ISSET(p,master.memoria.readSockets);
-}
+void destroyConnHandler(connHandle* handleMaster){
 
-bool cpuSock(int p, connHandle master){
-	return FD_ISSET(p,master.cpu.readSockets);
-}
-
-bool fsSock(int p, connHandle master){
-	return FD_ISSET(p,master.fs.readSockets);
-}
-
-bool consSock(int p, connHandle master){
-	return FD_ISSET(p,master.consola.readSockets);
-}
-
-bool isListener(int p, connHandle master){
-	return ( p==master.listenCPU || p== master.listenConsola );
 }
