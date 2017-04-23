@@ -12,8 +12,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <commons/config.h>
-#include "Configuration.h"
-#include "SocketLibrary.h"
+#include "../../ConfigLibrary/src/Configuration.c"
+#include "../../SocketLibrary/src/SocketLibrary.c"
 #define CONFIG_FILE "memoria.conf"
 const char* keys[8] = {"PUERTO", "MARCOS", "MARCO_SIZE", "ENTRADAS_CACHE", "CACHE_X_PROC", "REEMPLAZO_CACHE", "RETARDO_MEMORIA", "NULL"};
 

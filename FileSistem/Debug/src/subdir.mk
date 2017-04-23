@@ -4,22 +4,13 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../src/Configuration.c \
-../src/FileSistem.c \
-../src/InternalSocketFunctions.c \
-../src/SocketLibrary.c 
+../src/FileSistem.c 
 
 OBJS += \
-./src/Configuration.o \
-./src/FileSistem.o \
-./src/InternalSocketFunctions.o \
-./src/SocketLibrary.o 
+./src/FileSistem.o 
 
 C_DEPS += \
-./src/Configuration.d \
-./src/FileSistem.d \
-./src/InternalSocketFunctions.d \
-./src/SocketLibrary.d 
+./src/FileSistem.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

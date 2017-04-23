@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <commons/config.h>
-#include "Configuration.h"
-#include "SocketLibrary.h"
+#include "../../ConfigLibrary/src/Configuration.c"
+#include "../../SocketLibrary/src/SocketLibrary.c"
 
 const char* keys[3] = {"PUERTO", "PUNTO_MONTAJE" , "NULL"};
 

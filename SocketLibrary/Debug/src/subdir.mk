@@ -4,17 +4,14 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../src/InternalSocketFunctions.c \
 ../src/Main.c \
 ../src/SocketLibrary.c 
 
 OBJS += \
-./src/InternalSocketFunctions.o \
 ./src/Main.o \
 ./src/SocketLibrary.o 
 
 C_DEPS += \
-./src/InternalSocketFunctions.d \
 ./src/Main.d \
 ./src/SocketLibrary.d 
 

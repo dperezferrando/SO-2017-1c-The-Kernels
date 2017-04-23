@@ -11,8 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <commons/config.h>
-#include "SocketLibrary.h"
-#include "Configuration.h"
+#include "../../ConfigLibrary/src/Configuration.c"
+#include "../../SocketLibrary/src/SocketLibrary.c"
 #define CONFIG_FILE "consola.conf"
 const char* keys[3] = {"IP_KERNEL", "PUERTO_KERNEL", "NULL"};
 

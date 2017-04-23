@@ -39,12 +39,38 @@ void handleSockets(char** info, connHandle* master, socketHandler result){
 
 void handleConnection(int p, connHandle* master, void* msg){
 
-	if(memSock(p,master))memMsg(msg);
-		else if (cpuSock(p,master))cpuMsg(msg);
-			else if (fsSock(p,master))fsMsg(msg);
-				else if (consSock(p,master)) consMsg(msg);
+	if(memSock(p,master))memMsg(p, msg);
+		else if (cpuSock(p,master))cpuMsg(p, msg);
+			else if (fsSock(p,master))fsMsg(p, msg);
+				else if (consSock(p,master)) consMsg(p, msg);
 
 }
+// funciones implementadas humo para testear
+void memMsg(int socket, void* msg)
+{
+	puts("SOY MEMORIA");
+	lSend(socket, msg, strlen(msg)+1);
+}
+
+void cpuMsg(int socket, void* msg)
+{
+	puts("SOY CPU");
+	lSend(socket, msg, strlen(msg)+1);
+}
+
+void fsMsg(int socket, void* msg)
+{
+	puts("SOY FS");
+	lSend(socket, msg, strlen(msg)+1);
+}
+
+void consMsg(int socket, void* msg)
+{
+	puts("SOY CONSOLA");
+
+}
+
+
 
 
 

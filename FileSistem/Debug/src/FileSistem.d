@@ -1,10 +1,13 @@
-src/FileSistem.d: ../src/FileSistem.c ../src/Configuration.h \
- ../src/SocketLibrary.h ../src/Header.h ../src/InternalSocketFunctions.h
+src/FileSistem.d: ../src/FileSistem.c \
+ ../src/../../ConfigLibrary/src/Configuration.c \
+ ../src/../../ConfigLibrary/src/Configuration.h \
+ ../src/../../SocketLibrary/src/SocketLibrary.c \
+ ../src/../../SocketLibrary/src/SocketLibrary.h
 
-../src/Configuration.h:
+../src/../../ConfigLibrary/src/Configuration.c:
 
-../src/SocketLibrary.h:
+../src/../../ConfigLibrary/src/Configuration.h:
 
-../src/Header.h:
+../src/../../SocketLibrary/src/SocketLibrary.c:
 
-../src/InternalSocketFunctions.h:
+../src/../../SocketLibrary/src/SocketLibrary.h:

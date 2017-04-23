@@ -1,7 +1,10 @@
 #include "Listen.h"
 
 
-#define max(a,b) a > b ? a : b
+int max(int a, int b)
+{
+	return a > b ? a : b;
+}
 
 void handler(configFile* config){
 	t_list* procesos= list_create();
@@ -38,7 +41,7 @@ socketHandler updateSockets(connHandle master){
 		}
 	}
 
-	socketHandler response;
+	socketHandler response = initializeSocketHandler();
 	* (response.readSockets)  = * (aux);
 	* (response.writeSockets) = * (aux);
 	response.nfds= maxSocket;

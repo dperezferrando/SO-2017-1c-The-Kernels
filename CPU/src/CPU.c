@@ -12,8 +12,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <commons/config.h>
-#include "Configuration.h"
-#include "SocketLibrary.h"
+#include "../../ConfigLibrary/src/Configuration.c"
+#include "../../SocketLibrary/src/SocketLibrary.c"
 const char* keys[5]={"IP_KERNEL", "PUERTO_KERNEL", "IP_MEMORIA", "PUERTO_MEMORIA", "NULL"};
 
 typedef struct configFile{
