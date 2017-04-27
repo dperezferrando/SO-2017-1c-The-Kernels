@@ -2,7 +2,7 @@
 #include "ConnectionCore.h"
 
 
-void handleSockets(char** info, connHandle* master, socketHandler result){
+void handleSockets(Mensaje** info, connHandle* master, socketHandler result){
 	int p;
 	for(p=0;p<=(result.nfds);p++)
 	{
@@ -18,11 +18,10 @@ void handleSockets(char** info, connHandle* master, socketHandler result){
 				addWriteSocket(unCPU,&(master->cpu));
 			}
 			else{
-				char* data= lRecv(p);
-				if(data == NULL)
+				Mensaje* data= lRecv(p);
+				if(data->header.tipoOperacion == -1)
 				{
-					free(*info);
-					*info = NULL;
+					destruirMensaje(data);
 					closeConnection(p,master);
 				}
 				else {
@@ -33,11 +32,11 @@ void handleSockets(char** info, connHandle* master, socketHandler result){
 
 		}
 		else if(isWriting(p, result) && *info != NULL)
-			lSend(p, *info, strlen(*info)+1);
+			lSend(p, (*info)->data, (*info)->header.tipoOperacion,(*info)->header.tamanio);
 	}
 }
 
-void handleConnection(int p, connHandle* master, void* msg){
+void handleConnection(int p, connHandle* master, Mensaje* msg){
 
 	if(memSock(p,master))memMsg(p, msg);
 		else if (cpuSock(p,master))cpuMsg(p, msg);
@@ -46,25 +45,25 @@ void handleConnection(int p, connHandle* master, void* msg){
 
 }
 // funciones implementadas humo para testear
-void memMsg(int socket, void* msg)
+void memMsg(int socket, Mensaje* msg)
 {
 	puts("SOY MEMORIA");
-	lSend(socket, msg, strlen(msg)+1);
+	lSend(socket, msg->data, msg->header.tipoOperacion, msg->header.tamanio);
 }
 
-void cpuMsg(int socket, void* msg)
+void cpuMsg(int socket, Mensaje* msg)
 {
 	puts("SOY CPU");
-	lSend(socket, msg, strlen(msg)+1);
+	lSend(socket, msg->data, msg->header.tipoOperacion, msg->header.tamanio);
 }
 
-void fsMsg(int socket, void* msg)
+void fsMsg(int socket, Mensaje* msg)
 {
 	puts("SOY FS");
-	lSend(socket, msg, strlen(msg)+1);
+	lSend(socket, msg->data, msg->header.tipoOperacion, msg->header.tamanio);
 }
 
-void consMsg(int socket, void* msg)
+void consMsg(int socket, Mensaje* msg)
 {
 	puts("SOY CONSOLA");
 

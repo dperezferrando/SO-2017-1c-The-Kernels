@@ -55,16 +55,16 @@ int main(int argc, char** argsv) {
 	configFile* config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/CPU/Debug/CPU.conf", leer_archivo_configuracion, keys);
 	int conexion = getConnectedSocket(config->ip_Kernel, config->puerto_Kernel, CPU_ID);
 	puts("Esperando el mensaje del Kernel");
-	char* data = lRecv(conexion);
-	while(data != NULL)
+	Mensaje* info = lRecv(conexion);
+	while(info->header.tipoOperacion != -1)
 	{
 		char mensaje[25];
-		strcpy(mensaje,data);
-		free(data);
+		strcpy(mensaje,info->data);
+		destruirMensaje(info);
 		printf("MENSAJE RECIBIDO: %s\n", mensaje);
-		data = lRecv(conexion);
+		info = lRecv(conexion);
 	}
-	free(data);
+	destruirMensaje(info);
 	free(config);
 	return EXIT_SUCCESS;
 

@@ -40,15 +40,15 @@ int main(int argc, char** argsv) {
 	lListen(socket, 5);
 	int conexion = lAccept(socket, KERNEL_ID);
 	puts("Esperando mensaje del Kernel");
-	char* data = lRecv(conexion);
-	while(data != NULL)
+	Mensaje* info = lRecv(conexion);
+	while(info->header.tipoOperacion != -1)
 	{
 		char mensaje[25];
-		strcpy(mensaje,data);
+		strcpy(mensaje,info->data);
 		printf("MENSAJE RECIBIDO: %s\n", mensaje);
-		free(data);
-		data = lRecv(conexion);
+		destruirMensaje(info);
+		info = lRecv(conexion);
 	}
-	free(data);
+	destruirMensaje(info);
 	return EXIT_SUCCESS;
 }

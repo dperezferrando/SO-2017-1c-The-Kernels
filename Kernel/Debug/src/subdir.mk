@@ -6,7 +6,6 @@
 C_SRCS += \
 ../src/Configuration.c \
 ../src/ConnectionCore.c \
-../src/InternalSocketFunctions.c \
 ../src/Kernel.c \
 ../src/KernelConfiguration.c \
 ../src/Listen.c \
@@ -16,7 +15,6 @@ C_SRCS += \
 OBJS += \
 ./src/Configuration.o \
 ./src/ConnectionCore.o \
-./src/InternalSocketFunctions.o \
 ./src/Kernel.o \
 ./src/KernelConfiguration.o \
 ./src/Listen.o \
@@ -26,7 +24,6 @@ OBJS += \
 C_DEPS += \
 ./src/Configuration.d \
 ./src/ConnectionCore.d \
-./src/InternalSocketFunctions.d \
 ./src/Kernel.d \
 ./src/KernelConfiguration.d \
 ./src/Listen.d \

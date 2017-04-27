@@ -14,4 +14,4 @@ bool memSock(int, connHandle*);
 bool cpuSock(int, connHandle*);
 bool consSock(int, connHandle*);
 bool isListener(int, connHandle);
-void handleSockets(char**, connHandle*, socketHandler);
+void handleSockets(Mensaje**, connHandle*, socketHandler);

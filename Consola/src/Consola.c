@@ -49,7 +49,7 @@ int main(void) {
 	char mensaje[25];
 	puts("Ingresa el mensaje a enviar. Maximo 24 caracteres, sin espacios.");
 	scanf("%s", mensaje);
-	lSend(socket, mensaje, strlen(mensaje)+1);
+	lSend(socket, mensaje, 1,strlen(mensaje)+1);
 	puts("Enviado!");
 	free(config);
 	return 0;

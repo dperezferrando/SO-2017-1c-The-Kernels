@@ -14,6 +14,7 @@
 #include <commons/config.h>
 #include "../../ConfigLibrary/src/Configuration.c"
 #include "../../SocketLibrary/src/SocketLibrary.c"
+
 #define CONFIG_FILE "memoria.conf"
 const char* keys[8] = {"PUERTO", "MARCOS", "MARCO_SIZE", "ENTRADAS_CACHE", "CACHE_X_PROC", "REEMPLAZO_CACHE", "RETARDO_MEMORIA", "NULL"};
 
@@ -59,16 +60,16 @@ int main(int argc, char** argsv) {
 	lListen(socket, 5);
 	int conexion = lAccept(socket, KERNEL_ID);
 	puts("Esperando mensaje del Kernel");
-	char* data = lRecv(conexion);
-	while(data != NULL)
+	Mensaje* info = lRecv(conexion);
+	while(info->header.tipoOperacion != -1)
 	{
 		char mensaje[25];
-		strcpy(mensaje,data);
-		free(data);
+		strcpy(mensaje,info->data);
+		destruirMensaje(info);
 		printf("MENSAJE RECIBIDO: %s\n", mensaje);
-		data = lRecv(conexion);
+		info = lRecv(conexion);
 	}
-	free(data);
+	destruirMensaje(info);
 
 	return EXIT_SUCCESS;
 }

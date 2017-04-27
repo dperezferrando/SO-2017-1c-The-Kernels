@@ -1,5 +1,3 @@
-#ifndef __SOCKET_LIBRARY_H__
-#define __SOCKET_LIBRARY_H__
 #include "SocketLibrary.h"
 
 
@@ -18,10 +16,11 @@ int enviarHandShake(int socket, int idPropia)
 {
 	int* idProceso = malloc(sizeof(int));
 	*idProceso = idPropia;
-	lSend(socket, idProceso, sizeof(idPropia));
+	lSend(socket, idProceso, HANDSHAKE,sizeof(int));
 	free(idProceso);
-	int* confirmacion = lRecv(socket);
-	int conf = confirmacion != NULL && (*confirmacion) != 0;
+	Mensaje* confirmacion = lRecv(socket);
+	//int conf = confirmacion != NULL && (*confirmacion) != 0;
+	int conf = confirmacion->header.tipoOperacion != -1 && *((int*)confirmacion->data) != 0;
 	free(confirmacion);
 	return  conf;
 
@@ -29,14 +28,14 @@ int enviarHandShake(int socket, int idPropia)
 
 int recibirHandShake(int socket, int idEsperada) // bool
 {
-	int* idProceso = (int*)lRecv(socket);
+	Mensaje* handshake = lRecv(socket);
 	int* confirmacion = malloc(sizeof(int));
-	if(idProceso == NULL)
+	if(handshake->header.tipoOperacion != 0)
 		return 0;
-	int id = (*idProceso);
-	free(idProceso);
+	int id = (*(int*)handshake->data);
+	free(handshake);
 	*confirmacion = id == idEsperada;
-	lSend(socket, confirmacion, sizeof(confirmacion));
+	lSend(socket, confirmacion, HANDSHAKE,sizeof(int));
 	int conf = *confirmacion;
 	free(confirmacion);
 	return conf;
@@ -74,29 +73,25 @@ int lAccept(int sockListener, int idEsperada){
 	return newSocket;
 }
 
-void* lRecv(int reciever){
-	Header* header=malloc(sizeof(Header));
-	header->tamanio=0;
-	int status= recieveHeader(reciever,header);
-	if(status > 0)
+Mensaje* lRecv(int receiver)
+{
+	Mensaje* mensaje = malloc(sizeof(Mensaje));
+	int status = internalRecv(receiver, &mensaje->header, sizeof(Header));
+	if(status == 0)
 	{
-		void* buf=malloc(header->tamanio);
-		status= internalRecv(reciever,buf,header->tamanio);
-		free(header);
-		if(status > 0)
-			return buf;
-		else
-		{
-			free(buf);
-			return NULL;
-		}
+		mensaje->header = _createHeader(-1, -1);
+		mensaje->data = NULL;
+		return mensaje;
+		// ARREGLAR HEADER SIN PUNTERO
 	}
-	else
-	{
-		free(header);
-		return NULL;
-	}
+	int tamanioData = mensaje->header.tamanio;
+	mensaje->data = malloc(tamanioData);
+	internalRecv(receiver, mensaje->data, tamanioData);
+	return mensaje;
+
 }
+
+
 
 void closeConnection(int s,socketHandler* master){
 	close(s);
@@ -111,9 +106,21 @@ int recieveHeader(int socket, Header* header){
 	//printf("tamanio header: %d\n",header->tamanio);
 }
 
-void lSend(int sender, const void* msg, int len){
-	_sendHeader(sender,len);//tipo de proceso hardcodeado, hay que ver de donde pija se saca
-	internalSend(sender,msg,len);
+void lSend(int sender, void* msg, int tipoOperacion, int size){
+	//_sendHeader(sender,len);
+	int tamanioTotal = sizeof(Header) + size;
+	Header header = _createHeader(size, tipoOperacion);
+	void* buffer = malloc(tamanioTotal);
+	memcpy(buffer, &header, sizeof(Header));
+	memcpy(buffer + sizeof(Header), msg, size);
+	internalSend(sender,buffer,tamanioTotal);
+	free(buffer);
+}
+
+void destruirMensaje(Mensaje* mensaje)
+{
+	free(mensaje->data);
+	free(mensaje);
 }
 
 void handleData(char* data){
@@ -247,7 +254,7 @@ int _getFirstSocket(addrInfo* addr, int (*action)(int,const struct sockaddr *,so
 
 int internalRecv(int reciever, void* buf, int size){
 	int status;
-	errorIfEqual(status=recv(reciever,buf,size,0),-1,"recv");
+	errorIfEqual(status=recv(reciever,buf,size,MSG_WAITALL),-1,"recv");
 	return status;
 }
 
@@ -280,14 +287,15 @@ int _isNotEqual(int a, int b){
 	return a!=b;
 }
 
-void _sendHeader(int sender,int len){
+/*void _sendHeader(int sender,int len){
 	Header header= _createHeader(len);
 	internalSend(sender,&header,sizeof(Header));
-}
+}*/
 
-Header _createHeader(int size){
+Header _createHeader(int size, int tipoOperacion){
 	Header header;
 	header.tamanio= size;
+	header.tipoOperacion=tipoOperacion;
 	return header;
 }
 
@@ -299,4 +307,3 @@ timeVal _setTimeVal(int seconds, int microseconds){
 	return time;
 }
 
-#endif

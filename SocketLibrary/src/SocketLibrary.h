@@ -1,3 +1,5 @@
+#ifndef __SOCKET_LIBRARY__H__
+#define __SOCKET_LIBRARY__H__
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,6 +9,7 @@
 #include <sys/select.h>
 #include <netdb.h>
 
+#define HANDSHAKE 0
 #define KERNEL_ID 0
 #define MEMORIA_ID 1
 #define CPU_ID 2
@@ -22,9 +25,15 @@ typedef struct socketHandler{
 	int nfds;
 }socketHandler;
 
-typedef struct Header {
+typedef struct __attribute__((packed)) Header {
 	int tamanio;
+	int tipoOperacion;
 } Header;
+
+typedef struct __attribute__((packed)) Mensaje {
+	Header header;
+	void* data;
+} Mensaje;
 
 
 // PRIVADAS
@@ -39,7 +48,7 @@ int _isNotEqual(int, int);
 void errorIfEqual(int, int, char*);
 void errorIfNotEqual(int, int, char*);
 void _sendHeader(int,int);
-Header _createHeader(int);
+Header _createHeader(int, int);
 timeVal _setTimeVal(int, int);
 int _getFirstSocket(addrInfo*, int (int,const struct sockaddr *,socklen_t));
 
@@ -61,16 +70,16 @@ int recibirHandShake(int, int);
 //-----------------------------------------------------//
 
 void lListen(int,int);
-void* lRecv(int);
+Mensaje* lRecv(int);
 void clrReaders(socketHandler*);
 void clrWriters(socketHandler*);
 void clrHandler(socketHandler*);
 int recieveHeader(int, Header*);
-void lSend(int, const void*, int);
+void lSend(int, void*, int, int);
 void addReadSocket(int, socketHandler*);
 void rmvReadSocket(int, socketHandler*);
 void closeConnection(int,socketHandler*);
 void addWriteSocket(int, socketHandler*);
 void rmvWriteSocket(int, socketHandler*);
-
+#endif
 //-----------------------------------------------------//

@@ -11,7 +11,7 @@ void handler(configFile* config){
 	connHandle handleMaster= initializeConnectionHandler();
 	socketHandler handleResult;
 	initialize(config, procesos, &handleMaster);
-	char* info = NULL;
+	Mensaje* info = NULL;
 	while(1){
 		handleResult= updateSockets(handleMaster);
 		handleResult= lSelect(handleResult,0);
