@@ -7,25 +7,62 @@
  Description : Hello World in C, Ansi-style
  ============================================================================
  */
+#include "CPU.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <commons/config.h>
-#include "../../ConfigLibrary/src/Configuration.c"
-#include "../../SocketLibrary/src/SocketLibrary.c"
-const char* keys[5]={"IP_KERNEL", "PUERTO_KERNEL", "IP_MEMORIA", "PUERTO_MEMORIA", "NULL"};
+int kernel, memoria;
+int main(int argc, char** argsv) {
+	// COSAS DEL KERNEL COMENTADAS PORQUE ESTA RIP
 
-typedef struct configFile{
-	char ip_Kernel[16];
-	char puerto_Kernel[5];
-	char ip_Memoria[16];
-	char puerto_Memoria[5];
-} configFile;
+	configFile* config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/CPU/Debug/CPU.conf", leer_archivo_configuracion, keys);
+//	kernel = getConnectedSocket(config->ip_Kernel, config->puerto_Kernel, CPU_ID);
+	memoria = getConnectedSocket(config->ip_Memoria, config->puerto_Memoria, CPU_ID);
+	pthread_t conexionKernel, conexionMemoria;
+//	pthread_create(&conexionKernel, NULL, conexion_kernel, NULL);
+	pthread_create(&conexionMemoria, NULL, conexion_memoria, NULL);
+	pthread_join(conexionMemoria, NULL);
+//	pthread_join(&conexionKernel, NULL);
+	free(config);
+	//close(kernel);
+	close(memoria);
+	return EXIT_SUCCESS;
 
-void imprimir(configFile*);
-configFile* leer_archivo_configuracion(t_config*);
 
+}
+
+void conexion_kernel() // CODIGO DE TESTEO; NO TIENE QUE VER CON EL ENUNCIADO
+{
+	puts("KERNEL CONECTADO - ESPERANDO MENSAJE <3");
+	while(1)
+	{
+		Mensaje* mensaje = lRecv(kernel);
+		switch(mensaje->header.tipoOperacion)
+		{
+			case -1:
+				puts("MURIO EL KERNEL /FF");
+				exit(EXIT_FAILURE);
+				break;
+			case 1:
+				puts("LLEGO ALGO DEL KERNEL");
+				printf("MENSAJE RECIBIDO: %s\n", mensaje->data); // TESTING
+				break;
+		}
+		destruirMensaje(mensaje);
+	}
+}
+
+void conexion_memoria() // CODIGO DE TESTEO; NO TIENE QUE VER CON EL ENUNCIADO. SE MANDAN MENSAJES A MEMORIA. "SALIR" PARA TERMINAR
+{
+	puts("HILI");
+
+	char mensaje[10];
+	scanf("%s", mensaje);
+	while(strcmp(mensaje, "SALIR"))
+	{
+		lSend(memoria, mensaje, 1, sizeof(char)*10);
+		scanf("%s", mensaje);
+	}
+	lSend(memoria, NULL, 2, 0);
+}
 configFile* leer_archivo_configuracion(t_config* configHandler){
 
 	configFile* config = malloc(sizeof(configFile));
@@ -45,29 +82,6 @@ void imprimir(configFile* c){
 	printf("IP MEMORIA: %s\n", c->ip_Memoria);
 	printf("PUERTO MEMORIA: %s\n", c->puerto_Memoria);
 	puts("--------PROCESO CPU--------");
-
-}
-
-
-
-int main(int argc, char** argsv) {
-
-	configFile* config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/CPU/Debug/CPU.conf", leer_archivo_configuracion, keys);
-	int conexion = getConnectedSocket(config->ip_Kernel, config->puerto_Kernel, CPU_ID);
-	puts("Esperando el mensaje del Kernel");
-	Mensaje* info = lRecv(conexion);
-	while(info->header.tipoOperacion != -1)
-	{
-		char mensaje[25];
-		strcpy(mensaje,info->data);
-		destruirMensaje(info);
-		printf("MENSAJE RECIBIDO: %s\n", mensaje);
-		info = lRecv(conexion);
-	}
-	destruirMensaje(info);
-	free(config);
-	return EXIT_SUCCESS;
-
 
 }
 
