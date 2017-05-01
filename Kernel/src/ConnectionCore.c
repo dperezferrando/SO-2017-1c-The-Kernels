@@ -2,7 +2,7 @@
 #include "ConnectionCore.h"
 
 
-void handleSockets(Mensaje** info, connHandle* master, socketHandler result){
+void handleSockets(connHandle* master, socketHandler result){
 	int p;
 	for(p=0;p<=(result.nfds);p++)
 	{
@@ -15,78 +15,86 @@ void handleSockets(Mensaje** info, connHandle* master, socketHandler result){
 			else if(p==master->listenCPU)
 			{
 				int unCPU = lAccept(p, CPU_ID);
-				addWriteSocket(unCPU,&(master->cpu));
+				addReadSocket(unCPU,&(master->cpu));
 			}
-			else{
-				Mensaje* data= lRecv(p);
-				if(data->header.tipoOperacion == -1)
-				{
-					destruirMensaje(data);
-					closeConnection(p,master);
-				}
-				else {
-					*info = data;
-					handleConnection(p,master,data);
-				}
+			else if(consSock(p, master))
+			{
+				recibirDeConsola(p, master);
 			}
+			else if(cpuSock(p, master))
+			{
+				recibirDeCPU(p, master);
+			}
+			// habria que poner lo mismo para fs y memoria
 
 		}
-		else if(isWriting(p, result) && *info != NULL)
-			lSend(p, (*info)->data, (*info)->header.tipoOperacion,(*info)->header.tamanio);
+		if(isWriting(p, result))
+		{
+			if(memSock(p, master))
+				puts("La memoria espera algo"); // xddd fuck logic
+			if(fsSock(p, master))
+				puts("El fs espera algo"); // xddd fuck logic
+		}
+		// habria que poner lo mismo para consola y cpu
 	}
 }
 
-void handleConnection(int p, connHandle* master, Mensaje* msg){
-
-	if(memSock(p,master))memMsg(p, msg);
-		else if (cpuSock(p,master))cpuMsg(p, msg);
-			else if (fsSock(p,master))fsMsg(p, msg);
-				else if (consSock(p,master)) consMsg(p, msg);
-
-}
-// funciones implementadas humo para testear
-void memMsg(int socket, Mensaje* msg)
+void closeHandle(int s, connHandle* master)
 {
-	puts("SOY MEMORIA");
-	lSend(socket, msg->data, msg->header.tipoOperacion, msg->header.tamanio);
+	closeConnection(s, &(master->consola));
+	closeConnection(s, &(master->cpu));
 }
 
-void cpuMsg(int socket, Mensaje* msg)
+void recibirDeConsola(int socket, connHandle* master)
 {
-	puts("SOY CPU");
-	lSend(socket, msg->data, msg->header.tipoOperacion, msg->header.tamanio);
+	puts("CONSOLA");
+	Mensaje* mensaje = lRecv(socket);
+	switch(mensaje->header.tipoOperacion)
+	{
+		case -1:
+			closeHandle(socket, master);
+			break;
+		case 1: // TESTING
+			printf("MENSAJE CONSOLA: %s\n", mensaje->data);
+			break;
+	}
+
+	destruirMensaje(mensaje);
 }
 
-void fsMsg(int socket, Mensaje* msg)
+void recibirDeCPU(int socket, connHandle* master)
 {
-	puts("SOY FS");
-	lSend(socket, msg->data, msg->header.tipoOperacion, msg->header.tamanio);
+	puts("CPU");
+	Mensaje* mensaje = lRecv(socket);
+	switch(mensaje->header.tipoOperacion)
+	{
+		case -1:
+			closeHandle(socket, master);
+			break;
+		case 1: // TESTING
+			printf("MENSAJE CPU: %s\n", mensaje->data);
+			break;
+	}
+	destruirMensaje(mensaje);
 }
 
-void consMsg(int socket, Mensaje* msg)
-{
-	puts("SOY CONSOLA");
 
-}
-
-
-
-
-
-bool memSock(int p, connHandle* master){
-	return FD_ISSET(p,master->memoria.readSockets);
-}
 
 bool cpuSock(int p, connHandle* master){
-	return FD_ISSET(p,master->cpu.readSockets);
+	return FD_ISSET(p,&master->cpu.readSockets);
 }
 
-bool fsSock(int p, connHandle* master){
-	return FD_ISSET(p,master->fs.readSockets);
-}
 
 bool consSock(int p, connHandle* master){
-	return FD_ISSET(p,master->consola.readSockets);
+	return FD_ISSET(p,&master->consola.readSockets);
+}
+bool memSock(int p, connHandle* master){
+	return p == master->memoria;
+}
+
+bool fsSock(int p, connHandle* master)
+{
+	return p == master->fs;
 }
 
 bool isListener(int p, connHandle master){

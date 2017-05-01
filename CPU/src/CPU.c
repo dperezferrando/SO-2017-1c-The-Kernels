@@ -14,15 +14,15 @@ int main(int argc, char** argsv) {
 	// COSAS DEL KERNEL COMENTADAS PORQUE ESTA RIP
 
 	configFile* config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/CPU/Debug/CPU.conf", leer_archivo_configuracion, keys);
-//	kernel = getConnectedSocket(config->ip_Kernel, config->puerto_Kernel, CPU_ID);
+	kernel = getConnectedSocket(config->ip_Kernel, config->puerto_Kernel, CPU_ID);
 	memoria = getConnectedSocket(config->ip_Memoria, config->puerto_Memoria, CPU_ID);
 	pthread_t conexionKernel, conexionMemoria;
-//	pthread_create(&conexionKernel, NULL, conexion_kernel, NULL);
+	pthread_create(&conexionKernel, NULL, conexion_kernel, NULL);
 	pthread_create(&conexionMemoria, NULL, conexion_memoria, NULL);
 	pthread_join(conexionMemoria, NULL);
-//	pthread_join(&conexionKernel, NULL);
+	pthread_join(&conexionKernel, NULL);
 	free(config);
-	//close(kernel);
+	close(kernel);
 	close(memoria);
 	return EXIT_SUCCESS;
 
@@ -31,23 +31,9 @@ int main(int argc, char** argsv) {
 
 void conexion_kernel() // CODIGO DE TESTEO; NO TIENE QUE VER CON EL ENUNCIADO
 {
-	puts("KERNEL CONECTADO - ESPERANDO MENSAJE <3");
-	while(1)
-	{
-		Mensaje* mensaje = lRecv(kernel);
-		switch(mensaje->header.tipoOperacion)
-		{
-			case -1:
-				puts("MURIO EL KERNEL /FF");
-				exit(EXIT_FAILURE);
-				break;
-			case 1:
-				puts("LLEGO ALGO DEL KERNEL");
-				printf("MENSAJE RECIBIDO: %s\n", mensaje->data); // TESTING
-				break;
-		}
-		destruirMensaje(mensaje);
-	}
+	puts("KERNEL CONECTADO - ENVIANDO MENSAJE <3");
+	lSend(kernel, "Hola soy un test", 1, sizeof(char)*17); // TESTING
+
 }
 
 void conexion_memoria() // CODIGO DE TESTEO; NO TIENE QUE VER CON EL ENUNCIADO. SE MANDAN MENSAJES A MEMORIA. "SALIR" PARA TERMINAR

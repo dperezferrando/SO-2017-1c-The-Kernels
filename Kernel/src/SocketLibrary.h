@@ -20,8 +20,8 @@ typedef struct sockadrr sockAddr;
 typedef struct addrinfo addrInfo;
 typedef struct timeval timeVal;
 typedef struct socketHandler{
-	fd_set* readSockets;
-	fd_set* writeSockets;
+	fd_set readSockets;
+	fd_set writeSockets;
 	int nfds;
 }socketHandler;
 

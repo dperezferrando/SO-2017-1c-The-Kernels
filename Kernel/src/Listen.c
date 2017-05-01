@@ -11,39 +11,38 @@ void handler(configFile* config){
 	connHandle handleMaster= initializeConnectionHandler();
 	socketHandler handleResult;
 	initialize(config, procesos, &handleMaster);
-	Mensaje* info = NULL;
 	while(1){
 		handleResult= updateSockets(handleMaster);
 		handleResult= lSelect(handleResult,0);
-		handleSockets(&info, &handleMaster, handleResult);
-		destroySocketHandler(handleResult);
+		handleSockets(&handleMaster, handleResult);
+		//destroySocketHandler(handleResult);
 	}
-	free(info);
 	destroyConnHandler(&handleMaster);
 }
 
 connHandle initializeConnectionHandler(){
 	connHandle aux;
 	aux.consola= initializeSocketHandler();
-	aux.memoria= initializeSocketHandler();
 	aux.cpu= initializeSocketHandler();
-	aux.fs= initializeSocketHandler();
 	return aux;
 }
 
 socketHandler updateSockets(connHandle master){
-	fd_set* aux= malloc(sizeof(master.consola.readSockets)*4);
-	int maxSocket= max(max(max(master.consola.nfds,master.cpu.nfds),max(master.fs.nfds,master.memoria.nfds)),max(master.listenCPU,master.listenConsola));
+	fd_set aux;
+	int maxSocket= max(max(master.consola.nfds,master.cpu.nfds),max(max(master.memoria+1, master.fs+1), max(master.listenCPU+1,master.listenConsola+1)));
 	int p;
+	printf("max: %i\nSockets:", maxSocket);
 	for(p=0;p<maxSocket;p++){
-		if(memSock(p,&master) || cpuSock(p,&master) || fsSock(p,&master) || consSock(p,&master) || isListener(p,master)){
-			FD_SET(p,aux);
+		if(cpuSock(p,&master)|| consSock(p,&master) || isListener(p,master)){
+			FD_SET(p,&aux);
+			printf("%i -", p);
 		}
 	}
+	puts("");
 
 	socketHandler response = initializeSocketHandler();
-	* (response.readSockets)  = * (aux);
-	* (response.writeSockets) = * (aux);
+	response.readSockets  = aux;
+	response.writeSockets = aux;
 	response.nfds= maxSocket;
 
 	return response;
@@ -58,10 +57,11 @@ void initialize(configFile* config,t_list* procesos, connHandle* handleMaster){
 	lListen(conexionCPU, BACKLOG);
 	handleMaster->listenConsola= conexionConsola;
 	handleMaster->listenCPU= conexionCPU;
-	addReadSocket(conexionMemoria, &handleMaster->memoria);
-	addReadSocket(conexionFS, &handleMaster->fs);
+	handleMaster->fs = conexionFS;
+	handleMaster->memoria = conexionMemoria;
 }
 
 void destroyConnHandler(connHandle* handleMaster){
+
 
 }
