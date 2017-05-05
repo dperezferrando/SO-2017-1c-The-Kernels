@@ -74,10 +74,23 @@ int sonIguales(char* s1, char* s2) {
 		return 0;
 }
 
+
+char* leerArchivo(FILE *archivo) {
+	fseek(archivo, 0, SEEK_END);
+	long fsize = ftell(archivo);
+	fseek(archivo, 0, SEEK_SET);
+	char *script = malloc(fsize + 1);
+	fread(script, fsize, 1, archivo);
+	script[fsize] = '\0';
+	return script;
+}
+
 void iniciarPrograma(FILE* archivo) {
+	char* texto = leerArchivo(archivo);
 	contadorPrograma++;
 	printf("Hilo %i creado\n", contadorPrograma);
-	lSend(kernel, archivo, 4, sizeof(FILE*));
+	printf("Aca esta el texto: %s\n", texto);
+	lSend(kernel, texto, 4, strlen(texto));
 	puts("archivo enviado, esperando respuesta...");
 	Mensaje* mensaje = lRecv(kernel);
 	switch(mensaje->header.tipoOperacion)
@@ -173,7 +186,7 @@ Comando controlarComando() {
 
 
 void iniciar(char* path) {
-	FILE* archivo = txt_open_for_append(path);
+	FILE* archivo = fopen(path, "r");
 	pthread_t programa;
 	pthread_create(&programa, NULL, (void *) iniciarPrograma, archivo);
 }
