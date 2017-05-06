@@ -1,5 +1,7 @@
 #include "SocketLibrary.h"
 #include "ConnectionCore.h"
+#include <commons/collections/list.h>
+
 
 
 void handleSockets(connHandle* master, socketHandler result){
@@ -30,10 +32,10 @@ void handleSockets(connHandle* master, socketHandler result){
 		}
 		if(isWriting(p, result))
 		{
-			if(memSock(p, master))
+			/*if(memSock(p, master))
 				puts("La memoria espera algo"); // xddd fuck logic
 			if(fsSock(p, master))
-				puts("El fs espera algo"); // xddd fuck logic
+				puts("El fs espera algo"); // xddd fuck logic*/
 		}
 		// habria que poner lo mismo para consola y cpu
 	}
@@ -55,7 +57,16 @@ void recibirDeConsola(int socket, connHandle* master)
 			closeHandle(socket, master);
 			break;
 		case 1: // TESTING
-			printf("MENSAJE CONSOLA: %s\n", mensaje->data);
+			;
+			t_list* procesos = list_create();
+			int bufferSize = mensaje->header.tamanio + sizeof(int);
+			void* buffer = malloc(bufferSize);
+			int pid = createProcess(procesos);
+			memcpy(buffer, &pid, sizeof(int));
+			memcpy(buffer + sizeof(int), mensaje->data, mensaje->header.tamanio);
+			printf("%s\n", mensaje->data);
+			lSend(master->memoria, buffer, 1, bufferSize);
+			free(buffer);
 			break;
 	}
 

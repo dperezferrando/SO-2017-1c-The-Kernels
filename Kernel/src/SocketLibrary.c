@@ -141,7 +141,7 @@ socketHandler lSelect(socketHandler handler, int duration){
 	timeVal time= _setTimeVal(duration,0);
 	socketHandler result= copySocketHandler(handler);
 	int status= select(result.nfds,&result.readSockets,&result.writeSockets,NULL,&time);
-	printf("STATUS: %i\n", status);
+	//printf("STATUS: %i\n", status);
 	errorIfEqual(status,-1,"select");
 	return result;
 }

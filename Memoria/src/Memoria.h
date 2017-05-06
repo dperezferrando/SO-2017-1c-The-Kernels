@@ -20,6 +20,12 @@ typedef struct {
 	int retardo_memoria;
 } configFile;
 
+typedef struct entradaTabla {
+	int pid;
+	int frame;
+	int pagina;
+} entradaTabla;
+
 void imprimirConfigFile(configFile*);
 configFile* leerArchivoConfig(t_config*);
 void conexion_kernel();

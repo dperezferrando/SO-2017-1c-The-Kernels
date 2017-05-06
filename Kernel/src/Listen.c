@@ -31,14 +31,14 @@ socketHandler updateSockets(connHandle master){
 	fd_set aux;
 	int maxSocket= max(max(master.consola.nfds,master.cpu.nfds),max(max(master.memoria+1, master.fs+1), max(master.listenCPU+1,master.listenConsola+1)));
 	int p;
-	printf("max: %i\nSockets:", maxSocket);
+	//printf("max: %i\nSockets:", maxSocket);
 	for(p=0;p<maxSocket;p++){
 		if(cpuSock(p,&master)|| consSock(p,&master) || isListener(p,master)){
 			FD_SET(p,&aux);
-			printf("%i -", p);
+		//	printf("%i -", p);
 		}
 	}
-	puts("");
+	//puts("");
 
 	socketHandler response = initializeSocketHandler();
 	response.readSockets  = aux;

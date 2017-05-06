@@ -66,7 +66,18 @@ void conexion_kernel(int conexion)
 				break;
 			case 1:
 				puts("ARRANCAR PROCESO");
-				printf("MENSAJE RECIBIDO: %s\n", mensaje->data); // TESTING
+				int pid;
+				int tamanioArchivo = mensaje->header.tamanio-sizeof(int);
+				char* archivo = malloc(tamanioArchivo);
+				memcpy(&pid, mensaje->data, sizeof(int));
+				memcpy(archivo, mensaje->data+sizeof(int), tamanioArchivo);
+				printf("Archivo recibido: %s\n", archivo);
+				inicializarPrograma(pid, 1, archivo, tamanioArchivo);
+				free(archivo);
+				char* test = malloc(tamanioArchivo);
+				memcpy(test, memoria, tamanioArchivo);
+				printf("Archivo leido desde memoria: %s\n", test);
+				//lSend(kernel, 1,2, sizeof(int));
 				break;
 		}
 		destruirMensaje(mensaje);
@@ -115,6 +126,29 @@ void conexion_cpu(int conexion)
 	}
 	close(conexion);
 
+}
+
+void escribirBytes(int pid, int pagina, int offset, int tamanio, void* buffer)
+{
+	memcpy(memoria, buffer, tamanio);
+}
+
+
+
+void inicializarPrograma(int pid, int cantidadPaginas, char* archivo, int tamanio)
+{
+	crearEntrada(pid, cantidadPaginas);
+	escribirBytes(pid, 1, 0, tamanio, archivo);
+}
+
+void crearEntrada(int pid, int cantidadPaginas)
+{
+	entradaTabla unaEntrada;
+	unaEntrada.frame = 0;
+	unaEntrada.pagina = 0;
+	unaEntrada.pid = pid;
+	memcpy(memoria, &unaEntrada, sizeof(unaEntrada));
+	memoria += sizeof(unaEntrada);
 }
 
 void imprimirConfig(configFile* config)

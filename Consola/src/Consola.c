@@ -90,7 +90,7 @@ void iniciarPrograma(FILE* archivo) {
 	contadorPrograma++;
 	printf("Hilo %i creado\n", contadorPrograma);
 	printf("Aca esta el texto: %s\n", texto);
-	lSend(kernel, texto, 4, strlen(texto));
+	lSend(kernel, texto, 1, strlen(texto));
 	puts("archivo enviado, esperando respuesta...");
 	Mensaje* mensaje = lRecv(kernel);
 	switch(mensaje->header.tipoOperacion)
