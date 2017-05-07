@@ -15,6 +15,8 @@ int kernel, cpu; // SOCKETS
 void* memoria; // CACHO DE MEMORIA
 configFile* config;
 
+char* deserializarScript(void* data, int* pid, int* paginasTotales, int* tamanioArchivo);
+
 int main(int argc, char** argsv) {
 
 	pthread_t conexionKernel, esperarCPUS;
@@ -65,25 +67,34 @@ void conexion_kernel(int conexion)
 				exit(EXIT_FAILURE);
 				break;
 			case 1:
-				puts("ARRANCAR PROCESO");
-				int pid;
-				int tamanioArchivo = mensaje->header.tamanio-sizeof(int);
-				char* archivo = malloc(tamanioArchivo);
-				memcpy(&pid, mensaje->data, sizeof(int));
-				memcpy(archivo, mensaje->data+sizeof(int), tamanioArchivo);
-				printf("Archivo recibido: %s\n", archivo);
-				inicializarPrograma(pid, 1, archivo, tamanioArchivo);
-				free(archivo);
-				char* test = malloc(tamanioArchivo);
-				memcpy(test, memoria, tamanioArchivo);
+			{
+				int pid, cantidadPaginas;
+				char* script = deserializarScript(mensaje->data, &pid, &cantidadPaginas, &(mensaje->header.tamanio));
+				printf("ARRANCANDO PROCESO PID: %i\n", pid);
+				printf("Script recibido: %s\n", script);
+				inicializarPrograma(pid, 1, script, mensaje->header.tamanio);
+				free(script);
+				char* test = malloc(mensaje->header.tamanio);
+				memcpy(test, memoria, mensaje->header.tamanio);
 				printf("Archivo leido desde memoria: %s\n", test);
-				//lSend(kernel, 1,2, sizeof(int));
+				free(test);
 				break;
+			}
 		}
 		destruirMensaje(mensaje);
 
 	}
 
+}
+
+char* deserializarScript(void* data, int* pid, int* paginasTotales, int* tamanioArchivo)
+{
+	*tamanioArchivo = *tamanioArchivo-sizeof(int);
+	char* archivo = malloc(*tamanioArchivo);
+	memcpy(pid, data, sizeof(int));
+	memcpy(paginasTotales, data + sizeof(int), sizeof(int));
+	memcpy(archivo, data+sizeof(int)*2, *tamanioArchivo);
+	return archivo;
 }
 
 void esperar_cpus()

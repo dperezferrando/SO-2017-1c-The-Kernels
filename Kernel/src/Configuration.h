@@ -1,3 +1,5 @@
+#ifndef __CONFIGURATION_H__
+#define __CONFIGURATION_H__
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,7 +37,7 @@ typedef struct indStk{
 }indStk;
 
 typedef struct PCB{
-	int identificadorProceso;
+	int pid;
 	int programCounter;
 	int cantPaginasCodigo;
 	indCod indiceCodigo;
@@ -43,3 +45,4 @@ typedef struct PCB{
 	indStk indiceStack;
 	int exitCode;
 }PCB;
+#endif

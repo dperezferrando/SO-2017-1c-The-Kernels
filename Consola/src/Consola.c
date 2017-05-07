@@ -92,15 +92,27 @@ void iniciarPrograma(FILE* archivo) {
 	printf("Aca esta el texto: %s\n", texto);
 	lSend(kernel, texto, 1, strlen(texto));
 	puts("archivo enviado, esperando respuesta...");
-	Mensaje* mensaje = lRecv(kernel);
-	switch(mensaje->header.tipoOperacion)
+	while(1)
 	{
-		case -1:
-			puts("La conexion murio");
-			break;
-		case 1:
-			printf("Mensaje: %s\n", mensaje->data);
-			break;
+		Mensaje* mensaje = lRecv(kernel);
+		switch(mensaje->header.tipoOperacion)
+		{
+			case -1:
+				puts("La conexion murio");
+				exit(EXIT_FAILURE);
+				break;
+			case 1:
+				printf("Mensaje: %s\n", mensaje->data);
+				break;
+			case 2:
+			{
+				int pid;
+				memcpy(&pid, mensaje->data, sizeof(int));
+				printf("PID Recibido: %i\n", pid);
+				puts("Esperando impresion por pantalla");
+			}
+		}
+		destruirMensaje(mensaje);
 	}
 
 

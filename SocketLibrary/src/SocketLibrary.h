@@ -9,7 +9,11 @@
 #include <sys/select.h>
 #include <netdb.h>
 
+// TIPOS DE OPERACIONES
 #define HANDSHAKE 0
+#define INICIO_PROCESO 1
+
+// IDS PROCESOS
 #define KERNEL_ID 0
 #define MEMORIA_ID 1
 #define CPU_ID 2

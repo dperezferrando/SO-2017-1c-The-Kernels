@@ -12,6 +12,7 @@ typedef struct {
 	char ALGORITMO[4];
 	int GRADO_MULTIPROG;
 	int STACK_SIZE;
+	int PAG_SIZE;
 	char** SEM_IDS;
 	char** SEM_INIT;
 	char** SHARED_VARS;

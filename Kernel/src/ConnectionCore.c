@@ -1,8 +1,12 @@
 #include "SocketLibrary.h"
 #include "ConnectionCore.h"
+#include "Configuration.h"
 #include <commons/collections/list.h>
+#include "KernelConfiguration.h"
+#include "globales.h"
+#include <math.h>
 
-
+void* serializarScript(int pid, int tamanio, int paginasTotales, int* tamanioSerializado, void* script);
 
 void handleSockets(connHandle* master, socketHandler result){
 	int p;
@@ -27,17 +31,13 @@ void handleSockets(connHandle* master, socketHandler result){
 			{
 				recibirDeCPU(p, master);
 			}
-			// habria que poner lo mismo para fs y memoria
 
 		}
 		if(isWriting(p, result))
 		{
-			/*if(memSock(p, master))
-				puts("La memoria espera algo"); // xddd fuck logic
-			if(fsSock(p, master))
-				puts("El fs espera algo"); // xddd fuck logic*/
+			// enviar a consola y cpu
 		}
-		// habria que poner lo mismo para consola y cpu
+
 	}
 }
 
@@ -51,27 +51,40 @@ void recibirDeConsola(int socket, connHandle* master)
 {
 	puts("CONSOLA");
 	Mensaje* mensaje = lRecv(socket);
+	PCB* proceso;
 	switch(mensaje->header.tipoOperacion)
 	{
 		case -1:
 			closeHandle(socket, master);
 			break;
-		case 1: // TESTING
-			;
-			t_list* procesos = list_create();
-			int bufferSize = mensaje->header.tamanio + sizeof(int);
-			void* buffer = malloc(bufferSize);
-			int pid = createProcess(procesos);
-			memcpy(buffer, &pid, sizeof(int));
-			memcpy(buffer + sizeof(int), mensaje->data, mensaje->header.tamanio);
+		case 1:
+			proceso = createProcess(procesos);
+			lSend(socket, &proceso->pid, 2, sizeof(int));
+			int tamanioScript = mensaje->header.tamanio;
+			int tamanioScriptSerializado = 0;
+			proceso->cantPaginasCodigo = ceil((double)tamanioScript/(double)config->PAG_SIZE);
+			int paginasTotales = proceso->cantPaginasCodigo + config->STACK_SIZE;
+			void* buffer = serializarScript(proceso->pid, tamanioScript, paginasTotales, &tamanioScriptSerializado, mensaje->data);
 			printf("%s\n", mensaje->data);
-			lSend(master->memoria, buffer, 1, bufferSize);
+			lSend(conexionMemoria, buffer, 1, tamanioScriptSerializado);
+			list_add(procesos, proceso);
 			free(buffer);
 			break;
 	}
 
 	destruirMensaje(mensaje);
 }
+
+void* serializarScript(int pid, int tamanio, int paginasTotales, int* tamanioSerializado, void* script)
+{
+	*tamanioSerializado = tamanio + (sizeof(int)*2);
+	void* buffer = malloc(*tamanioSerializado);
+	memcpy(buffer, &pid, sizeof(int));
+	memcpy(buffer + sizeof(int), &paginasTotales, sizeof(int));
+	memcpy(buffer + sizeof(int)*2, script, tamanio);
+	return buffer;
+}
+
 
 void recibirDeCPU(int socket, connHandle* master)
 {
@@ -99,14 +112,7 @@ bool cpuSock(int p, connHandle* master){
 bool consSock(int p, connHandle* master){
 	return FD_ISSET(p,&master->consola.readSockets);
 }
-bool memSock(int p, connHandle* master){
-	return p == master->memoria;
-}
 
-bool fsSock(int p, connHandle* master)
-{
-	return p == master->fs;
-}
 
 bool isListener(int p, connHandle master){
 	return ( p==master.listenCPU || p== master.listenConsola );

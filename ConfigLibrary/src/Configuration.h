@@ -1,9 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <commons/config.h>
-
-
 
 
 bool rutaCorrecta(t_config* configHandler);
@@ -36,7 +35,7 @@ typedef struct indStk{
 }indStk;
 
 typedef struct PCB{
-	int identificadorProceso;
+	int pid;
 	int programCounter;
 	int cantPaginasCodigo;
 	indCod indiceCodigo;

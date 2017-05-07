@@ -2,8 +2,6 @@
 typedef struct connectionHandler{
 	socketHandler cpu;
 	socketHandler consola;
-	int memoria;
-	int fs;
 	int listenCPU;
 	int listenConsola;
 }connHandle;

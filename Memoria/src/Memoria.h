@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <commons/config.h>
+#include <commons/collections/list.h>
 #include <pthread.h>
 #include "../../ConfigLibrary/src/Configuration.c"
 #include "../../SocketLibrary/src/SocketLibrary.c"
