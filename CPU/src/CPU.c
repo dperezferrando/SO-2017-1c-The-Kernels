@@ -9,7 +9,13 @@
  */
 #include "CPU.h"
 
-int kernel, memoria;
+AnSISOP_funciones primitivas = {
+		.AnSISOP_definirVariable		= definirVariable,
+		.AnSISOP_obtenerPosicionVariable= obtenerPosicionVariable,
+		.AnSISOP_asignarValorCompartida				= asignarValorCompartida
+};
+
+
 int main(int argc, char** argsv) {
 	// COSAS DEL KERNEL COMENTADAS PORQUE ESTA RIP
 
