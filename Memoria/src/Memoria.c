@@ -14,14 +14,14 @@
 int kernel, cpu; // SOCKETS
 char* memoria; // CACHO DE MEMORIA
 char* memoriaUtilizable;
-int cantPaginasAdmin;
+int cantPaginasAdmin; // PAGINAS OCUPADAS POR LA TABLA
 configFile* config;
 
 char* deserializarScript(void* data, int* pid, int* paginasTotales, int* tamanioArchivo);
 
 int main(int argc, char** argsv) {
 
-	pthread_t conexionKernel, esperarCPUS;
+	pthread_t conexionKernel, esperarCPUS, consolaMemoria;
 	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/Memoria/Debug/memoria.conf", leerArchivoConfig, keys);
 	arrancarMemoria();
 	levantarSockets();
@@ -29,6 +29,7 @@ int main(int argc, char** argsv) {
 	int conexion = lAccept(kernel, KERNEL_ID);
 	pthread_create(&conexionKernel, NULL, (void *) conexion_kernel, conexion);
 	pthread_create(&esperarCPUS, NULL, (void *) esperar_cpus, NULL);
+	//pthread_create(&consolaMemoria, NULL, (void*) recibir_comandos, NULL);
 	pthread_join(conexionKernel, NULL);
 	pthread_join(esperarCPUS, NULL);
 	free(config);
@@ -110,17 +111,27 @@ void conexion_kernel(int conexion)
 				char* script = deserializarScript(mensaje->data, &pid, &cantidadPaginas, &(mensaje->header.tamanio));
 				printf("ARRANCANDO PROCESO PID: %i\n", pid);
 				printf("Script recibido: %s\n", script);
-	/*			if(sePuedeIniciarPrograma(cantidadPaginas))
-					lSend(kernel, )*/
+			/*	if(sePuedeIniciarPrograma(cantidadPaginas))
+					puts("HAY ESPACIO - OK");*/
 				inicializarPrograma(pid, cantidadPaginas, script, mensaje->header.tamanio);
-				free(script);
-				/*memcpy(test, memoria, mensaje->header.tamanio);
-				printf("Archivo leido desde memoria: %s\n", test);*/
+				char* data;
+				char* data2;
+				char* data3;
 				//mostrarTablaPaginas();
-				char* data = solicitarBytes(pid, 0,0, mensaje->header.tamanio);
-				printf("Script: %s\n", data);
+				data = solicitarBytes(pid, 0, 0, config->marco_size);
+				data2 = solicitarBytes(pid, 1, 0, config->marco_size);
+				data3 = solicitarBytes(pid, 2, 0, config->marco_size);
+				data[256] = '\0';
+				data2[256] = '\0';
+				data3[256] = '\0';
+				printf("Script [1]:%s\n", data);
+				printf("Script [2]:%s\n", data2);
+				printf("Script [3]:%s\n", data3);
 				free(data);
-				mostrarTablaPaginas();
+				free(data2);
+				free(data3);
+				free(script);
+
 				break;
 			}
 		}
@@ -183,49 +194,94 @@ void conexion_cpu(int conexion)
 }
 
 
-char* solicitarBytes(int pid, int pagina, int offset, int tamanio)
+entradaTabla* obtenerEntradaAproximada(int pid, int pagina)
 {
 	int frameAprox = bestHashingAlgorithmInTheFuckingWorld(pid, pagina);
 	entradaTabla* pointer = (entradaTabla*)memoria+frameAprox;
-	while(pointer->pid != pid && pointer->pagina != pagina)
-	{
+	return pointer;
+}
+
+entradaTabla* obtenerEntradaDe(int pid, int pagina)
+{
+	entradaTabla* pointer = obtenerEntradaAproximada(pid, pagina);
+	while(pointer->pid != pid || pointer->pagina != pagina)
 		pointer++;
-	}
+	return pointer;
+}
+
+char* obtenerPosicionAOperar(int pid, int pagina, int offset)
+{
+	entradaTabla* pointer = obtenerEntradaDe(pid, pagina);
 	char* punteroAFrame = memoria + (pointer->frame*config->marco_size)+offset;
+	return punteroAFrame;
+}
+
+char* solicitarBytes(int pid, int pagina, int offset, int tamanio)
+{
+	char* punteroAFrame = obtenerPosicionAOperar(pid, pagina, offset);
 	char* data = malloc(tamanio);
 	memcpy(data, punteroAFrame, tamanio);
 	return data;
 }
 
-void escribirBytes(int pid, int pagina, int offset, int tamanio, void* buffer)
+int escribirBytes(int pid, int pagina, int offset, int tamanio, void* buffer)
 {
-	int frameAprox = bestHashingAlgorithmInTheFuckingWorld(pid, pagina);
-	entradaTabla* pointer = (entradaTabla*)memoria+frameAprox;
-	while(pointer->pid != pid && pointer->pagina != pagina)
-	{
-		pointer++;
-	}
-	char* punteroAFrame = memoria + (pointer->frame*config->marco_size)+offset;
+	if(tamanio+offset > config->marco_size)
+		return 0;
+	char* punteroAFrame = obtenerPosicionAOperar(pid, pagina, offset);
 	memcpy(punteroAFrame, buffer, tamanio);
+	return 1;
 }
 
 int bestHashingAlgorithmInTheFuckingWorld(int pid, int pagina)
 {
-	return cantPaginasAdmin;
+	return cantPaginasAdmin; // TO DO OBV
 }
 
 
+int sePuedeIniciarPrograma(int cantidadDePaginas) // ROTISIMO
+{
+	entradaTabla* pointer = (entradaTabla*)memoria;
+	int i =0, j = 0;
+	puts("A");
+	while(i < cantidadDePaginas || j < config->marcos);
+	{
+		printf("%i - %i\n", i,j);
+		if(pointer->pid == -1)
+			i++;
+		pointer++;
+		j++;
+	}
+	return i == cantidadDePaginas;
+}
 
 void inicializarPrograma(int pid, int cantidadPaginas, char* archivo, int tamanio)
 {
-	crearEntrada(pid, cantidadPaginas);
-	escribirBytes(pid, 0, 0, tamanio, archivo);
+	crearEntradas(pid, cantidadPaginas);
+	escribirCodigoPrograma(pid, archivo, tamanio);
+
 }
 
-void crearEntrada(int pid, int cantidadPaginas)
+void escribirCodigoPrograma(int pid, char* archivo, int tamanio)
 {
-	int frameAprox = bestHashingAlgorithmInTheFuckingWorld(pid,0);
-	entradaTabla* pointer = (entradaTabla*)memoria+frameAprox;
+	int paginas = ceil((double)tamanio/(double)config->marco_size);
+	int i;
+	if(paginas == 1)
+		escribirBytes(pid, paginas, 0, tamanio, archivo);
+	else
+	{
+		for(i = 0;i<paginas-1;i++)
+		{
+			escribirBytes(pid, i, 0, config->marco_size, archivo);
+			archivo += config->marco_size;
+		}
+		escribirBytes(pid, paginas-1, 0, tamanio % config->marco_size, archivo);
+	}
+}
+
+void crearEntradas(int pid, int cantidadPaginas)
+{
+	entradaTabla* pointer = obtenerEntradaAproximada(pid, 0);
 	int i =0;
 	while(i<cantidadPaginas)
 	{
@@ -240,6 +296,13 @@ void crearEntrada(int pid, int cantidadPaginas)
 
 }
 
+/*void recibirComandos()
+{
+	char comando[]
+	puts("PROCESO MEMORIA - INGRESA UN COMANDO");
+	scanf("%s", comando);
+}
+*/
 void imprimirConfig(configFile* config)
 {
 	puts("--------PROCESO MEMORIA--------");

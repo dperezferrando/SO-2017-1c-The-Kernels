@@ -36,9 +36,12 @@ void esperar_cpus();
 void levantarSockets();
 void arrancarMemoria();
 void mostrarTablaPaginas();
-void crearEntrada(int, int);
+void crearEntradas(int, int);
 int bestHashingAlgorithmInTheFuckingWorld(int, int);
 char* solicitarBytes(int, int, int, int);
+int escribirBytes(int,int,int,int,void*);
+void inicializarPrograma(int,int,char*,int);
+void escribirCodigoPrograma(int, char*, int);
 
 
 
