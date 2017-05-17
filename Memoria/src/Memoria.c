@@ -12,7 +12,9 @@
 
 // VARIABLES GLOBALES PORQUE ACA VALE TODO VIEJA
 int kernel, cpu; // SOCKETS
-void* memoria; // CACHO DE MEMORIA
+char* memoria; // CACHO DE MEMORIA
+char* memoriaUtilizable;
+int cantPaginasAdmin;
 configFile* config;
 
 char* deserializarScript(void* data, int* pid, int* paginasTotales, int* tamanioArchivo);
@@ -21,12 +23,12 @@ int main(int argc, char** argsv) {
 
 	pthread_t conexionKernel, esperarCPUS;
 	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/Memoria/Debug/memoria.conf", leerArchivoConfig, keys);
+	arrancarMemoria();
 	levantarSockets();
 	puts("ESPERANDO AL KERNEL");
 	int conexion = lAccept(kernel, KERNEL_ID);
 	pthread_create(&conexionKernel, NULL, (void *) conexion_kernel, conexion);
 	pthread_create(&esperarCPUS, NULL, (void *) esperar_cpus, NULL);
-	arrancarMemoria();
 	pthread_join(conexionKernel, NULL);
 	pthread_join(esperarCPUS, NULL);
 	free(config);
@@ -44,7 +46,43 @@ void arrancarMemoria()
 		puts("CAPO, una cosa nomas queria decirte: tu pc no tiene RAM, malloc fallo, salu2");
 		exit(EXIT_FAILURE);
 	}
+	entradaTabla* pointer = (entradaTabla*)memoria;
+	cantPaginasAdmin = ceil((double)(sizeof(entradaTabla)*config->marcos)/(double)config->marco_size);
+	printf("PAGINAS ADMINISTRATIVAS: %i | Tamanio entrada: %i\n", cantPaginasAdmin, sizeof(entradaTabla));
+	int i;
+	int j = 0;
+	for(i = 0;i<config->marcos;i++)
+	{
+		pointer->frame = i;
+
+		if(i<cantPaginasAdmin)
+		{
+			pointer->pagina = j;
+			pointer->pid = -2;
+			j++;
+		}
+		else
+		{
+			pointer->pagina = -1;
+			pointer->pid = -1;
+		}
+		pointer++;
+	}
+	memoriaUtilizable = (char*)pointer;
+
 }
+
+void mostrarTablaPaginas()
+{
+	entradaTabla* pointer = (entradaTabla*)memoria;
+	int i;
+	for(i = 0;i<config->marcos;i++)
+	{
+		printf("Tabla: FRAME: %i | PID: %i | PAG: %i\n", pointer->frame, pointer->pid, pointer->pagina);
+		pointer++;
+	}
+}
+
 void levantarSockets()
 {
 	kernel = getBindedSocket("127.0.0.1", config->puerto_kernel);
@@ -72,12 +110,17 @@ void conexion_kernel(int conexion)
 				char* script = deserializarScript(mensaje->data, &pid, &cantidadPaginas, &(mensaje->header.tamanio));
 				printf("ARRANCANDO PROCESO PID: %i\n", pid);
 				printf("Script recibido: %s\n", script);
-				inicializarPrograma(pid, 1, script, mensaje->header.tamanio);
+	/*			if(sePuedeIniciarPrograma(cantidadPaginas))
+					lSend(kernel, )*/
+				inicializarPrograma(pid, cantidadPaginas, script, mensaje->header.tamanio);
 				free(script);
-				char* test = malloc(mensaje->header.tamanio);
-				memcpy(test, memoria, mensaje->header.tamanio);
-				printf("Archivo leido desde memoria: %s\n", test);
-				free(test);
+				/*memcpy(test, memoria, mensaje->header.tamanio);
+				printf("Archivo leido desde memoria: %s\n", test);*/
+				//mostrarTablaPaginas();
+				char* data = solicitarBytes(pid, 0,0, mensaje->header.tamanio);
+				printf("Script: %s\n", data);
+				free(data);
+				mostrarTablaPaginas();
 				break;
 			}
 		}
@@ -139,9 +182,36 @@ void conexion_cpu(int conexion)
 
 }
 
+
+char* solicitarBytes(int pid, int pagina, int offset, int tamanio)
+{
+	int frameAprox = bestHashingAlgorithmInTheFuckingWorld(pid, pagina);
+	entradaTabla* pointer = (entradaTabla*)memoria+frameAprox;
+	while(pointer->pid != pid && pointer->pagina != pagina)
+	{
+		pointer++;
+	}
+	char* punteroAFrame = memoria + (pointer->frame*config->marco_size)+offset;
+	char* data = malloc(tamanio);
+	memcpy(data, punteroAFrame, tamanio);
+	return data;
+}
+
 void escribirBytes(int pid, int pagina, int offset, int tamanio, void* buffer)
 {
-	memcpy(memoria, buffer, tamanio);
+	int frameAprox = bestHashingAlgorithmInTheFuckingWorld(pid, pagina);
+	entradaTabla* pointer = (entradaTabla*)memoria+frameAprox;
+	while(pointer->pid != pid && pointer->pagina != pagina)
+	{
+		pointer++;
+	}
+	char* punteroAFrame = memoria + (pointer->frame*config->marco_size)+offset;
+	memcpy(punteroAFrame, buffer, tamanio);
+}
+
+int bestHashingAlgorithmInTheFuckingWorld(int pid, int pagina)
+{
+	return cantPaginasAdmin;
 }
 
 
@@ -149,17 +219,25 @@ void escribirBytes(int pid, int pagina, int offset, int tamanio, void* buffer)
 void inicializarPrograma(int pid, int cantidadPaginas, char* archivo, int tamanio)
 {
 	crearEntrada(pid, cantidadPaginas);
-	escribirBytes(pid, 1, 0, tamanio, archivo);
+	escribirBytes(pid, 0, 0, tamanio, archivo);
 }
 
 void crearEntrada(int pid, int cantidadPaginas)
 {
-	entradaTabla unaEntrada;
-	unaEntrada.frame = 0;
-	unaEntrada.pagina = 0;
-	unaEntrada.pid = pid;
-	memcpy(memoria, &unaEntrada, sizeof(unaEntrada));
-	memoria += sizeof(unaEntrada);
+	int frameAprox = bestHashingAlgorithmInTheFuckingWorld(pid,0);
+	entradaTabla* pointer = (entradaTabla*)memoria+frameAprox;
+	int i =0;
+	while(i<cantidadPaginas)
+	{
+		if(pointer->pid == -1)
+		{
+			pointer->pid = pid;
+			pointer->pagina = i;
+			i++;
+		}
+		pointer++;
+	}
+
 }
 
 void imprimirConfig(configFile* config)

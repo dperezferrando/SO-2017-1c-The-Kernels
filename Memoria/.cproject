@@ -33,6 +33,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.87477149" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug">
 								<option id="gnu.c.link.option.libs.1531996638" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="commons"/>
+									<listOptionValue builtIn="false" value="m"/>
 									<listOptionValue builtIn="false" value="pthread"/>
 								</option>
 								<option id="gnu.c.link.option.paths.469799470" name="Library search path (-L)" superClass="gnu.c.link.option.paths"/>

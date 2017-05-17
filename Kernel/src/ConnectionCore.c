@@ -65,7 +65,6 @@ void recibirDeConsola(int socket, connHandle* master)
 			proceso->cantPaginasCodigo = ceil((double)tamanioScript/(double)config->PAG_SIZE);
 			int paginasTotales = proceso->cantPaginasCodigo + config->STACK_SIZE;
 			void* buffer = serializarScript(proceso->pid, tamanioScript, paginasTotales, &tamanioScriptSerializado, mensaje->data);
-			printf("%s\n", mensaje->data);
 			lSend(conexionMemoria, buffer, 1, tamanioScriptSerializado);
 			list_add(procesos, proceso);
 			free(buffer);

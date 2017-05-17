@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <commons/config.h>
 #include <commons/collections/list.h>
 #include <pthread.h>
@@ -34,6 +35,10 @@ void conexion_cpu();
 void esperar_cpus();
 void levantarSockets();
 void arrancarMemoria();
+void mostrarTablaPaginas();
+void crearEntrada(int, int);
+int bestHashingAlgorithmInTheFuckingWorld(int, int);
+char* solicitarBytes(int, int, int, int);
 
 
 
