@@ -1,53 +1,387 @@
 /*
  ============================================================================
  Name        : Consola.c
- Author      : 
- Version     :
- Copyright   : Your copyright notice
- Description : Hello World in C, Ansi-style
+ Author      : Dario Poma
+ Version     : 1.0
+ Copyright   : ---
+ Description : Una hermosa consola...
  ============================================================================
  */
 
+#include "Consola.h"
 
-#include <stdio.h>
-#include <pthread.h>
-#include <stdlib.h>
-#include <string.h>
-#include <commons/config.h>
-#include <commons/string.h>
-#include <commons/txt.h>
-#include <commons/collections/list.h>
-#include "../../ConfigLibrary/src/Configuration.c"
-#include "../../SocketLibrary/src/SocketLibrary.c"
-#define CONFIG_FILE "consola.conf"
-#define C_INICIAR "run"
-#define C_FINALIZAR "close"
-#define C_DESCONECTAR "exit"
-#define C_LIMPIAR "clear"
-#define INICIAR 1
-#define FINALIZAR 2
-#define DESCONECTAR 3
-#define LIMPIAR 4
-#define ERROR -1
+int main(void) {
+	leerArchivoDeConfiguracion();
+	conectarConKernel();
+	atenderPedidos();
+	finalizarProceso();
+	return EXIT_SUCCESS;
+}
 
-int kernel; //Socket
-int contadorPrograma;
+void atenderInstrucciones() {
+	Instruccion instruccion;
+	instruccion.comando = 0;
+	mensajeConsola(INGRESAR);
+	while(instruccion.comando != EXIT) {
+		instruccion = obtenerInstruccion();
+		switch(instruccion.comando) {
+			case RUN: iniciar(instruccion.argumento); break;
+			case CLOSE: cerrar(instruccion.argumento); break;
+			case DISCONNECT: desconectar(); break;
+			case CLEAR: limpiar(); break;
+			case LIST: mostrarLista(); break;
+			case HELP: mensajeConsola(AYUDA); break;
+			default: break;
+		}
+	}
+}
 
-const char* keys[3] = { "IP_KERNEL", "PUERTO_KERNEL", "NULL" };
+Instruccion obtenerInstruccion() {
+	Instruccion instruccion;
+	char mensaje[MAX];
+	char comando[MAX];
+	strcpy(mensaje, leerCaracteresEntrantes());
+	strcpy(comando, obtenerComandoDe(mensaje));
+	instruccion.comando = identificarComando(comando);
+	if(instruccion.comando != ERROR) {
+		if(elComandoLlevaParametros(comando))
+			strcpy(instruccion.argumento, obtenerArgumentoDe(mensaje));
+	} else
+		mensajeConsola(ERROR_COMANDO);
+	return instruccion;
+}
 
-typedef struct {
-	char ip_kernel[16];
-	char puerto_kernel[5];
+int identificarComando(char* comando) {
+	if(sonIguales(comando, C_RUN))
+		return RUN;
+	else if(sonIguales(comando, C_CLOSE))
+		return CLOSE;
+	else if(sonIguales(comando, C_DISCONNECT))
+		return DISCONNECT;
+	else if(sonIguales(comando, C_EXIT))
+		return EXIT;
+	else if(sonIguales(comando, C_CLEAR))
+		return CLEAR;
+	else if(sonIguales(comando, C_LIST))
+			return LIST;
+	else if(sonIguales(comando, C_HELP))
+			return HELP;
+	else
+		return ERROR;
+}
 
-} configFile;
+void mensajeConsola(int mensaje) {
+	switch(mensaje) {
+	case INGRESAR: mensajeIngresar(); break;
+	case ERROR_COMANDO: mensajeComandoInvalido(); break;
+	case CONSOLA_CONECTADA: mensajeConsolaConectada(); break;
+	case ERROR_ARCHIVO: mensajeErrorArchivo(); break;
+	case AYUDA: mensajeAyuda(); break;
+	case ERROR_PID: mensajeErrorPid(); break;
+	case CONSOLA_DESCONECTADA: mensajeConsolaDesconectada(); break;
+	case NO_HAY_PROCESOS: mensajeNoHayProcesos(); break;
+	case ERROR_CONEXION: mensajeErrorConexion(); break;
+	case ESPERA: mensajeEspera(); break;
+	}
+}
 
 
-typedef struct {
-	int id;
-	char* path;
-} Comando;
+//MENSAJES CONSOLA
+void mensajeIngresar() {
+	printf("Consola: ");
+}
+
+void mensajeComandoInvalido() {
+	puts("-------------------------------");
+	puts("ERROR: COMANDO INVALIDO");
+	puts("-------------------------------");
+	mensajeIngresar();
+}
+
+void mensajeConsolaConectada() {
+	puts("CONSOLA CONECTADA");
+	puts("--------------------------------------");
+	puts("PARA VER LOS COMANDOS INGRESE 'HELP'");
+	puts("--------------------------------------");
+}
+
+void mensajeConsolaDesconectada() {
+	puts("-------------------------------");
+	puts("CONSOLA DESCONECTADA");
+	puts("-------------------------------");
+}
+
+void mensajeErrorConexion() {
+	puts("-------------------------------");
+	puts("ERROR: LA CONEXION FINALIZO");
+	puts("-------------------------------");
+}
+
+void mensajeErrorArchivo() {
+	puts("--------------------------------");
+	puts("ERROR: ARCHIVO O RUTA INCORRECTA");
+	puts("--------------------------------");
+	mensajeIngresar();
+}
+
+void mensajeErrorPid() {
+	puts("--------------------------------------");
+	puts("ERROR: IDENTIFICADOR DE PROCESO INEXISTENTE");
+	puts("--------------------------------------");
+	mensajeIngresar();
+}
+
+void mensajeDesconectarTodo() {
+	puts("-------------------------------------------");
+	puts("TODOS LOS PROCESOS HAN SIDO DESCONECTADOS");
+	puts("-------------------------------------------");
+	mensajeIngresar();
+}
+
+void mensajeNoHayProcesos() {
+	puts("----------------------------------");
+	puts("NO HAY PROCESOS EJECUTANDOSE");
+	puts("----------------------------------");
+}
+
+
+void informacionPrograma(Programa* programa) {
+	puts("----------------------------------------");
+	printf("ID PROCESO: %i\n", programa->pid);
+	printf("FECHA DE INICIO: %s\n", mostrarTiempo(programa->tiempoInicio));
+	printf("FECHA DE FINALIZACION: %s\n", mostrarTiempo(obtenerTiempo()));
+	printf("TIEMPO DE EJECUCION: %f SEGUNDOS\n", difftime(obtenerTiempo(), programa->tiempoInicio));
+	puts("----------------------------------------");
+	mensajeIngresar();
+
+}
+
+void mensajeAyuda() {
+	puts("------------------------------------------------------------");
+	puts("RUN <RUTA_ARCHIVO> ---> INICIA UN PROCESO");
+	puts("CLOSE <ID_PROCESO> ---> FINALIZA UN PROCESO");
+	puts("DISCONNECT -----------> DESCONECTA TODOS LOS PROCESOS");
+	puts("CLEAR ----------------> LIMPIA LA PANTALLA");
+	puts("LIST -----------------> MUESTRA LOS PROCESOS EN EJECUCION");
+	puts("EXIT -----------------> SALIR DEL PROGRAMA");
+	puts("------------------------------------------------------------");
+	mensajeIngresar();
+}
+
+void mensajeEspera() {
+	puts("------------------------------------------------------------");
+	puts("ESPERANDO RESPUESTA DEL KERNEL...");
+	puts("------------------------------------------------------------");
+}
+
+
+//FUNCIONES NO DECLARATIVAS
+
+//DELEGAR
+void recibirRespuesta(Programa* programa) {
+	int estado = 1;
+	while(estado != 0) {
+		//NO SE QUE PORQUE DESPUES DEL RECV EL PUNTERO CAMBIA MAGICAMENTE
+		//printf("%p", programa);
+		Mensaje* mensaje = lRecv(kernel);
+		//printf("%p", programa);
+		//printf("RECUPERO EL PUNTERO %p, ", (Programa*)list_get(listaDeProgramas, list_size(listaDeProgramas)-1));
+		switch(mensaje->header.tipoOperacion) {
+			case -1:
+				mensajeConsola(ERROR_CONEXION);
+				exit(EXIT_FAILURE);
+				break;
+			case 1:
+				printf("Mensaje: %s\n", mensaje->data);
+				break;
+			case 2:
+				memcpy(&(((Programa*)list_get(listaDeProgramas, list_size(listaDeProgramas)-1))->pid), mensaje->data, sizeof(int));
+				printf("PID RECIBIDO: %i\n", ((Programa*)list_get(listaDeProgramas, list_size(listaDeProgramas)-1))->pid);
+				puts("ESPERANDO IMPRESIONES POR PANTALLA...");
+				puts("------------------------------------------");
+				break;
+
+		}
+		destruirMensaje(mensaje);
+	}
+}
+
+
+void iniciar(char* path) {
+	FILE* archivo = fopen(path, "r");
+	if(archivo != NULL) {
+		Programa* programa = malloc(sizeof(Programa));
+		programa->tiempoInicio = obtenerTiempo();
+		programa->archivo = archivo;
+		pthread_create(&(programa->hiloPrograma), NULL, (void *) conexionKernel, programa);
+		list_add(listaDeProgramas, programa);
+	}
+	else
+		mensajeConsola(ERROR_ARCHIVO);
+}
+
+
+void cerrar(char* pidPrograma) {
+
+	Programa* programa = buscarProgramaPorPid(pidPrograma);
+	if(programa == NULL)
+		mensajeConsola(ERROR_PID);
+	else {
+		/*lSend(kernel, &programa->pid, 2, sizeof(int));
+		mensajeEspera();
+		Mensaje* mensaje = lRecv(kernel);
+		switch(mensaje->header.tipoOperacion) {
+			case -1:
+				mensajeConsola(ERROR_CONEXION);
+				exit(EXIT_FAILURE);
+				break;
+			case 1:
+				break;
+		}
+		destruirMensaje(mensaje);
+		*/
+		//ESTO IRIA EN CASE 1
+		informacionPrograma(programa);
+		free(programa);
+	}
+}
+
+void desconectar() {
+	/*
+	int i = -1;
+	lSend(kernel, &i, 2, sizeof(int));
+	mensajeEspera();
+	Mensaje* mensaje = lRecv(kernel);
+	switch(mensaje->header.tipoOperacion) {
+		case -1:
+			mensajeConsola(ERROR_CONEXION);
+			exit(EXIT_FAILURE);
+			break;
+		case 1:
+			//printf("Mensaje: %s\n", mensaje->data);
+
+			break;
+	}
+	destruirMensaje(mensaje);
+	*/
+	//ESTO IRIA EN CASE 1
+	mensajeConsola(CONSOLA_DESCONECTADA);
+	mensajeConsola(INGRESAR);
+}
+
+
+Programa* buscarProgramaPorPid(char* pid) {
+
+	bool buscarPorPid(void* unPrograma) {
+			Programa* programa = (Programa*)unPrograma;
+			return sonIguales(string_itoa(programa->pid), pid);
+	}
+
+	Programa* programa =(Programa*)list_find(listaDeProgramas, buscarPorPid);
+	int i;
+	for(i=0; programa != (Programa*)list_get(listaDeProgramas, i); i++);
+	if(programa != NULL) {
+		list_remove(listaDeProgramas, i);
+		return programa;
+	}
+	else
+		return NULL;
+}
+
+
+void conexionKernel(Programa* programa) {
+	char* texto = leerArchivo(programa->archivo);
+	puts("------------------------------------------");
+	printf("CONTENIDO DEL ARCHIVO: %s\n", texto);
+	lSend(kernel, texto, 1, strlen(texto));
+	recibirRespuesta(programa);
+}
+
+
+void mostrarLista() {
+	int i;
+	if(list_is_empty(listaDeProgramas))
+		mensajeConsola(NO_HAY_PROCESOS);
+	else {
+		puts("---------------------------------------------");
+		for(i=0;i<list_size(listaDeProgramas); i++)
+			printf("EL PID DEL PROCESO N°%i ES: %i\n", i, ((Programa*)list_get(listaDeProgramas, i))->pid);
+		puts("----------------------------------------------");
+	}
+	mensajeConsola(INGRESAR);
+}
+
+time_t obtenerTiempo() {
+	time_t tiempo = time(0);
+	return tiempo;
+}
+
+char* mostrarTiempo(time_t tiempo) {
+	struct tm *tlocal = localtime(&tiempo);
+	char fecha[MAX];
+	strftime(fecha,MAX,"%d/%m/%y | %H:%M:%S", tlocal);
+	return fecha;
+}
+
+char* leerCaracteresEntrantes() {
+	int i, caracterLeido;
+	char cadena[MAX];
+	for(i = 0; (caracterLeido= getchar()) != '\n'; i++)
+		cadena[i] = caracterLeido;
+	cadena[i] = '\0';
+	return cadena;
+}
+
+char* obtenerComandoDe(char* cadenaALeer) {
+	int i;
+	char cadena[MAX];
+	for(i=0; cadenaALeer[i] != ' ' && cadenaALeer[i] != '\0'; i++);
+	strcpy(cadena, string_substring_until(cadenaALeer, i));
+	return cadena;
+}
+
+char* obtenerArgumentoDe(char* cadenaALeer) {
+	char comando[MAX];
+	strcpy(comando, obtenerComandoDe(cadenaALeer));
+ 	int indice = strlen(comando);
+ 	if(indice == strlen(cadenaALeer)) {
+ 		return "";
+ 	}
+ 	return string_substring_from(cadenaALeer, indice+1);
+}
+
+int elComandoLlevaParametros(char* comando) {
+	return sonIguales(comando, C_RUN) || sonIguales(comando, C_CLOSE);
+}
+
+void leerArchivoDeConfiguracion() {
+	config = configurate(PATH_CONFIG_FILE, leerArchivoConfig, keys);
+}
+
+void conectarConKernel() {
+	kernel = getConnectedSocket(config->ip_kernel, config->puerto_kernel, CONSOLA_ID);
+	mensajeConsola(CONSOLA_CONECTADA);
+}
+
+void atenderPedidos() {
+	listaDeProgramas = list_create();
+	pthread_t usuario;
+	pthread_create(&usuario, NULL, (void *) atenderInstrucciones, NULL);
+	pthread_join(usuario, NULL);
+}
+
+char* leerArchivo(FILE* archivo) {
+	fseek(archivo, 0, SEEK_END);
+	long posicion = ftell(archivo);
+	fseek(archivo, 0, SEEK_SET);
+	char *texto = malloc(posicion + 1);
+	fread(texto, posicion, 1, archivo);
+	texto[posicion] = '\0';
+	return texto;
+}
 
 void imprimirConfig(configFile* config) {
+	puts("");
 	puts("-------------------------------");
 	puts("#PROCESO CONSOLA");
 	printf("IP KERNEL: %s\n", config->ip_kernel);
@@ -57,14 +391,24 @@ void imprimirConfig(configFile* config) {
 
 configFile* leerArchivoConfig(t_config* configHandler) {
 	configFile* config = malloc(sizeof(configFile));
-	strcpy(config->ip_kernel,
-			config_get_string_value(configHandler, "IP_KERNEL"));
-	strcpy(config->puerto_kernel,
-			config_get_string_value(configHandler, "PUERTO_KERNEL"));
+	strcpy(config->ip_kernel,config_get_string_value(configHandler, "IP_KERNEL"));
+	strcpy(config->puerto_kernel,config_get_string_value(configHandler, "PUERTO_KERNEL"));
 	config_destroy(configHandler);
 	imprimirConfig(config);
-
 	return config;
+}
+
+
+//LA DECLARATIVIDAD NO SE MANCHA
+
+void finalizarProceso() {
+	free(config);
+	close(kernel);
+}
+
+void limpiar() {
+	system("clear");
+	mensajeConsola(INGRESAR);
 }
 
 int sonIguales(char* s1, char* s2) {
@@ -72,173 +416,5 @@ int sonIguales(char* s1, char* s2) {
 		return 1;
 	else
 		return 0;
-}
-
-
-char* leerArchivo(FILE *archivo) {
-	fseek(archivo, 0, SEEK_END);
-	long fsize = ftell(archivo);
-	fseek(archivo, 0, SEEK_SET);
-	char *script = malloc(fsize + 1);
-	fread(script, fsize, 1, archivo);
-	script[fsize] = '\0';
-	return script;
-}
-
-void iniciarPrograma(FILE* archivo) {
-	char* texto = leerArchivo(archivo);
-	contadorPrograma++;
-	printf("Hilo %i creado\n", contadorPrograma);
-	printf("Aca esta el texto: %s\n", texto);
-	lSend(kernel, texto, 1, strlen(texto));
-	puts("archivo enviado, esperando respuesta...");
-	while(1)
-	{
-		Mensaje* mensaje = lRecv(kernel);
-		switch(mensaje->header.tipoOperacion)
-		{
-			case -1:
-				puts("La conexion murio");
-				exit(EXIT_FAILURE);
-				break;
-			case 1:
-				printf("Mensaje: %s\n", mensaje->data);
-				break;
-			case 2:
-			{
-				int pid;
-				memcpy(&pid, mensaje->data, sizeof(int));
-				printf("PID Recibido: %i\n", pid);
-				puts("Esperando impresion por pantalla");
-			}
-		}
-		destruirMensaje(mensaje);
-	}
-
-
-}
-
-
-
-
-void finalizar() {
-
-}
-void limpiar() {
-}
-void desconectar() {
-}
-
-
-
-
-int identificarComando(char* comando) {
-	if (sonIguales(comando, C_INICIAR))
-		return INICIAR;
-	else if (sonIguales(comando, C_FINALIZAR))
-		return FINALIZAR;
-	else if (sonIguales(comando, C_DESCONECTAR))
-		return DESCONECTAR;
-	else if (sonIguales(comando, C_LIMPIAR))
-		return LIMPIAR;
-	else
-		return ERROR;
-}
-
-void verificarComando(int idComando) {
-	if (idComando > 0)
-		puts("Comando reconocido");
-	else
-		puts("Comando inexistente");
-}
-
-Comando controlarComando() {
-	Comando comando;
-	int caracter, i;
-	//No hay argumento
-	int flagArg = 0;
-	char mensaje[1000];
-	char instruccion[10];
-	//Con enter se envia el comando
-	for (i = 0; (caracter = getchar()) != '\n'; i++) {
-		switch (caracter) {
-		//Con espacio separo la instruccion del argumento
-		case ' ': {
-			mensaje[i] = '\0';
-			//Me guardo la instruccion
-			strcpy(instruccion, mensaje);
-			//Para que empiece a guardar el path en 'mensaje'
-			i = -1;
-			//Hay argumento
-			flagArg = 1;
-		}
-			break;
-		default:
-			//Voy guardando los caracteres
-			mensaje[i] = caracter;
-		}
-	}
-	//Por si alguien se olvido de poner el path (no apreto espacio)
-	if (flagArg == 0) {
-		mensaje[i] = '\0';
-		strcpy(instruccion, mensaje);
-	}
-
-	mensaje[i] = '\0';
-	//Me guardo el tipo de comando
-	comando.id = identificarComando(instruccion);
-	//Me guardo el path
-	comando.path = mensaje;
-	//Verifico que exista el comando
-	verificarComando(comando.id);
-	//TESTING
-	printf("El path es: %s\n", comando.path);
-	return comando;
-}
-
-
-void iniciar(char* path) {
-	FILE* archivo = fopen(path, "r");
-	pthread_t programa;
-	pthread_create(&programa, NULL, (void *) iniciarPrograma, archivo);
-}
-
-void atenderMensajes() {
-	//Para que entre al while
-	int instruccion = 0;
-	//Finaliza con el comando 'exit'
-	while (instruccion != DESCONECTAR) {
-		Comando comando;
-		puts("-------------------------------");
-		printf("Ingrese un comando: ");
-		//Me devuelve el tipo de comando y el argumento (path)
-		comando = controlarComando();
-		//Verifico el tipo de comando
-		switch(comando.id) {
-			case INICIAR: iniciar(comando.path); break;
-			case FINALIZAR: finalizar(); break;
-			case LIMPIAR: limpiar(); break;
-			case DESCONECTAR: desconectar(); break;
-		}
-	}
-	puts("-------------------------------");
-	printf("Consola desconectada.\n");
-	printf("\n");
-
-}
-
-
-
-int main(void) {
-	configFile* config;
-	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/Consola/Debug/consola.conf",leerArchivoConfig, keys);
-	kernel = getConnectedSocket(config->ip_kernel, config->puerto_kernel,CONSOLA_ID);
-	printf("Consola conectada.\n");
-	pthread_t usuario;
-	pthread_create(&usuario, NULL, (void *) atenderMensajes, NULL);
-	pthread_join(usuario, NULL);
-	free(config);
-	close(kernel);
-	return 0;
 }
 
