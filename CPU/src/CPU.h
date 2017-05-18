@@ -5,6 +5,7 @@
 #include <commons/config.h>
 #include <pthread.h>
 #include <parser/parser.h>
+#include <parser/metadata_program.h>
 #include "../../ConfigLibrary/src/Configuration.c"
 #include "../../SocketLibrary/src/SocketLibrary.c"
 const char* keys[5]={"IP_KERNEL", "PUERTO_KERNEL", "IP_MEMORIA", "PUERTO_MEMORIA", "NULL"};
