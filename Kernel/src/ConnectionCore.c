@@ -69,9 +69,17 @@ void recibirDeConsola(int socket, connHandle* master)
 			list_add(procesos, proceso);
 			free(buffer);
 			break;
+		case 9:
+			killProcess(procesos,mensaje->data);
+			tamanioScriptSerializado = 0;
+			buffer= serializarScript( * ( (int*) mensaje->data ) , 0 , 0 , & tamanioScriptSerializado, "");
+			//solo me interesa mandarle el kill, no tengo ningun mensaje que pasarle hasta ahora al menos
+			lSend(conexionMemoria, buffer, 9, tamanioScriptSerializado);
+			break;
 	}
 
 	destruirMensaje(mensaje);
+
 }
 
 void* serializarScript(int pid, int tamanio, int paginasTotales, int* tamanioSerializado, void* script)
