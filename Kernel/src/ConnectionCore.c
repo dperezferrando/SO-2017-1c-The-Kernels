@@ -2,6 +2,7 @@
 #include "ConnectionCore.h"
 #include "Configuration.h"
 #include <commons/collections/list.h>
+#include <parser/metadata_program.h>
 #include "KernelConfiguration.h"
 #include "globales.h"
 #include <math.h>
@@ -66,6 +67,10 @@ void recibirDeConsola(int socket, connHandle* master)
 			int paginasTotales = proceso->cantPaginasCodigo + config->STACK_SIZE;
 			void* buffer = serializarScript(proceso->pid, tamanioScript, paginasTotales, &tamanioScriptSerializado, mensaje->data);
 			lSend(conexionMemoria, buffer, 1, tamanioScriptSerializado);
+			/*t_metadata_program* metadata= metadata_desde_literal(mensaje->data);
+			proceso->programCounter= metadata->instruccion_inicio;
+			proceso->indiceCodigo= malloc(metadata->instrucciones_size * 2 * sizeof(int));*/
+
 			list_add(procesos, proceso);
 			free(buffer);
 			break;
