@@ -74,19 +74,23 @@ void recibirDeConsola(int socket, connHandle* master)
 			// TO DO: CHEQUEAR QUE HAY ESPACIO EN MEMORIA
 			int tamanioScript = mensaje->header.tamanio;
 			PCB* pcb = createProcess(mensaje->data, tamanioScript);
-			lSend(socket, &pcb->pid, 2, sizeof(int));
-			int tamanioScriptSerializado = 0;
-			int paginasTotales = pcb->cantPaginasCodigo + config->STACK_SIZE;
-			void* buffer = serializarScript(pcb->pid, tamanioScript, paginasTotales, &tamanioScriptSerializado, mensaje->data);
-			lSend(conexionMemoria, buffer, 1, tamanioScriptSerializado);
-			queue_push(colaReady, pcb);
-			// MANDO A EJECUTAR ACANOMA
-			PCBSerializado pcbSerializado = serializarPCB(pcb);
-			int CPU = (int)queue_pop(colaCPUS);
-			lSend(CPU, pcbSerializado.data, 1, pcbSerializado.size);
-			puts("PCB ENVIADO");
-			free(pcbSerializado.data);
-			free(buffer);
+			if(enviarScriptAMemoria(pcb, mensaje->data, tamanioScript))
+			{
+				lSend(socket, &pcb->pid, 2, sizeof(int));
+				// ACA HAY QUE AGREGAR A NEW, HAY QUE PLANIFICAR, ESTO ESTA ASI NOMAS:
+				queue_push(colaReady, pcb);
+				PCBSerializado pcbSerializado = serializarPCB(pcb);
+				int CPU = (int)queue_pop(colaCPUS);
+				lSend(CPU, pcbSerializado.data, 1, pcbSerializado.size);
+				puts("PCB ENVIADO");
+				free(pcbSerializado.data);
+			}
+			else
+			{
+				puts("NO HAY ESPACIO");
+				lSend(socket, NULL, -2, 0);
+			}
+
 			break;
 		}
 		case 9:
@@ -102,21 +106,17 @@ void recibirDeConsola(int socket, connHandle* master)
 
 }
 
-
-
-PCBSerializado serializarPCB(PCB* pcb) // A SER REEMPLAZADO POR LO DE NICO
+int enviarScriptAMemoria(PCB* pcb, char* script, int tamanioScript)
 {
-	PCBSerializado pcbSerializado;
-	pcbSerializado.size = sizeof(int)*4 + pcb->sizeIndiceCodigo;
-	pcbSerializado.data = malloc(pcbSerializado.size);
-	memcpy(pcbSerializado.data, &pcb->pid, sizeof(int));
-	memcpy(pcbSerializado.data + sizeof(int), &pcb->cantPaginasCodigo, sizeof(int));
-	memcpy(pcbSerializado.data + (sizeof(int)*2), &pcb->programCounter, sizeof(int));
-	memcpy(pcbSerializado.data + (sizeof(int)*3), &pcb->sizeIndiceCodigo, sizeof(int));
-	memcpy(pcbSerializado.data + (sizeof(int)*4), pcb->indiceCodigo, pcb->sizeIndiceCodigo);
-	return pcbSerializado;
-
+	int tamanioScriptSerializado = 0;
+	int paginasTotales = pcb->cantPaginasCodigo + config->STACK_SIZE;
+	void* buffer = serializarScript(pcb->pid, tamanioScript, paginasTotales, &tamanioScriptSerializado, script);
+	lSend(conexionMemoria, buffer, 1, tamanioScriptSerializado);
+	Mensaje* respuesta = lRecv(conexionMemoria);
+	free(buffer);
+	return respuesta->header.tipoOperacion == 104;
 }
+
 
 void* serializarScript(int pid, int tamanio, int paginasTotales, int* tamanioSerializado, void* script)
 {
@@ -138,8 +138,11 @@ void recibirDeCPU(int socket, connHandle* master)
 		case -1:
 			closeHandle(socket, master);
 			break;
-		case 1: // TESTING
-
+		case 1:
+			puts("SE TERMINO LA EJECUCION DE UN PROCESO. SE DEBERIA ENVIAR A COLA FINALIZADO EL PCB");
+			PCB* pcb = deserializarPCB(mensaje->data);
+			printf("RECIBIDO PCB: PID: %i\n", pcb->pid);
+			free(pcb);
 			break;
 	}
 	destruirMensaje(mensaje);

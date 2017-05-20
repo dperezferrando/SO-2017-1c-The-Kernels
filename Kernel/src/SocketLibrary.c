@@ -85,8 +85,11 @@ Mensaje* lRecv(int receiver)
 		// ARREGLAR HEADER SIN PUNTERO
 	}
 	int tamanioData = mensaje->header.tamanio;
-	mensaje->data = malloc(tamanioData);
-	internalRecv(receiver, mensaje->data, tamanioData);
+	if(tamanioData != 0)
+	{
+		mensaje->data = malloc(tamanioData);
+		internalRecv(receiver, mensaje->data, tamanioData);
+	}
 	return mensaje;
 
 }
@@ -121,7 +124,8 @@ void lSend(int sender, void* msg, int tipoOperacion, int size){
 	Header header = _createHeader(size, tipoOperacion);
 	void* buffer = malloc(tamanioTotal);
 	memcpy(buffer, &header, sizeof(Header));
-	memcpy(buffer + sizeof(Header), msg, size);
+	if(msg != NULL)
+		memcpy(buffer + sizeof(Header), msg, size);
 	internalSend(sender,buffer,tamanioTotal);
 	free(buffer);
 }

@@ -16,17 +16,22 @@
 int main(int argc, char** argsv) {
 	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/CPU/Debug/CPU.conf", leer_archivo_configuracion, keys);
 	iniciarConexiones();
-	esperarPCB();
-	informarAMemoriaDelPIDActual();
-	while(pcb->programCounter<5)
+	while(1) // EN UN FUTURO ESTO SE CAMBIA POR EL ENVIO DE LA SEÑAL SIGUSR1
 	{
-		char* linea = pedirInstruccionAMemoria(pcb, tamanioPagina);
-		//analizadorLinea(linea, &primitivas, &primitivas_kernel);
-		printf("Instruccion [%i]: %s\n", pcb->programCounter, linea);
-		free(linea);
-		pcb->programCounter++;
+		esperarPCB();
+		informarAMemoriaDelPIDActual();
+		while(pcb->programCounter<5) // HARDCODEADO
+		{
+			char* linea = pedirInstruccionAMemoria(pcb, tamanioPagina);
+			//analizadorLinea(linea, &primitivas, &primitivas_kernel);
+			printf("Instruccion [%i]: %s\n", pcb->programCounter, linea);
+			free(linea);
+			pcb->programCounter++;
+		}
+		PCBSerializado pcbSerializado = serializarPCB(pcb);
+		lSend(kernel, pcbSerializado.data, 1, pcbSerializado.size);
 	}
-
+	free(pcb);
 	free(config);
 	close(kernel);
 	close(memoria);
@@ -85,20 +90,6 @@ posicionEnMemoria* obtenerPosicionMemoria(int pagina, int offset, int size)
 	posicion->offset= offset;
 	posicion->size = size;
 	return posicion;
-}
-
-
-PCB* deserializarPCB(char* pcbSerializado) // A SER REEMPLAZADO POR LO DE NICO
-{
-	PCB* pcb = malloc(sizeof(PCB));
-	memcpy(&pcb->pid, pcbSerializado, sizeof(int));
-	memcpy(&pcb->cantPaginasCodigo, pcbSerializado + sizeof(int), sizeof(int));
-	memcpy(&pcb->programCounter, pcbSerializado + (sizeof(int)*2), sizeof(int));
-	memcpy(&pcb->sizeIndiceCodigo, pcbSerializado + (sizeof(int)*3), sizeof(int));
-	pcb->indiceCodigo = malloc(pcb->sizeIndiceCodigo);
-	memcpy(pcb->indiceCodigo, pcbSerializado + (sizeof(int)*4), pcb->sizeIndiceCodigo);
-	return pcb;
-
 }
 
 configFile* leer_archivo_configuracion(t_config* configHandler){

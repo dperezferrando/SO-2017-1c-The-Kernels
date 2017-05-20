@@ -49,6 +49,33 @@ void* configurate(char* ruta, void*(*handleConfigFile)(t_config*), char* keys[])
 
 }
 
+PCB* deserializarPCB(char* pcbSerializado) // A SER REEMPLAZADO POR LO DE NICO
+{
+	PCB* pcb = malloc(sizeof(PCB));
+	memcpy(&pcb->pid, pcbSerializado, sizeof(int));
+	memcpy(&pcb->cantPaginasCodigo, pcbSerializado + sizeof(int), sizeof(int));
+	memcpy(&pcb->programCounter, pcbSerializado + (sizeof(int)*2), sizeof(int));
+	memcpy(&pcb->sizeIndiceCodigo, pcbSerializado + (sizeof(int)*3), sizeof(int));
+	pcb->indiceCodigo = malloc(pcb->sizeIndiceCodigo);
+	memcpy(pcb->indiceCodigo, pcbSerializado + (sizeof(int)*4), pcb->sizeIndiceCodigo);
+	return pcb;
+
+}
+
+PCBSerializado serializarPCB(PCB* pcb) // A SER REEMPLAZADO POR LO DE NICO
+{
+	PCBSerializado pcbSerializado;
+	pcbSerializado.size = sizeof(int)*4 + pcb->sizeIndiceCodigo;
+	pcbSerializado.data = malloc(pcbSerializado.size);
+	memcpy(pcbSerializado.data, &pcb->pid, sizeof(int));
+	memcpy(pcbSerializado.data + sizeof(int), &pcb->cantPaginasCodigo, sizeof(int));
+	memcpy(pcbSerializado.data + (sizeof(int)*2), &pcb->programCounter, sizeof(int));
+	memcpy(pcbSerializado.data + (sizeof(int)*3), &pcb->sizeIndiceCodigo, sizeof(int));
+	memcpy(pcbSerializado.data + (sizeof(int)*4), pcb->indiceCodigo, pcb->sizeIndiceCodigo);
+	return pcbSerializado;
+
+}
+
 /*PCBSerializado serializarPCB (PCB* pcb){
 	PCBSerializado pcbSerializado;
 	pcbSerializado.size = sizeof(int)*5 + pcb->sizeIndiceCodigo;
@@ -79,7 +106,7 @@ PCB* deserializarPCB (char* buffer){
 	//indEtq indiceEtiqueta;
 	//indStk indiceStack;
 	return pcb;
-}*/
+}
 
 //SERIALIZACION BIBLICA
 /*char *serializarPCB(t_pcb *pcb) {

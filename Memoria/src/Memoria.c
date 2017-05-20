@@ -64,7 +64,7 @@ void arrancarMemoria()
 		}
 		else
 		{
-			pointer->pagina = -1;
+			pointer->pagina = 1;
 			pointer->pid = -1;
 		}
 		pointer++;
@@ -109,30 +109,23 @@ void conexion_kernel(int conexion)
 			{
 				int pid, cantidadPaginas;
 				char* script = deserializarScript(mensaje->data, &pid, &cantidadPaginas, &(mensaje->header.tamanio));
-				printf("ARRANCANDO PROCESO PID: %i\n", pid);
-				printf("Script recibido: %s\n", script);
-			/*	if(sePuedeIniciarPrograma(cantidadPaginas))
-					puts("HAY ESPACIO - OK");*/
+				printf("ARRANCANDO PROCESO PID: %i | Paginas: %i\n", pid, cantidadPaginas);
+				if(!sePuedeIniciarPrograma(pid, cantidadPaginas))
+				{
+					lSend(conexion, NULL,-2,0);
+					break;
+				}
+				lSend(conexion, NULL, 104,0);
 				inicializarPrograma(pid, cantidadPaginas, script, mensaje->header.tamanio);
-				char* data;
-				char* data2;
-				char* data3;
-				//mostrarTablaPaginas();
-				data = solicitarBytes(pid, 0, 0, config->marco_size);
-				data2 = solicitarBytes(pid, 1, 0, config->marco_size);
-				data3 = solicitarBytes(pid, 2, 0, config->marco_size);
-				data[256] = '\0';
-				data2[256] = '\0';
-				data3[256] = '\0';
-				printf("Script [1]:%s\n", data);
-				printf("Script [2]:%s\n", data2);
-				printf("Script [3]:%s\n", data3);
-				free(data);
-				free(data2);
-				free(data3);
 				free(script);
-
 				break;
+			}
+			case 9:
+			{
+				int pid;
+				memcpy(&pid, mensaje->data, sizeof(int));
+				printf("EL KERNEL MANDO A AJUSTICIAR EL PROCESO: %i\n", pid);
+				//finalizarPrograma(pid);
 			}
 		}
 		destruirMensaje(mensaje);
@@ -179,20 +172,23 @@ void conexion_cpu(int conexion)
 				break;
 
 			case 1:
-				printf("CPU ENVIO PID: %i\n", (int)mensaje->data); // TESTING
 				memcpy(&pidActual, mensaje->data, sizeof(int));
+				printf("CPU CAMBIO A PROCESO PID: %i\n", pidActual); // TESTING
+
 				break;
 
 			case 2:
+			{
 				// LEER
-				puts("CPU QUIERE LEER");
 				posicionEnMemoria* posicion = malloc(sizeof(posicionEnMemoria));
 				memcpy(posicion, mensaje->data, sizeof(posicionEnMemoria));
+				printf("CPU QUIERE LEER PAG: %i | OFFSET: %i | SIZE: %i\n", posicion->pagina, posicion->offset, posicion->size);
 				char* linea = solicitarBytes(pidActual, posicion->pagina, posicion->offset, posicion->size);
 				lSend(conexion, linea, 3, posicion->size);
 				free(linea);
 				free(posicion);
 				break;
+			}
 
 			case 3:
 				// ESCRIBIR
@@ -257,21 +253,35 @@ int bestHashingAlgorithmInTheFuckingWorld(int pid, int pagina)
 }
 
 
-int sePuedeIniciarPrograma(int cantidadDePaginas) // ROTISIMO
+/*int sePuedeIniciarPrograma(int pid, int cantidadDePaginas) // ROTISIMO
 {
-	entradaTabla* pointer = (entradaTabla*)memoria;
-	int i =0, j = 0;
+	entradaTabla* comienzo = obtenerEntradaAproximada(pid, 0);
+	entradaTabla* pointer = comienzo;
+	int i =0, j = comienzo->frame;
 	puts("A");
-	while(i < cantidadDePaginas || j < config->marcos);
+	do
 	{
-		printf("%i - %i\n", i,j);
 		if(pointer->pid == -1)
 			i++;
 		pointer++;
 		j++;
-	}
+		if(j == config->marcos)
+		{
+			j=0;
+			pointer = (entradaTabla*)memoria;
+
+
+		}
+	/*	puts("-----------");
+		printf("FRAME POINTER: %i\n", pointer->frame);
+		printf("FRAME UTILIZABLE: %i\n", ((entradaTabla*)memoriaUtilizable)->frame);
+		printf("FRAME COMIENZO: %i\n", comienzo->frame);
+		puts("-----------");*/
+
+	/*}
+	while(i < cantidadDePaginas && pointer != comienzo);
 	return i == cantidadDePaginas;
-}
+}*/
 
 void inicializarPrograma(int pid, int cantidadPaginas, char* archivo, int tamanio)
 {
@@ -285,7 +295,7 @@ void escribirCodigoPrograma(int pid, char* archivo, int tamanio)
 	int paginas = ceil((double)tamanio/(double)config->marco_size);
 	int i;
 	if(paginas == 1)
-		escribirBytes(pid, paginas-1, 0, tamanio, archivo);
+		escribirBytes(pid, 0, 0, tamanio, archivo);
 	else
 	{
 		for(i = 0;i<paginas-1;i++)
@@ -295,6 +305,38 @@ void escribirCodigoPrograma(int pid, char* archivo, int tamanio)
 		}
 		escribirBytes(pid, paginas-1, 0, tamanio % config->marco_size, archivo);
 	}
+}
+
+
+int sePuedeIniciarPrograma(int pid, int cantidadDePaginas) // ROTISIMO
+{
+	entradaTabla* comienzo = obtenerEntradaAproximada(pid, 0);
+	entradaTabla* pointer = comienzo;
+	int i =0, j = comienzo->frame;
+	do
+	{
+		if(pointer->pid == -1)
+		{
+			i++;
+		}
+		pointer++;
+		j++;
+		if(j == config->marcos)
+		{
+			j=0;
+			pointer = (entradaTabla*)memoria;
+
+
+		}
+	/*	puts("-----------");
+		printf("FRAME POINTER: %i\n", pointer->frame);
+		printf("FRAME UTILIZABLE: %i\n", ((entradaTabla*)memoriaUtilizable)->frame);
+		printf("FRAME COMIENZO: %i\n", comienzo->frame);
+		puts("-----------");*/
+
+	}
+	while(i < cantidadDePaginas && pointer != comienzo);
+	return i == cantidadDePaginas;
 }
 
 void crearEntradas(int pid, int cantidadPaginas)
