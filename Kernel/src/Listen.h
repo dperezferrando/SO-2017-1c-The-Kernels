@@ -2,7 +2,7 @@
 #include "ConnectionCore.h"
 #include "KernelConfiguration.h"
 #include <commons/collections/list.h>
-
+#include <commons/collections/queue.h>
 
 #define PUERTO "7171"
 #define PUERTO2 "7172"
@@ -13,4 +13,4 @@ void handler(configFile* config);
 void destroyConnHandler(connHandle*);
 socketHandler updateSockets(connHandle);
 connHandle initializeConnectionHandler();
-void initialize(configFile*,t_list*, connHandle*);
+void initialize(configFile*, connHandle*);

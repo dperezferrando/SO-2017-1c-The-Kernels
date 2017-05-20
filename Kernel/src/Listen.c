@@ -8,10 +8,9 @@ int max(int a, int b)
 }
 
 void handler(configFile* config){
-	t_list* procesos= list_create();
 	connHandle handleMaster= initializeConnectionHandler();
 	socketHandler handleResult;
-	initialize(config, procesos, &handleMaster);
+	initialize(config, &handleMaster);
 	while(1){
 		handleResult= updateSockets(handleMaster);
 		handleResult= lSelect(handleResult,0);
@@ -49,7 +48,7 @@ socketHandler updateSockets(connHandle master){
 	return response;
 }
 
-void initialize(configFile* config,t_list* procesos, connHandle* handleMaster){
+void initialize(configFile* config,connHandle* handleMaster){
 	int conexionConsola= getBindedSocket(LOCALHOST,config->PUERTO_PROG);
 	int conexionCPU = getBindedSocket(LOCALHOST, config->PUERTO_CPU);
 	conexionMemoria = getConnectedSocket(config->IP_MEMORIA, config->PUERTO_MEMORIA, KERNEL_ID);

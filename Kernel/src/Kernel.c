@@ -19,9 +19,12 @@ const char* keys[16] = {"PUERTO_PROG", "PUERTO_CPU", "IP_MEMORIA", "PUERTO_MEMOR
 int main(int argc, char** argsv) {
 	puts("!!!Hello Kernel!!!\n"); /* prints !!!Hello World!!! */
 	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/Kernel/Debug/config.conf", readConfigFile, keys);
-	procesos = list_create();
+	colaReady = queue_create();
+	colaFinished=queue_create();
+	colaCPUS = queue_create();
 	handler(config);
 	destruirConfig(config);
+	// EN ALGUN MOMENTO DESTRUIR ESAS COLAS
 	//list_clean_and_destroy_elements(destruirPCB);
 	return 0;
 }

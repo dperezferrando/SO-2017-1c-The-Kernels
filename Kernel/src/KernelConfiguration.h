@@ -1,3 +1,5 @@
+#ifndef __KERNEL_CONF__
+#define __KERNEL_CONF__
 #include "Configuration.h"
 
 typedef struct {
@@ -23,4 +25,4 @@ bool configKernel(char*);
 void handleConfigFile(t_config*);
 configFile* readConfigFile(t_config* configHandler);
 void destruirConfig(configFile*);
-
+#endif

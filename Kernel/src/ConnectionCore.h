@@ -1,4 +1,5 @@
 #include <commons/collections/list.h>
+
 typedef struct connectionHandler{
 	socketHandler cpu;
 	socketHandler consola;

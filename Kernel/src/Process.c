@@ -1,9 +1,20 @@
 #include "Configuration.h"
+#include "globales.h"
 #include <commons/collections/list.h>
+#include <commons/collections/queue.h>
+#include <parser/parser.h>
+#include <parser/metadata_program.h>
+#include <math.h>
 
-PCB* createProcess(t_list* procesos){//devuelve el index en la lista, que coincide con el PID
+PCB* createProcess(char* script, int tamanioScript){//devuelve el index en la lista, que coincide con el PID
 	PCB* pcb = malloc(sizeof(PCB));
-	pcb->pid= list_size(procesos);
+	pcb->pid= queue_size(colaReady);
+	t_metadata_program* metadata = metadata_desde_literal(script);
+	pcb->cantPaginasCodigo = ceil((double)tamanioScript/(double)config->PAG_SIZE);
+	pcb->sizeIndiceCodigo = metadata->instrucciones_size*sizeof(indCod);
+	pcb->indiceCodigo = malloc(pcb->sizeIndiceCodigo);
+	memcpy(pcb->indiceCodigo, metadata->instrucciones_serializado, metadata->instrucciones_size*sizeof(indCod));
+	pcb->programCounter = 0;
 	return pcb;
 }
 

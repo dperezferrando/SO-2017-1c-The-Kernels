@@ -2,11 +2,19 @@
 #include "ConnectionCore.h"
 #include "Configuration.h"
 #include <commons/collections/list.h>
+#include <commons/collections/queue.h>
 #include "KernelConfiguration.h"
 #include "globales.h"
-#include <math.h>
+
+
+typedef struct PCBSerializado // A SER REMPLAZADO POR LO DE NICO
+{
+	char* data;
+	int size;
+} PCBSerializado;
 
 void* serializarScript(int pid, int tamanio, int paginasTotales, int* tamanioSerializado, void* script);
+PCBSerializado serializarPCB(PCB*);
 
 void handleSockets(connHandle* master, socketHandler result){
 	int p;
@@ -22,6 +30,7 @@ void handleSockets(connHandle* master, socketHandler result){
 			{
 				int unCPU = lAccept(p, CPU_ID);
 				addReadSocket(unCPU,&(master->cpu));
+				aceptarNuevoCPU(unCPU);
 			}
 			else if(consSock(p, master))
 			{
@@ -41,44 +50,77 @@ void handleSockets(connHandle* master, socketHandler result){
 	}
 }
 
+void aceptarNuevoCPU(int unCPU)
+{
+	puts("NUEVO CPU");
+	queue_push(colaCPUS, (int*)unCPU);
+	lSend(unCPU, &config->PAG_SIZE, 0, sizeof(int));
+	puts("AGREGADO CPU A COLA");
+}
+
 void closeHandle(int s, connHandle* master)
 {
 	closeConnection(s, &(master->consola));
 	closeConnection(s, &(master->cpu));
 }
 
+
 void recibirDeConsola(int socket, connHandle* master)
 {
 	puts("CONSOLA");
 	Mensaje* mensaje = lRecv(socket);
-	PCB* proceso;
+
 	switch(mensaje->header.tipoOperacion)
 	{
 		case -1:
 			closeHandle(socket, master);
 			break;
 		case 1:
-			proceso = createProcess(procesos);
-			lSend(socket, &proceso->pid, 2, sizeof(int));
+		{
+			// TO DO: CHEQUEAR QUE HAY ESPACIO EN MEMORIA
 			int tamanioScript = mensaje->header.tamanio;
+			PCB* pcb = createProcess(mensaje->data, tamanioScript);
+			lSend(socket, &pcb->pid, 2, sizeof(int));
 			int tamanioScriptSerializado = 0;
-			proceso->cantPaginasCodigo = ceil((double)tamanioScript/(double)config->PAG_SIZE);
-			int paginasTotales = proceso->cantPaginasCodigo + config->STACK_SIZE;
-			void* buffer = serializarScript(proceso->pid, tamanioScript, paginasTotales, &tamanioScriptSerializado, mensaje->data);
+			int paginasTotales = pcb->cantPaginasCodigo + config->STACK_SIZE;
+			void* buffer = serializarScript(pcb->pid, tamanioScript, paginasTotales, &tamanioScriptSerializado, mensaje->data);
 			lSend(conexionMemoria, buffer, 1, tamanioScriptSerializado);
-			list_add(procesos, proceso);
+			queue_push(colaReady, pcb);
+			// MANDO A EJECUTAR ACANOMA
+			PCBSerializado pcbSerializado = serializarPCB(pcb);
+			int CPU = (int)queue_pop(colaCPUS);
+			lSend(CPU, pcbSerializado.data, 1, pcbSerializado.size);
+			puts("PCB ENVIADO");
+			free(pcbSerializado.data);
 			free(buffer);
 			break;
+		}
 		case 9:
-			killProcess(procesos,mensaje->data);
+			/*killProcess(procesos,mensaje->data);
 			tamanioScriptSerializado = 0;
 			buffer= serializarScript( * ( (int*) mensaje->data ) , 0 , 0 , & tamanioScriptSerializado, "");
 			//solo me interesa mandarle el kill, no tengo ningun mensaje que pasarle hasta ahora al menos
-			lSend(conexionMemoria, buffer, 9, tamanioScriptSerializado);
+			lSend(conexionMemoria, buffer, 9, tamanioScriptSerializado);*/
 			break;
 	}
 
 	destruirMensaje(mensaje);
+
+}
+
+
+
+PCBSerializado serializarPCB(PCB* pcb) // A SER REEMPLAZADO POR LO DE NICO
+{
+	PCBSerializado pcbSerializado;
+	pcbSerializado.size = sizeof(int)*4 + pcb->sizeIndiceCodigo;
+	pcbSerializado.data = malloc(pcbSerializado.size);
+	memcpy(pcbSerializado.data, &pcb->pid, sizeof(int));
+	memcpy(pcbSerializado.data + sizeof(int), &pcb->cantPaginasCodigo, sizeof(int));
+	memcpy(pcbSerializado.data + (sizeof(int)*2), &pcb->programCounter, sizeof(int));
+	memcpy(pcbSerializado.data + (sizeof(int)*3), &pcb->sizeIndiceCodigo, sizeof(int));
+	memcpy(pcbSerializado.data + (sizeof(int)*4), pcb->indiceCodigo, pcb->sizeIndiceCodigo);
+	return pcbSerializado;
 
 }
 
@@ -103,7 +145,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			closeHandle(socket, master);
 			break;
 		case 1: // TESTING
-			printf("MENSAJE CPU: %s\n", mensaje->data);
+
 			break;
 	}
 	destruirMensaje(mensaje);

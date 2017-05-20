@@ -9,130 +9,96 @@
  */
 #include "CPU.h"
 
-AnSISOP_funciones primitivas = {
-		.AnSISOP_definirVariable		= definirVariable,
-		.AnSISOP_obtenerPosicionVariable= obtenerPosicionVariable,
-		.AnSISOP_asignarValorCompartida				= asignarValorCompartida
-};
 
-	//por ahora sincronice todo con flags cabeza despues definimos si ponemos semaforos o que onda
-	PCB pcb;
-	int Pc= pcb.programCounter;
-	int continuarPcb = 0;
-	int actualizar =0;
-	int endm=0;
-	int endk=0;
-	int terminar =0;
-	int necesitoPcb=1;
+
+PCB* deserializarPCB(char*);
+
 
 int main(int argc, char** argsv) {
-	// COSAS DEL KERNEL COMENTADAS PORQUE ESTA RIP
+	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/CPU/Debug/CPU.conf", leer_archivo_configuracion, keys);
+	iniciarConexiones();
+	esperarPCB();
+	informarAMemoriaDelPIDActual();
+	while(pcb->programCounter<5)
+	{
+		char* linea = pedirInstruccionAMemoria(pcb, tamanioPagina);
+		//analizadorLinea(linea, &primitivas, &primitivas_kernel);
+		printf("Instruccion [%i]: %s\n", pcb->programCounter, linea);
+		free(linea);
+		pcb->programCounter++;
+	}
 
-	configFile* config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/CPU/Debug/CPU.conf", leer_archivo_configuracion, keys);
-	kernel = getConnectedSocket(config->ip_Kernel, config->puerto_Kernel, CPU_ID);
-	memoria = getConnectedSocket(config->ip_Memoria, config->puerto_Memoria, CPU_ID);
-	pthread_t conexionKernel, conexionMemoria;
-	pthread_create(&conexionKernel, NULL, conexion_kernel, NULL);
-	pthread_create(&conexionMemoria, NULL, conexion_memoria, NULL);
-	pthread_join(conexionMemoria, NULL);
-	pthread_join(&conexionKernel, NULL);
 	free(config);
 	close(kernel);
 	close(memoria);
 	return EXIT_SUCCESS;
 
-
 }
 
-void conexion_kernel(){
-
-						//--------//
-	// CODIGO DE TESTEO; NO TIENE QUE VER CON EL ENUNCIADO
-	puts("KERNEL CONECTADO - ENVIANDO MENSAJE <3");
-	lSend(kernel, "Hola soy un test", 1, sizeof(char)*17); // TESTING
-						//--------//
-
-	int conexion = lAccept(kernel, KERNEL_ID);
-	while(endk==0){
-		if(necesitoPcb==1){
-			Mensaje* info = lRecv(conexion); //LOCKEA PARA RECIVIR
-			switch(info->header.tipoOperacion){
-				case -1:{
-					puts("MEMORY IS DEAD");
-					exit(EXIT_FAILURE);
-					break;
-				}
-				case 1:{
-					char* mensaje;
-					strcpy(mensaje,info->data);
-					printf("PCB RECIBIDO: %s\n", mensaje);
-					pcb = deserializacion(mensaje);
-					destruirMensaje(info);
-					continuarPcb=1; //habilita hilo memoria
-					necesitoPcb=0;
-				}
-			}
-		}
-		if (terminar==1){
-			pcb.programCounter = Pc;
-			lSend(kernel, "Fin Ejecucion", 1, sizeof(char)*14);
-			char* mensaje;
-			mensaje= serializar();
-			//lSend(kernel, ("",mensaje), 1, sizeof(char)*);
-			endk=1;
-		}
-	}
+void iniciarConexiones()
+{
+	kernel = getConnectedSocket(config->ip_Kernel, config->puerto_Kernel, CPU_ID);
+	memoria = getConnectedSocket(config->ip_Memoria, config->puerto_Memoria, CPU_ID);
+	puts("Esperando Tamaño Paginas");
+	Mensaje* tamanioPaginas = lRecv(kernel);
+	memcpy(&tamanioPagina, tamanioPaginas->data, sizeof(int));
+	free(tamanioPaginas);
 }
 
-void conexion_memoria(){
+void esperarPCB()
+{
+	puts("Esperando PCB");
+	Mensaje* mensaje = lRecv(kernel);
+	puts("PCB RECIBIDO");
+	pcb = deserializarPCB(mensaje->data);
+	destruirMensaje(mensaje);
+}
 
-	int conexion = lAccept(memoria, MEMORIA_ID);
-	while(endm==0){
-		if(continuarPcb==1){
-			//busco posiciones
-			int offset = pcb.indiceCodigo.offset[Pc];
-			int longitud = pcb.indiceCodigo.longitud[Pc];
-			//mando mensaje
-			int c1 = contardigitoscabeza(offset);
-			int c2 = contardigitoscabeza(longitud);
-			lSend(memoria,("%d%d", offset, longitud), 1, sizeof(char)*(c1+c2+1));
-			//espero sentencia
-			puts("Esperando sentencia de Memoria");
-			Mensaje* info = lRecv(conexion); //LOCKEA PARA RECIVIR
-			switch(info->header.tipoOperacion){
-				case -1:{
-					puts("MEMORY IS DEAD");
-					exit(EXIT_FAILURE);
-					break;
-				}
-				case 1:{
-					char* sentencia;
-					strcpy(sentencia,info->data);
-					printf("SENTENCIA RECIBIDA: %s\n", sentencia);
-					destruirMensaje(info);
-					analizadorlinea(sentencia); //mando sentencia al analisador (No se como funciona)
-					Pc++; //aumento Pc, antes de morir debe actualizar pc en pcb y enviar a kernel
-					continuarPcb=0; //no se espera mas nada (Este CP)
-				}
-			}
-		}
-		if (actualizar==1){
-			actualizarvalores();
-			endm=1;
-		}
-	}
+void informarAMemoriaDelPIDActual()
+{
+	char* pid = malloc(sizeof(int));
+	memcpy(pid, &pcb->pid, sizeof(int));
+	lSend(memoria, pid, 1, sizeof(int));
+	free(pid);
+}
 
-	// CODIGO DE TESTEO; NO TIENE QUE VER CON EL ENUNCIADO. SE MANDAN MENSAJES A MEMORIA. "SALIR" PARA TERMINAR
-	/*puts("HILI");
+char* pedirInstruccionAMemoria(PCB* pcb, int tamanioPagina)
+{
+	int pagina = pcb->indiceCodigo[pcb->programCounter].offset/tamanioPagina;
+	int offset = pcb->indiceCodigo[pcb->programCounter].offset%tamanioPagina;
+	int size = pcb->indiceCodigo[pcb->programCounter].longitud;
+	printf("MANDO A MEMORIA ORDEN A LEER PAG: %i - OFFSET: %i - SIZE: %i\n", pagina, offset, size);
+	posicionEnMemoria* posicion = obtenerPosicionMemoria(pagina, offset, size);
+	lSend(memoria, posicion, 2, sizeof(posicionEnMemoria));
+	free(posicion);
+	Mensaje* respuesta = lRecv(memoria);
+	char* instruccion = malloc(size);
+	memcpy(instruccion, respuesta->data, size);
+	instruccion[size] = '\0';
+	destruirMensaje(respuesta);
+	return instruccion;
+}
 
-	char mensaje[10];
-	scanf("%s", mensaje);
-	while(strcmp(mensaje, "SALIR"))
-	{
-		lSend(memoria, mensaje, 1, sizeof(char)*10);
-		scanf("%s", mensaje);
-	}
-	lSend(memoria, NULL, 2, 0);*/
+posicionEnMemoria* obtenerPosicionMemoria(int pagina, int offset, int size)
+{
+	posicionEnMemoria* posicion = malloc(sizeof(posicionEnMemoria));
+	posicion->pagina = pagina;
+	posicion->offset= offset;
+	posicion->size = size;
+	return posicion;
+}
+
+
+PCB* deserializarPCB(char* pcbSerializado) // A SER REEMPLAZADO POR LO DE NICO
+{
+	PCB* pcb = malloc(sizeof(PCB));
+	memcpy(&pcb->pid, pcbSerializado, sizeof(int));
+	memcpy(&pcb->cantPaginasCodigo, pcbSerializado + sizeof(int), sizeof(int));
+	memcpy(&pcb->programCounter, pcbSerializado + (sizeof(int)*2), sizeof(int));
+	memcpy(&pcb->sizeIndiceCodigo, pcbSerializado + (sizeof(int)*3), sizeof(int));
+	pcb->indiceCodigo = malloc(pcb->sizeIndiceCodigo);
+	memcpy(pcb->indiceCodigo, pcbSerializado + (sizeof(int)*4), pcb->sizeIndiceCodigo);
+	return pcb;
 
 }
 
@@ -158,33 +124,34 @@ void imprimir(configFile* c){
 
 }
 
-int contardigitoscabeza(int var){ //se llama cabeza porque supongo que hay alguna common para hacer esto, pero no la encontre
-	int c = 1;
-	while(var/10>0){
-		c++;
-		var = var / 10;
+// FUNCIONES ANSISOP PARSER
+t_puntero definirVariable(t_nombre_variable identificador){
+	t_puntero posicionMemoria;
+	Mensaje* m;
+	lSend(memoria,(t_nombre_variable) identificador,0,strlen(identificador)+1);
+	m = lRecv(memoria);
+	posicionMemoria=(t_puntero) m-> data;
+	return posicionMemoria;
+
+}
+
+
+t_puntero obtenerPosicionVariable(t_nombre_variable identificador){
+	t_puntero desplazamiento;
+	Mensaje* m;
+	lSend(memoria,(t_nombre_variable) identificador,0,strlen(identificador)+1);
+	m=lRecv(memoria);
+	desplazamiento=(t_puntero) m->data;
+	if(desplazamiento==-1){
+		puts("Error");
 	}
-	return c;
+
+	return desplazamiento;
 }
 
-PCB deserializacion(char* buffer){//INCOMPLETA, tiene que estar en las commons de config
-	//PCB pcb = malloc(sizeof(struct Pcb));
-	memcpy(&(pcb->pid), buffer, 4);
-	memcpy(&(pcb->programCounter), buffer + 4, 4);
-	memcpy(&(pcb->cantPaginasCodigo), buffer + 8, 4);
-	//indCod indiceCodigo;
-	//indEtq indiceEtiqueta;
-	//indStk indiceStack;
-	//memcpy(&(Pcb->exitCode), buffer + , 4);
-	return pcb;
-}
+t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor){//falta ersolver
+	t_valor_variable valorAsignado=valor;
+	lSend(kernel, (t_valor_variable) valorAsignado,0,sizeof(t_valor_variable));
+	return valorAsignado;
 
-char* serializacion(){ //INCOMPLETA, tiene que estar en las commons de config
-	char* buffer;
-	return buffer;
-}
-
-void actualizarvalores(){ //INCOMPLETA
-	//lSend(memoria, MENSAJEVALORESDELSTACK, 1, sizeof(char)*(c1+c2));
-	terminar=1;
 }

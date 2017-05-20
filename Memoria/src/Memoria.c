@@ -170,6 +170,7 @@ void conexion_cpu(int conexion)
 	{
 		printf("Procesando CPU SOCKET: %i\n", conexion);
 		Mensaje* mensaje = lRecv(conexion);
+		int pidActual;
 		switch(mensaje->header.tipoOperacion)
 		{
 			case -1:
@@ -178,13 +179,30 @@ void conexion_cpu(int conexion)
 				break;
 
 			case 1:
-				printf("MENSAJE CPU: %s\n", mensaje->data); // TESTING
+				printf("CPU ENVIO PID: %i\n", (int)mensaje->data); // TESTING
+				memcpy(&pidActual, mensaje->data, sizeof(int));
 				break;
 
 			case 2:
+				// LEER
+				puts("CPU QUIERE LEER");
+				posicionEnMemoria* posicion = malloc(sizeof(posicionEnMemoria));
+				memcpy(posicion, mensaje->data, sizeof(posicionEnMemoria));
+				char* linea = solicitarBytes(pidActual, posicion->pagina, posicion->offset, posicion->size);
+				lSend(conexion, linea, 3, posicion->size);
+				free(linea);
+				free(posicion);
+				break;
+
+			case 3:
+				// ESCRIBIR
+				break;
+
+			case 4:
 				puts("EL CPU SE TOMA EL PALO");
 				conectado = 0;
 				break;
+
 
 		}
 		destruirMensaje(mensaje);
@@ -267,7 +285,7 @@ void escribirCodigoPrograma(int pid, char* archivo, int tamanio)
 	int paginas = ceil((double)tamanio/(double)config->marco_size);
 	int i;
 	if(paginas == 1)
-		escribirBytes(pid, paginas, 0, tamanio, archivo);
+		escribirBytes(pid, paginas-1, 0, tamanio, archivo);
 	else
 	{
 		for(i = 0;i<paginas-1;i++)
