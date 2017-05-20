@@ -7,14 +7,8 @@
 #include "globales.h"
 
 
-typedef struct PCBSerializado // A SER REMPLAZADO POR LO DE NICO
-{
-	char* data;
-	int size;
-} PCBSerializado;
 
 void* serializarScript(int pid, int tamanio, int paginasTotales, int* tamanioSerializado, void* script);
-PCBSerializado serializarPCB(PCB*);
 
 void handleSockets(connHandle* master, socketHandler result){
 	int p;

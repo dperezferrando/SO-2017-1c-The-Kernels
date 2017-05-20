@@ -11,7 +11,6 @@
 
 
 
-PCB* deserializarPCB(char*);
 
 
 int main(int argc, char** argsv) {

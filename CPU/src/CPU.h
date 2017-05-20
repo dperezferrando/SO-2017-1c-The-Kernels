@@ -44,7 +44,6 @@ char* conseguirDatosDeLaMemoria(PCB*, int);
 t_puntero definirVariable(t_nombre_variable);
 t_puntero obtenerPosicionVariable(t_nombre_variable);
 t_valor_variable asignarValorCompartida(t_nombre_compartida, t_valor_variable);
-PCB* deserializacion(char*);
 void imprimir(configFile*);
 configFile* leer_archivo_configuracion(t_config*);
 void conexion_memoria();

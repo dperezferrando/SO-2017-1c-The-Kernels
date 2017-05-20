@@ -7,10 +7,11 @@
 #include <commons/config.h>
 
 
-bool rutaCorrecta(t_config* configHandler);
-bool archivoConfigValido(t_config* configHandler,char* []);
-bool archivoConfigCompleto(t_config* configHandler, char* []);
-void* configurate(char* ,void*(t_config*), char* []);
+typedef struct PCBSerializado
+{
+	char* data;
+	int size;
+} PCBSerializado;
 
 typedef struct __attribute__((packed)) indCod{
 	int offset;
@@ -51,5 +52,12 @@ typedef struct __attribute__((packed)) posicionEnMemoria {
 	int offset;
 	int size;
 } posicionEnMemoria;
+
+bool rutaCorrecta(t_config* configHandler);
+bool archivoConfigValido(t_config* configHandler,char* []);
+bool archivoConfigCompleto(t_config* configHandler, char* []);
+void* configurate(char* ,void*(t_config*), char* []);
+PCBSerializado serializarPCB (PCB* pcb);
+PCB* deserializarPCB (char*);
 
 #endif

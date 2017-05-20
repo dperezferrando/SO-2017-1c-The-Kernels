@@ -13,6 +13,7 @@ PCB* createProcess(char* script, int tamanioScript){//devuelve el index en la li
 	pcb->cantPaginasCodigo = ceil((double)tamanioScript/(double)config->PAG_SIZE);
 	pcb->sizeIndiceCodigo = metadata->instrucciones_size*sizeof(indCod);
 	pcb->indiceCodigo = malloc(pcb->sizeIndiceCodigo);
+	pcb->exitCode = 0;
 	memcpy(pcb->indiceCodigo, metadata->instrucciones_serializado, metadata->instrucciones_size*sizeof(indCod));
 	pcb->programCounter = 0;
 	return pcb;
