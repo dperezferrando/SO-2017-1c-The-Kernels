@@ -167,23 +167,6 @@ int contardigitoscabeza(int var){ //se llama cabeza porque supongo que hay algun
 	return c;
 }
 
-PCB deserializacion(char* buffer){//INCOMPLETA, tiene que estar en las commons de config
-	//PCB pcb = malloc(sizeof(struct Pcb));
-	memcpy(&(pcb->pid), buffer, 4);
-	memcpy(&(pcb->programCounter), buffer + 4, 4);
-	memcpy(&(pcb->cantPaginasCodigo), buffer + 8, 4);
-	//indCod indiceCodigo;
-	//indEtq indiceEtiqueta;
-	//indStk indiceStack;
-	//memcpy(&(Pcb->exitCode), buffer + , 4);
-	return pcb;
-}
-
-char* serializacion(){ //INCOMPLETA, tiene que estar en las commons de config
-	char* buffer;
-	return buffer;
-}
-
 void actualizarvalores(){ //INCOMPLETA
 	//lSend(memoria, MENSAJEVALORESDELSTACK, 1, sizeof(char)*(c1+c2));
 	terminar=1;
