@@ -1,6 +1,9 @@
 #include <commons/collections/queue.h>
 #include "KernelConfiguration.h"
 t_queue* colaReady;
+t_queue* colaBlocked;
+//PCB* execution;
+//t_queue* colaSuspended;
 t_queue* colaFinished;
 t_queue* colaCPUS;
 configFile* config;
