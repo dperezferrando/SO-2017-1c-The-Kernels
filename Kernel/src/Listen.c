@@ -7,14 +7,14 @@ int max(int a, int b)
 	return a > b ? a : b;
 }
 
-void handler(configFile* config){
+void handler(){
 	connHandle handleMaster= initializeConnectionHandler();
-	socketHandler handleResult;
+	socketHandler result;
 	initialize(config, &handleMaster);
 	while(1){
-		handleResult= updateSockets(handleMaster);
-		handleResult= lSelect(handleResult,0);
-		handleSockets(&handleMaster, handleResult);
+		result= updateSockets(handleMaster);
+		result= lSelect(result,0);
+		handleSockets(&handleMaster, result);
 		//destroySocketHandler(handleResult);
 	}
 	destroyConnHandler(&handleMaster);
@@ -53,6 +53,7 @@ void initialize(configFile* config,connHandle* handleMaster){
 	int conexionCPU = getBindedSocket(LOCALHOST, config->PUERTO_CPU);
 	conexionMemoria = getConnectedSocket(config->IP_MEMORIA, config->PUERTO_MEMORIA, KERNEL_ID);
 	conexionFS = getConnectedSocket(config->IP_FS, config->PUERTO_FS, KERNEL_ID);
+	maxPID=0;
 	lListen(conexionConsola,BACKLOG);
 	lListen(conexionCPU, BACKLOG);
 	handleMaster->listenConsola= conexionConsola;

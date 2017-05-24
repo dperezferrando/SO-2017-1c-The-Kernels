@@ -1,12 +1,4 @@
-#include "SocketLibrary.h"
 #include "ConnectionCore.h"
-#include "Configuration.h"
-#include <commons/collections/list.h>
-#include <commons/collections/queue.h>
-#include "KernelConfiguration.h"
-#include "globales.h"
-
-
 
 void* serializarScript(int pid, int tamanio, int paginasTotales, int* tamanioSerializado, void* script);
 
@@ -77,13 +69,8 @@ void recibirDeConsola(int socket, connHandle* master)
 			if(enviarScriptAMemoria(pcb, mensaje->data, tamanioScript))
 			{
 				lSend(socket, &pcb->pid, 2, sizeof(int));
-				// ACA HAY QUE AGREGAR A NEW, HAY QUE PLANIFICAR, ESTO ESTA ASI NOMAS:
-				queue_push(colaReady, pcb);
-				PCBSerializado pcbSerializado = serializarPCB(pcb);
-				int CPU = (int)queue_pop(colaCPUS);
-				lSend(CPU, pcbSerializado.data, 1, pcbSerializado.size);
-				puts("PCB ENVIADO");
-				free(pcbSerializado.data);
+				newProcess(pcb);
+				readyProcess(pcb);
 			}
 			else
 			{
@@ -94,16 +81,55 @@ void recibirDeConsola(int socket, connHandle* master)
 			break;
 		}
 		case 9:
-			/*killProcess(procesos,mensaje->data);
-			tamanioScriptSerializado = 0;
-			buffer= serializarScript( * ( (int*) mensaje->data ) , 0 , 0 , & tamanioScriptSerializado, "");
+			killProcess(mensaje->data);
+			int tamanioScriptSerializado = 0;
+			void* buffer= serializarScript( * ( (int*) mensaje->data ) , 0 , 0 , & tamanioScriptSerializado, "");
 			//solo me interesa mandarle el kill, no tengo ningun mensaje que pasarle hasta ahora al menos
-			lSend(conexionMemoria, buffer, 9, tamanioScriptSerializado);*/
+			lSend(conexionMemoria, buffer, 9, tamanioScriptSerializado);
 			break;
 	}
 
 	destruirMensaje(mensaje);
 
+}
+
+void newProcess(PCB* pcb)
+{
+	queue_push(colaNew, pcb);
+	ProcessControl pc;
+	pc.pid= pcb->pid;
+	pc.state= 0;
+	list_add(process,&pc);
+}
+
+int readyProcess(){//-1 ==> no se pudo poner en ready
+	if(checkMultiprog()){
+		fromNewToReady();
+	} else {
+		return -1;
+		}
+
+	executeProcess();
+	return 1;
+}
+
+int checkMultiprog(){
+	int currentMultiprog= queue_size(colaReady) + queue_size(colaBlocked) + queue_size(colaExecute);
+	return config->GRADO_MULTIPROG > currentMultiprog;
+}
+
+int executeProcess(){
+	if(queue_size(colaCPUS)<=0){
+		return -1;
+	} else{
+		PCB* pcb= fromReadyToExecute();
+		PCBSerializado pcbSerializado = serializarPCB(pcb);
+		int CPU = (int)queue_pop(colaCPUS);
+		lSend(CPU, pcbSerializado.data, 1, pcbSerializado.size);
+		puts("PCB ENVIADO");
+		free(pcbSerializado.data);
+		return 1;
+		}
 }
 
 int enviarScriptAMemoria(PCB* pcb, char* script, int tamanioScript)
