@@ -1,6 +1,6 @@
 #include "ConnectionCore.h"
 
-void* serializarScript(int pid, int tamanio, int paginasTotales, int* tamanioSerializado, void* script);
+//----------------------------------------------------Main Function---------------------------------------------------------//
 
 void handleSockets(connHandle* master, socketHandler result){
 	int p;
@@ -36,19 +36,10 @@ void handleSockets(connHandle* master, socketHandler result){
 	}
 }
 
-void aceptarNuevoCPU(int unCPU)
-{
-	puts("NUEVO CPU");
-	queue_push(colaCPUS, (int*)unCPU);
-	lSend(unCPU, &config->PAG_SIZE, 0, sizeof(int));
-	puts("AGREGADO CPU A COLA");
-}
 
-void closeHandle(int s, connHandle* master)
-{
-	closeConnection(s, &(master->consola));
-	closeConnection(s, &(master->cpu));
-}
+
+
+//---------------------------------------------------Funciones de Consola---------------------------------------------------//
 
 
 void recibirDeConsola(int socket, connHandle* master)
@@ -93,44 +84,15 @@ void recibirDeConsola(int socket, connHandle* master)
 
 }
 
-void newProcess(PCB* pcb)
-{
-	queue_push(colaNew, pcb);
-	ProcessControl pc;
-	pc.pid= pcb->pid;
-	pc.state= 0;
-	list_add(process,&pc);
+bool consSock(int p, connHandle* master){
+	return FD_ISSET(p,&master->consola.readSockets);
 }
 
-int readyProcess(){//-1 ==> no se pudo poner en ready
-	if(checkMultiprog()){
-		fromNewToReady();
-	} else {
-		return -1;
-		}
 
-	executeProcess();
-	return 1;
-}
 
-int checkMultiprog(){
-	int currentMultiprog= queue_size(colaReady) + queue_size(colaBlocked) + queue_size(colaExecute);
-	return config->GRADO_MULTIPROG > currentMultiprog;
-}
 
-int executeProcess(){
-	if(queue_size(colaCPUS)<=0){
-		return -1;
-	} else{
-		PCB* pcb= fromReadyToExecute();
-		PCBSerializado pcbSerializado = serializarPCB(pcb);
-		int CPU = (int)queue_pop(colaCPUS);
-		lSend(CPU, pcbSerializado.data, 1, pcbSerializado.size);
-		puts("PCB ENVIADO");
-		free(pcbSerializado.data);
-		return 1;
-		}
-}
+//------------------------------------------------Funciones de Memoria-------------------------------------------------------//
+
 
 int enviarScriptAMemoria(PCB* pcb, char* script, int tamanioScript)
 {
@@ -140,19 +102,81 @@ int enviarScriptAMemoria(PCB* pcb, char* script, int tamanioScript)
 	lSend(conexionMemoria, buffer, 1, tamanioScriptSerializado);
 	Mensaje* respuesta = lRecv(conexionMemoria);
 	free(buffer);
-	return respuesta->header.tipoOperacion == 104;
+	int to= respuesta->header.tipoOperacion;
+	free(respuesta);
+	return to == 104;
 }
 
-
-void* serializarScript(int pid, int tamanio, int paginasTotales, int* tamanioSerializado, void* script)
-{
-	*tamanioSerializado = tamanio + (sizeof(int)*2);
-	void* buffer = malloc(*tamanioSerializado);
-	memcpy(buffer, &pid, sizeof(int));
-	memcpy(buffer + sizeof(int), &paginasTotales, sizeof(int));
-	memcpy(buffer + sizeof(int)*2, script, tamanio);
-	return buffer;
+MemoryRequest deserializeMemReq(void* mr){
+	MemoryRequest res;
+	memcpy(&res.pid,mr,sizeof(int));
+	memcpy(&res.size,mr+sizeof(int),sizeof(int));
+	return res;
 }
+
+void* serializeMemReq(MemoryRequest mr){
+	void* res= malloc(sizeof(mr));
+	memcpy(res,&mr.pid,sizeof(int));
+	memcpy(res,&mr.size,sizeof(int));
+	return res;
+}
+
+int memoryRequest(MemoryRequest mr, int size, void* msg){
+	PageOwnership* po= malloc(sizeof(PageOwnership));
+	if(sendMemoryRequest(mr,size,msg,po)==-1){return -1;};
+	Mensaje* res= lRecv(conexionMemoria);
+	if(res->header.tipoOperacion==-1){return -1;}
+	if (po->idpage!=0){//el pedido se grabo en la pagina ya asignada
+		HeapMetadata* hm= malloc(sizeof(HeapMetadata));
+		memcpy(hm,res->data+(sizeof(int)*2),sizeof(HeapMetadata));
+		list_add(po->occSpaces,hm);
+		list_replace(ownedPages, PIDFindPO(mr.pid), po);
+		return 0;
+	}
+		else{//se le otorgo una pagina y se grabo alli
+			memcpy(&po->pid,res->data,sizeof(int));
+			memcpy(&po->idpage,res->data+sizeof(int),sizeof(int));
+			po->occSpaces=list_create();
+			list_add(ownedPages,po);
+			free(res);
+			return 1;
+		}
+}
+
+int sendMemoryRequest(MemoryRequest mr, int size, void* msg, PageOwnership* po){
+	if(!viableRequest(mr.size)){return -1;}
+	po->pid= mr.pid;
+	po->idpage= pageToStore(mr);
+	void* serializedMSG= serializeMemReq(mr);
+	memcpy(serializedMSG,&po->idpage,sizeof(int));
+	memcpy(serializedMSG,msg,size);
+	lSend(conexionMemoria,serializedMSG,3,sizeof(mr)+size);
+	return 1;
+}
+
+int pageToStore(MemoryRequest mr){
+	t_list* processPages= list_create();
+	findProcessPages(mr.pid,processPages);
+	bool pageHasEnoughSpace(PageOwnership* po){
+		int i,acc=0;
+		for(i=0;i<list_size(po->occSpaces);i++){
+			HeapMetadata* hw= list_get(po->occSpaces,i);
+			acc+=hw->size;
+		}
+		return acc<= mr.size+sizeof(HeapMetadata);
+	}
+	PageOwnership* po = list_find(processPages,&pageHasEnoughSpace);
+	if(po!=NULL) {return po->idpage;} else {return 0;}
+}
+
+void findProcessPages(int pid, t_list* processPages){
+	bool _PIDFind(PageOwnership* po){
+		return po->pid== pid;
+	}
+	processPages= list_filter(ownedPages,&(_PIDFind));
+}
+
+//------------------------------------------------Funciones de CPU----------------------------------------------------------//
 
 
 void recibirDeCPU(int socket, connHandle* master)
@@ -170,10 +194,36 @@ void recibirDeCPU(int socket, connHandle* master)
 			printf("RECIBIDO PCB: PID: %i\n", pcb->pid);
 			free(pcb);
 			break;
+		case 2:
+			puts("TERMINA EJECUCION DE PROCESO PERO ESTE NO ESTA FINALIZADO");
+			pcb = deserializarPCB(mensaje->data);
+			printf("RECIBIDO PCB: PID: %i\n", pcb->pid);
+			fromExecuteToReady(pcb->pid);
+			break;
+		case 3:
+			puts("PROCESO PIDE MEMORIA");
+			MemoryRequest mr= deserializeMemReq(mensaje->data);
+			memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr));
 	}
 	destruirMensaje(mensaje);
 }
 
+
+void aceptarNuevoCPU(int unCPU)
+{
+	puts("NUEVO CPU");
+	queue_push(colaCPUS, (int*)unCPU);
+	lSend(unCPU, &config->PAG_SIZE, 0, sizeof(int));
+	enviarAlgoritmo(unCPU);
+	puts("AGREGADO CPU A COLA");
+}
+
+
+void enviarAlgoritmo(int CPU){
+	int algoritmo=0;
+	if(strcmp(config->ALGORITMO, "RR")){algoritmo= config->QUANTUM;}
+	lSend(CPU, &algoritmo, 10, sizeof(int));
+}
 
 
 bool cpuSock(int p, connHandle* master){
@@ -181,11 +231,48 @@ bool cpuSock(int p, connHandle* master){
 }
 
 
-bool consSock(int p, connHandle* master){
-	return FD_ISSET(p,&master->consola.readSockets);
+
+
+//---------------------------------------------------Funciones Auxiliares----------------------------------------------------//
+
+
+void* serializarScript(int pid, int tamanio, int paginasTotales, int* tamanioSerializado, void* script)
+{
+	*tamanioSerializado = tamanio + (sizeof(int)*2);
+	void* buffer = malloc(*tamanioSerializado);
+	memcpy(buffer, &pid, sizeof(int));
+	memcpy(buffer + sizeof(int), &paginasTotales, sizeof(int));
+	memcpy(buffer + sizeof(int)*2, script, tamanio);
+	return buffer;
+}
+
+
+void closeHandle(int s, connHandle* master)
+{
+	closeConnection(s, &(master->consola));
+	closeConnection(s, &(master->cpu));
+}
+
+
+int checkMultiprog(){
+	int currentMultiprog= queue_size(colaReady) + list_size(blockedList) + list_size(executeList);
+	return config->GRADO_MULTIPROG > currentMultiprog;
 }
 
 
 bool isListener(int p, connHandle master){
 	return ( p==master.listenCPU || p== master.listenConsola );
 }
+
+bool viableRequest(int requestSize){
+	return ((config->PAG_SIZE)-10) >= requestSize;
+}
+
+int PIDFindPO(int PID){
+	bool _PIDFind(PageOwnership* po){
+		return po->pid== PID;
+	}
+	return *((int*)list_find(ownedPages,&(_PIDFind)));
+}
+
+

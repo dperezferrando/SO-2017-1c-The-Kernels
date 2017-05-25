@@ -1,6 +1,14 @@
 #include "Process.h"
 
-PCB* createProcess(char* script, int tamanioScript){//devuelve el index en la lista, que coincide con el PID
+
+
+
+//--------------------------------------------Creacion y Destruccion--------------------------------------------------------//
+
+
+
+
+PCB* createProcess(char* script, int tamanioScript){
 	PCB* pcb = malloc(sizeof(PCB));
 	pcb->pid= (maxPID++);
 	t_metadata_program* metadata = metadata_desde_literal(script);
@@ -13,12 +21,130 @@ PCB* createProcess(char* script, int tamanioScript){//devuelve el index en la li
 	return pcb;
 }
 
+
 void killProcess(int* PID){
 	bool encontrarPorPID(PCB* PCB){
 		return (PCB->pid)==*PID;
 	}
 	//list_remove_by_condition(colaNew,&encontrarPorPID);
 }
+
+
+
+
+//-----------------------------------------------------Manejo de Planificacion-----------------------------------------------//
+
+
+
+
+void newProcess(PCB* pcb)
+{
+	queue_push(colaNew, pcb);
+	ProcessControl pc;
+	pc.pid= pcb->pid;
+	pc.state= 0;
+	list_add(process,&pc);
+}
+
+
+int readyProcess(){//-1 ==> no se pudo poner en ready
+	if(checkMultiprog()){
+		fromNewToReady();
+	} else {
+		return -1;
+		}
+
+	executeProcess();
+	return 1;
+}
+
+
+int executeProcess(){
+	if(queue_size(colaCPUS)<=0){
+		return -1;
+	} else{
+		PCB* pcb= fromReadyToExecute();
+		PCBSerializado pcbSerializado = serializarPCB(pcb);
+		int CPU = (int)queue_pop(colaCPUS);
+		lSend(CPU, pcbSerializado.data, 1, pcbSerializado.size);
+		puts("PCB ENVIADO");
+		free(pcbSerializado.data);
+		return 1;
+		}
+}
+
+
+
+
+//----------------------------------------------------Manejo de Colas-------------------------------------------------------//
+
+
+
+
+PCB* fromNewToReady(){
+	return _fromQueueToQueue(colaNew,colaReady,1);
+}
+
+
+PCB* fromBlockedToReady(int pid){
+	return _fromListToQueue(blockedList,colaReady,pid,1);
+}
+
+
+PCB* fromExecuteToReady(int pid){
+	return _fromListToQueue(executeList,colaReady,pid,2);
+}
+
+
+PCB* fromReadyToExecute(){
+	return _fromQueueToList(colaReady,executeList,2);
+}
+
+
+PCB* fromExecuteToFinished(int pid){
+	return _fromListToQueue(executeList,colaFinished,pid,9);
+}
+
+
+PCB* fromReadyToFinished(){
+	return _fromQueueToQueue(colaReady,colaFinished,9);
+}
+
+
+PCB* fromBlockedToFinished(int pid){
+	return _fromListToQueue(blockedList,colaFinished,pid,9);
+}
+
+
+PCB* _fromQueueToQueue(t_queue* fromQueue, t_queue* toQueue, int newState){
+	PCB* pcb = queue_pop(fromQueue);
+	_processChangeStateToQueue(toQueue,pcb,newState);
+	return pcb;
+}
+
+PCB* _fromQueueToList(t_queue* fromQueue, t_list* toList, int newState){
+	PCB* pcb = queue_pop(fromQueue);
+	_processChangeStateToList(toList,pcb, newState);
+	return pcb;
+}
+
+
+PCB* _fromListToQueue(t_list* fromList, t_queue* toQueue, int PID, int newState){
+	bool encontrarPorPID(PCB* PCB){
+		return (PCB->pid)==PID;
+	}
+	PCB* pcb= list_remove_by_condition(fromList,&encontrarPorPID);
+	_processChangeStateToQueue(toQueue,pcb,newState);
+	return pcb;
+}
+
+
+
+
+//---------------------------------------------------------Auxiliares------------------------------------------------------//
+
+
+
 
 int PIDFind(int PID){
 	bool _PIDFind(ProcessControl* pc){
@@ -27,23 +153,21 @@ int PIDFind(int PID){
 	return *((int*)list_find(process,&(_PIDFind)));
 }
 
+
 void modifyProcessState(int PID, int newState){
 	ProcessControl* pc = list_get(process,PIDFind(PID));
 	pc->state= newState;
 	list_replace(process, PIDFind(PID), pc);
 }
 
-PCB* _fromTo(t_queue* fromQueue, t_queue* toQueue, int newState){
-	PCB* pcb = queue_pop(fromQueue);
+
+void _processChangeStateToQueue(t_queue* toQueue, PCB* pcb, int newState){
 	queue_push(toQueue, pcb);
 	modifyProcessState(pcb->pid,newState);
-	return pcb;
 }
 
-PCB* fromNewToReady(){
-	return _fromTo(colaNew,colaReady,1);
-}
 
-PCB* fromReadyToExecute(){
-	return _fromTo(colaReady,colaExecute,2);
+void _processChangeStateToList(t_list* toList, PCB* pcb, int newState){
+	list_add(toList, pcb);
+	modifyProcessState(pcb->pid,newState);
 }

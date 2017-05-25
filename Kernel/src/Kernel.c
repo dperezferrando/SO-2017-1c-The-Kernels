@@ -23,8 +23,8 @@ int main(int argc, char** argsv) {
 
 	colaNew = queue_create();
 	colaReady = queue_create();
-	colaBlocked = queue_create();
-	colaExecute = queue_create();
+	blockedList = list_create();
+	executeList = list_create();
 	colaFinished=queue_create();
 	colaCPUS = queue_create();
 
