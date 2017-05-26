@@ -12,14 +12,22 @@
 #include <stdlib.h>
 #include "Listen.h"
 #include "globales.h"
-//#include "KernelConfiguration.h"
+#include "tests/KernelTest.h"
+#include "KernelConfiguration.h"
 const char* keys[16] = {"PUERTO_PROG", "PUERTO_CPU", "IP_MEMORIA", "PUERTO_MEMORIA", "IP_FS", "PUERTO_FS", "QUANTUM", "QUANTUM_SLEEP", "ALGORITMO", "GRADO_MULTIPROG", "SEM_IDS", "SEM_INIT", "SHARED_VARS", "STACK_SIZE", "PAG_SIZE", "NULL"};
 
 
 int main(int argc, char** argsv) {
+
 	puts("!!!Hello Kernel!!!\n"); /* prints !!!Hello World!!! */
 
-	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/Kernel/Debug/config.conf", readConfigFile, keys);
+	if(strcmp(argsv[1],"-test")==0){
+		kernelTest(1);
+		return EXIT_SUCCESS;
+	}
+
+	config = configurate("/home/utnso/workspace/tp-2017-1c-The-Kernels/Kernel/Debug/config.conf", readConfigFile, keys);
+
 
 	colaNew = queue_create();
 	colaReady = queue_create();

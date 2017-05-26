@@ -39,16 +39,21 @@ void killProcess(int* PID){
 
 void newProcess(PCB* pcb)
 {
+	puts("6");
 	queue_push(colaNew, pcb);
-	ProcessControl pc;
-	pc.pid= pcb->pid;
-	pc.state= 0;
-	list_add(process,&pc);
+	puts("7");
+	ProcessControl* pc= malloc(sizeof(ProcessControl));
+	pc->pid= pcb->pid;
+	pc->state= 0;
+	puts("8");
+	list_add(process,pc);
+	puts("9");
 }
 
 
 int readyProcess(){//-1 ==> no se pudo poner en ready
 	if(checkMultiprog()){
+		puts("no viole segmento");
 		fromNewToReady();
 	} else {
 		return -1;
@@ -82,7 +87,9 @@ int executeProcess(){
 
 
 PCB* fromNewToReady(){
+	puts("from new to ready");
 	return _fromQueueToQueue(colaNew,colaReady,1);
+	puts("paso a ready");
 }
 
 
@@ -118,7 +125,9 @@ PCB* fromBlockedToFinished(int pid){
 
 PCB* _fromQueueToQueue(t_queue* fromQueue, t_queue* toQueue, int newState){
 	PCB* pcb = queue_pop(fromQueue);
+	puts("pcb");
 	_processChangeStateToQueue(toQueue,pcb,newState);
+	puts("state");
 	return pcb;
 }
 
@@ -146,23 +155,29 @@ PCB* _fromListToQueue(t_list* fromList, t_queue* toQueue, int PID, int newState)
 
 
 
-int PIDFind(int PID){
+ProcessControl* PIDFind(int PID){
 	bool _PIDFind(ProcessControl* pc){
 		return pc->pid== PID;
 	}
-	return *((int*)list_find(process,&(_PIDFind)));
+	return list_remove_by_condition(process,&(_PIDFind));
 }
 
 
 void modifyProcessState(int PID, int newState){
-	ProcessControl* pc = list_get(process,PIDFind(PID));
+	puts("modify process state");
+	ProcessControl* pc = PIDFind(PID);
+	puts("lo saco de la lista");
+	printf("process control is null: %d",pc==NULL);
 	pc->state= newState;
-	list_replace(process, PIDFind(PID), pc);
+	list_add(process, pc);
 }
 
 
 void _processChangeStateToQueue(t_queue* toQueue, PCB* pcb, int newState){
 	queue_push(toQueue, pcb);
+	puts("push ook");
+	puts("pcb se rompe?");
+	printf("%d",pcb->pid);
 	modifyProcessState(pcb->pid,newState);
 }
 

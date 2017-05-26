@@ -10,7 +10,7 @@
 #include <math.h>
 
 
-int PIDFind(int);
+ProcessControl* PIDFind(int);
 
 PCB* fromNewToReady();
 PCB* fromReadyToExecute();
