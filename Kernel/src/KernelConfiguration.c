@@ -7,8 +7,7 @@
 }*/
 
 void imprimirConfig(configFile* config)
-{
-	puts("--------PROCESO KERNEL--------");
+{	puts("--------PROCESO KERNEL--------");
 	printf("PUERTO PROGRAMA: %s | PUERTO CPU: %s \n", config->PUERTO_PROG, config->PUERTO_CPU);
 	printf("IP MEMORIA: %s | PUERTO MEMORIA: %s \n", config->IP_MEMORIA, config->PUERTO_MEMORIA);
 	printf("IP FILE SYSTEM: %s | PUERTO FILE SYSTEM: %s \n", config->IP_FS, config->PUERTO_FS);

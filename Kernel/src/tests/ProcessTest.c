@@ -15,56 +15,91 @@ void testReadyProcessMultiprogNotOK(){
 
 }
 
+void testExecuteProcessCPUOk(){
+	testExecuteProcess(1);
+}
 
-//---------------------------------------------------Codigo de Test------------------------------------------------------//
+void testExecuteProcessCPUNotOk(){
+	testExecuteProcess(0);
+}
+
+//--------------------------------------------------------------Tests Core-----------------------------------------------------------------//
 
 
 void testNewProcess(){
 	initializeProcessQueuesAndLists();//inicializo las listas
-	puts("inicializoPCB");
 	initializePCB();//pcb fantasma
-	puts("NewProcess");
 	newProcess(pcb);//procedimiento
 
 	//------------------------------------------Asserts----------------------------------------//
-	puts("Asserts");
 	CU_ASSERT_EQUAL(queue_size(colaNew),1);
 	pcb= queue_pop(colaNew);
 	CU_ASSERT_EQUAL(pcb->pid,1);
 
 	//-----------------------------------------------Destruction--------------------------------------------------//
 
-	destroyProcessQueuesAndLists();
 	free(pcb);
 }
 
 void testReadyProcess(int multiprogOK){
 	initializeProcessQueuesAndLists();//inicializo las listas
-	puts("inicializoPCB");
-	initializeConfigFile();
+	//initializeConfigFile();
 	//initializePCBinReady();
 	initializePCB();
 	newProcess(pcb);
-	config->GRADO_MULTIPROG= multiprogOK==0?0:2;
+	int expected=1,cantNew=0,cantReady=1,state=1;
+	if(!multiprogOK){
+		expected= -1;
+		cantNew=1;
+		cantReady=0;
+		state=0;
+		config->GRADO_MULTIPROG= 0;
+	}
+	else{
+		config->GRADO_MULTIPROG= 1;
+	}
+
 	int res= readyProcess();
-	int expected= multiprogOK==0?-1:1;
 
 	//------------------------------------------Asserts----------------------------------------//
 
-	CU_ASSERT_NOT_EQUAL(res,expected);
-	CU_ASSERT_EQUAL(queue_size(colaNew),1);
+	CU_ASSERT_EQUAL(res,expected);
+	CU_ASSERT_EQUAL(queue_size(colaNew),cantNew);
+	CU_ASSERT_EQUAL(queue_size(colaReady),cantReady);
 	CU_ASSERT_EQUAL(list_size(process),1);
 	ProcessControl* auxpc= list_get(process,0);
 	CU_ASSERT_EQUAL(auxpc->pid,pcb->pid);
-	CU_ASSERT_EQUAL(auxpc->state, 1);
+	CU_ASSERT_EQUAL(auxpc->state, state);
 
 	//-----------------------------------------------Destruction--------------------------------------------------//
 
-	destroyProcessQueuesAndLists();
 	free(pcb);
 	free(auxpc);
 }
 
+void testExecuteProcess(int cpuOK){
+	initializeProcessQueuesAndLists();
+	initializePCB();
+	newProcess(pcb);
+	config->GRADO_MULTIPROG= 1;
+	readyProcess();
+	int sizeReady=0,sizeExecute=1,expected=1;
+	if(cpuOK)queue_push(colaCPUS, (int*)10);
+
+	int state= executeProcess();
+
+	if(!cpuOK){
+		sizeReady=1;
+		sizeExecute=0;
+		expected=-1;
+	}
+
+	CU_ASSERT_EQUAL(state,expected);
+	CU_ASSERT_EQUAL(queue_size(colaReady),sizeReady);
+	CU_ASSERT_EQUAL(list_size(executeList),sizeExecute);
+}
+
+//----------------------------------------------------------------Tests No Core-------------------------------------------------------------------//
 
 void testPIDFind(){
 	process = list_create();
@@ -72,20 +107,16 @@ void testPIDFind(){
 	pc1->pid= 1;
 	pc1->state= 0;
 	list_add(process,pc1);
-	int size= list_size(process);
-	CU_ASSERT_EQUAL(size,1);
 	ProcessControl* pc2= malloc(sizeof(ProcessControl));
 	pc2->pid= 3;
 	pc2->state= 1;
 	list_add(process,pc2);
-	size= list_size(process);
-	CU_ASSERT_EQUAL(size,2);
 
-	ProcessControl* pc3= PIDFind(1);
+	ProcessControl* pc3= PIDFindAndRemove(1);
 	CU_ASSERT_EQUAL(pc3->pid,pc1->pid);
 	CU_ASSERT_EQUAL(pc3->state,pc1->state);
 
-	ProcessControl* pc4= PIDFind(3);
+	ProcessControl* pc4= PIDFindAndRemove(3);
 	CU_ASSERT_EQUAL(pc4->pid,pc2->pid);
 	CU_ASSERT_EQUAL(pc4->state,pc2->state);
 
@@ -94,11 +125,27 @@ void testPIDFind(){
 
 }
 
+
+void testModifyProcessState() {
+	process = list_create();
+	ProcessControl* pc1= malloc(sizeof(ProcessControl));
+	pc1->pid= 1;
+	pc1->state= 0;
+	list_add(process,pc1);
+	modifyProcessState(1,1);
+
+	ProcessControl* pc2= PIDFindAndRemove(1);
+	CU_ASSERT_EQUAL(pc2->state, 1);
+
+	free(pc1);
+}
+
+
 //-----------------------------------------Funciones de Inicializacion-----------------------------------------------------//
 
 
 int initializeProcessQueuesAndLists(){
-	puts("inicializo");
+	if(colaNew!=NULL) destroyProcessQueuesAndLists();
 	colaNew = queue_create();
 	colaCPUS = queue_create();
 	colaReady = queue_create();
@@ -108,29 +155,21 @@ int initializeProcessQueuesAndLists(){
 
 	process= list_create();
 
-	puts("termino ini");
-
 	return 0;
 }
 
 int initializeConfigFile(){
-	const char* keys[16] = {"PUERTO_PROG", "PUERTO_CPU", "IP_MEMORIA", "PUERTO_MEMORIA", "IP_FS", "PUERTO_FS", "QUANTUM", "QUANTUM_SLEEP", "ALGORITMO", "GRADO_MULTIPROG", "SEM_IDS", "SEM_INIT", "SHARED_VARS", "STACK_SIZE", "PAG_SIZE", "NULL"};
-	config = configurate("/home/utnso/workspace/tp-2017-1c-The-Kernels/Kernel/Debug/config.conf", readConfigFile, keys);
-	int res= (config->GRADO_MULTIPROG > -1)?0:-1;
-	return res;
+	/*const char* keys[16] = {"PUERTO_PROG", "PUERTO_CPU", "IP_MEMORIA", "PUERTO_MEMORIA", "IP_FS", "PUERTO_FS", "QUANTUM", "QUANTUM_SLEEP", "ALGORITMO", "GRADO_MULTIPROG", "SEM_IDS", "SEM_INIT", "SHARED_VARS", "STACK_SIZE", "PAG_SIZE", "NULL"};
+	config = configurate("/home/utnso/workspace/tp-2017-1c-The-Kernels/Kernel/Debug/config.conf", readConfigFile, keys);*/
+	return 0;
 }
 
 int initializePCB(){
 	//pcb= createProcess("aa",sizeof("aa"));
-	puts("1");
 	pcb= malloc(sizeof(PCB));
-	puts("2");
 	pcb->pid=1;
-	puts("3");
 	pcb->programCounter=1;
-	puts("4");
 	pcb->exitCode=1;
-	puts("5");
 	return 0;
 }
 

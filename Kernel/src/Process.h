@@ -11,10 +11,13 @@
 
 
 ProcessControl* PIDFind(int);
+ProcessControl* PIDFindAndRemove(int);
 
 PCB* fromNewToReady();
 PCB* fromReadyToExecute();
+PCB* fromReadyToFinished();
 PCB* fromExecuteToFinished();
+PCB* fromBlockedToFinished(int);
 PCB* createProcess(char*, int);
 PCB* _fromTo(t_queue*, t_queue*, int);
 PCB* _fromQueueToList(t_queue*, t_list*, int);

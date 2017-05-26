@@ -20,13 +20,13 @@ const char* keys[16] = {"PUERTO_PROG", "PUERTO_CPU", "IP_MEMORIA", "PUERTO_MEMOR
 int main(int argc, char** argsv) {
 
 	puts("!!!Hello Kernel!!!\n"); /* prints !!!Hello World!!! */
+	config = configurate("/home/utnso/workspace/tp-2017-1c-The-Kernels/Kernel/Debug/config.conf", readConfigFile, keys);
 
 	if(strcmp(argsv[1],"-test")==0){
+		test=1;
 		kernelTest(1);
 		return EXIT_SUCCESS;
 	}
-
-	config = configurate("/home/utnso/workspace/tp-2017-1c-The-Kernels/Kernel/Debug/config.conf", readConfigFile, keys);
 
 
 	colaNew = queue_create();

@@ -26,7 +26,23 @@ void killProcess(int* PID){
 	bool encontrarPorPID(PCB* PCB){
 		return (PCB->pid)==*PID;
 	}
-	//list_remove_by_condition(colaNew,&encontrarPorPID);
+	ProcessControl* pc= PIDFind(PID);
+	t_queue* queue= NULL;
+	t_list* list= NULL;
+	switch (pc->state){
+	case 0:
+		queue= colaNew;
+		break;
+	case 1:
+		fromReadyToFinished();//revisar esto, creo que necesita el PID pero no l opide por ser queue
+		break;
+	case 2:
+		fromExecuteToFinished(PID);
+		break;
+	case 3:
+		fromBlockedToFinished(PID);
+		break;
+	}
 }
 
 
@@ -39,21 +55,16 @@ void killProcess(int* PID){
 
 void newProcess(PCB* pcb)
 {
-	puts("6");
 	queue_push(colaNew, pcb);
-	puts("7");
 	ProcessControl* pc= malloc(sizeof(ProcessControl));
 	pc->pid= pcb->pid;
 	pc->state= 0;
-	puts("8");
 	list_add(process,pc);
-	puts("9");
 }
 
 
 int readyProcess(){//-1 ==> no se pudo poner en ready
 	if(checkMultiprog()){
-		puts("no viole segmento");
 		fromNewToReady();
 	} else {
 		return -1;
@@ -71,14 +82,12 @@ int executeProcess(){
 		PCB* pcb= fromReadyToExecute();
 		PCBSerializado pcbSerializado = serializarPCB(pcb);
 		int CPU = (int)queue_pop(colaCPUS);
-		lSend(CPU, pcbSerializado.data, 1, pcbSerializado.size);
-		puts("PCB ENVIADO");
+		if(!test)lSend(CPU, pcbSerializado.data, 1, pcbSerializado.size);
+		if(!test)puts("PCB ENVIADO");
 		free(pcbSerializado.data);
 		return 1;
 		}
 }
-
-
 
 
 //----------------------------------------------------Manejo de Colas-------------------------------------------------------//
@@ -87,9 +96,7 @@ int executeProcess(){
 
 
 PCB* fromNewToReady(){
-	puts("from new to ready");
 	return _fromQueueToQueue(colaNew,colaReady,1);
-	puts("paso a ready");
 }
 
 
@@ -125,9 +132,7 @@ PCB* fromBlockedToFinished(int pid){
 
 PCB* _fromQueueToQueue(t_queue* fromQueue, t_queue* toQueue, int newState){
 	PCB* pcb = queue_pop(fromQueue);
-	puts("pcb");
 	_processChangeStateToQueue(toQueue,pcb,newState);
-	puts("state");
 	return pcb;
 }
 
@@ -155,19 +160,23 @@ PCB* _fromListToQueue(t_list* fromList, t_queue* toQueue, int PID, int newState)
 
 
 
-ProcessControl* PIDFind(int PID){
+ProcessControl* PIDFindAndRemove(int PID){
 	bool _PIDFind(ProcessControl* pc){
 		return pc->pid== PID;
 	}
 	return list_remove_by_condition(process,&(_PIDFind));
 }
 
+ProcessControl* PIDFind(int PID){
+	bool _PIDFind(ProcessControl* pc){
+		return pc->pid== PID;
+	}
+	return list_find(process,&(_PIDFind));
+}
+
 
 void modifyProcessState(int PID, int newState){
-	puts("modify process state");
-	ProcessControl* pc = PIDFind(PID);
-	puts("lo saco de la lista");
-	printf("process control is null: %d",pc==NULL);
+	ProcessControl* pc = PIDFindAndRemove(PID);
 	pc->state= newState;
 	list_add(process, pc);
 }
@@ -175,9 +184,6 @@ void modifyProcessState(int PID, int newState){
 
 void _processChangeStateToQueue(t_queue* toQueue, PCB* pcb, int newState){
 	queue_push(toQueue, pcb);
-	puts("push ook");
-	puts("pcb se rompe?");
-	printf("%d",pcb->pid);
 	modifyProcessState(pcb->pid,newState);
 }
 

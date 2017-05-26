@@ -30,6 +30,8 @@ struct PageOwnership{
 	t_list* occSpaces;
 } typedef PageOwnership;
 
+bool test;
+
 int maxPID;
 int conexionFS;
 int conexionMemoria;

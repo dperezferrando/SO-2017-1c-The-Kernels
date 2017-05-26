@@ -7,9 +7,12 @@ int kernelTest(int flag){
 
 	CU_pSuite processTest = CU_add_suite("process",initializeProcessQueuesAndLists,destroyProcessQueuesAndLists);
 	CU_add_test(processTest, "PIDFind", testPIDFind);
-	/*CU_add_test(processTest, "newProcess",testNewProcess);
+	CU_add_test(processTest, "modifyProcessState", testModifyProcessState);
+	CU_add_test(processTest, "newProcess",testNewProcess);
 	CU_add_test(processTest, "readyProcessMultiprogOK",testReadyProcessMultiprogOK);
-	CU_add_test(processTest, "readyProcessMultiprogNotOK",testReadyProcessMultiprogNotOK);*/
+	CU_add_test(processTest, "readyProcessMultiprogNotOK",testReadyProcessMultiprogNotOK);
+	CU_add_test(processTest, "executeProcessCPUOK",testExecuteProcessCPUOk);
+	CU_add_test(processTest, "executeProcessCPUNotOK",testExecuteProcessCPUNotOk);
 
 	CU_basic_run_tests();
 	CU_cleanup_registry();

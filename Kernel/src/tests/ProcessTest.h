@@ -28,8 +28,10 @@ int initializePCBinQueue(t_queue* queue);
 void testPIDFind();
 void testNewProcess();
 void testReadyProcess(int);
+void testModifyProcessState();
+void testExecuteProcessCPUOk();
+void testExecuteProcessCPUNotOk();
 void testReadyProcessMultiprogOK();
 void testReadyProcessMultiprogNotOK();
-
 
 #endif
