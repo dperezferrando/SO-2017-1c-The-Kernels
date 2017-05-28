@@ -17,6 +17,9 @@ typedef struct connectionHandler{
 }connHandle;
 
 
+PCB* recibirPCB(Mensaje*);
+
+
 int readyProcess();
 int executeProcess();
 int checkMultiprog();

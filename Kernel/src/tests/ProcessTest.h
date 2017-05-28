@@ -32,6 +32,8 @@ void testModifyProcessState();
 void testExecuteProcessCPUOk();
 void testExecuteProcessCPUNotOk();
 void testReadyProcessMultiprogOK();
+void testCPUReturnsProcessToReady();
+void testCPUReturnsProcessToBlocked();
 void testReadyProcessMultiprogNotOK();
 
 #endif

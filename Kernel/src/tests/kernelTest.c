@@ -13,6 +13,8 @@ int kernelTest(int flag){
 	CU_add_test(processTest, "readyProcessMultiprogNotOK",testReadyProcessMultiprogNotOK);
 	CU_add_test(processTest, "executeProcessCPUOK",testExecuteProcessCPUOk);
 	CU_add_test(processTest, "executeProcessCPUNotOK",testExecuteProcessCPUNotOk);
+	CU_add_test(processTest, "CPUReturnsProcessToReady", testCPUReturnsProcessToReady);
+	CU_add_test(processTest, "CPUReturnsProcessToBlocked", testCPUReturnsProcessToBlocked);
 
 	CU_basic_run_tests();
 	CU_cleanup_registry();

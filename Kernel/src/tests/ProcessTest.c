@@ -23,6 +23,14 @@ void testExecuteProcessCPUNotOk(){
 	testExecuteProcess(0);
 }
 
+void testCPUReturnsProcessToReady(){
+	testCPUReturnsProcess(1);
+}
+
+void testCPUReturnsProcessToBlocked(){
+	testCPUReturnsProcess(3);
+}
+
 //--------------------------------------------------------------Tests Core-----------------------------------------------------------------//
 
 
@@ -84,7 +92,7 @@ void testExecuteProcess(int cpuOK){
 	config->GRADO_MULTIPROG= 1;
 	readyProcess();
 	int sizeReady=0,sizeExecute=1,expected=1;
-	if(cpuOK)queue_push(colaCPUS, (int*)10);
+	if(cpuOK) queue_push(colaCPUS, (int*)10);
 
 	int state= executeProcess();
 
@@ -97,6 +105,33 @@ void testExecuteProcess(int cpuOK){
 	CU_ASSERT_EQUAL(state,expected);
 	CU_ASSERT_EQUAL(queue_size(colaReady),sizeReady);
 	CU_ASSERT_EQUAL(list_size(executeList),sizeExecute);
+}
+
+
+void testCPUReturnsProcess(int processState){
+	initializeProcessQueuesAndLists();
+	initializePCB();
+	newProcess(pcb);
+	config->GRADO_MULTIPROG= 1;
+	readyProcess();
+	queue_push(colaCPUS, (int*)10);
+	int state= executeProcess();
+	CU_ASSERT_EQUAL(state,1);
+	pcb->programCounter=2;
+	cpuReturnsProcessTo(pcb,processState);
+
+	int size= processState==1?queue_size(colaReady):list_size(blockedList);
+
+	CU_ASSERT_EQUAL(size,1);
+
+	PCB* newPCB= processState==1?queue_pop(colaReady):list_get(blockedList,0);
+
+	CU_ASSERT_EQUAL(newPCB->programCounter,2);
+
+	ProcessControl* pc= PIDFind(pcb->pid);
+
+	CU_ASSERT_EQUAL(pc->state,processState);
+
 }
 
 //----------------------------------------------------------------Tests No Core-------------------------------------------------------------------//

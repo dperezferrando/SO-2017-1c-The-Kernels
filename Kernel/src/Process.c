@@ -34,7 +34,7 @@ void killProcess(int* PID){
 		queue= colaNew;
 		break;
 	case 1:
-		fromReadyToFinished();//revisar esto, creo que necesita el PID pero no l opide por ser queue
+		fromReadyToFinished(PID);
 		break;
 	case 2:
 		fromExecuteToFinished(PID);
@@ -90,6 +90,21 @@ int executeProcess(){
 }
 
 
+void cpuReturnsProcessTo(PCB* newPCB, int state){
+	switch(state){
+		case 1:
+			fromExecuteToReady(newPCB->pid);
+			replacePCBinQueue(newPCB,colaReady);
+			break;
+		case 3:
+			fromExecuteToBlocked(newPCB->pid);
+			replacePCBInList(newPCB,blockedList);
+			break;
+	}
+
+}
+
+
 //----------------------------------------------------Manejo de Colas-------------------------------------------------------//
 
 
@@ -106,7 +121,11 @@ PCB* fromBlockedToReady(int pid){
 
 
 PCB* fromExecuteToReady(int pid){
-	return _fromListToQueue(executeList,colaReady,pid,2);
+	return _fromListToQueue(executeList,colaReady,pid,1);
+}
+
+PCB* fromExecuteToBlocked(int pid){
+	return _fromListToList(executeList,blockedList,pid,3);
 }
 
 
@@ -120,8 +139,8 @@ PCB* fromExecuteToFinished(int pid){
 }
 
 
-PCB* fromReadyToFinished(){
-	return _fromQueueToQueue(colaReady,colaFinished,9);
+PCB* fromReadyToFinished(int pid){
+	return _fromListToQueue(colaReady->elements,colaFinished,pid,9);
 }
 
 
@@ -144,15 +163,36 @@ PCB* _fromQueueToList(t_queue* fromQueue, t_list* toList, int newState){
 
 
 PCB* _fromListToQueue(t_list* fromList, t_queue* toQueue, int PID, int newState){
-	bool encontrarPorPID(PCB* PCB){
-		return (PCB->pid)==PID;
-	}
-	PCB* pcb= list_remove_by_condition(fromList,&encontrarPorPID);
+	PCB* pcb= removePcbFromList(PID,fromList);
 	_processChangeStateToQueue(toQueue,pcb,newState);
 	return pcb;
 }
 
+PCB* _fromListToList(t_list* fromList, t_list* toList, int PID, int newState){
+	PCB* pcb= removePcbFromList(PID,fromList);
+	_processChangeStateToList(toList,pcb,newState);
+	return pcb;
+}
 
+PCB* removePcbFromList(int PID,t_list* fromList){
+	bool encontrarPorPID(PCB* PCB){
+		return (PCB->pid)==PID;
+	}
+	return list_remove_by_condition(fromList,&encontrarPorPID);
+}
+
+int replacePCBInList(PCB* pcb,t_list* list){
+	PCB* replacedPCB= removePcbFromList(pcb->pid,list);
+	if(pcb->pid == replacedPCB->pid){
+		list_add(list,pcb);
+		return 1;
+	}
+	return -1;
+}
+
+int replacePCBinQueue(PCB* pcb,t_queue* queue){
+	return replacePCBInList(pcb,queue->elements);
+}
 
 
 //---------------------------------------------------------Auxiliares------------------------------------------------------//
@@ -183,8 +223,7 @@ void modifyProcessState(int PID, int newState){
 
 
 void _processChangeStateToQueue(t_queue* toQueue, PCB* pcb, int newState){
-	queue_push(toQueue, pcb);
-	modifyProcessState(pcb->pid,newState);
+	_processChangeStateToList(toQueue->elements,pcb,newState);
 }
 
 

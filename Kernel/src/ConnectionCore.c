@@ -182,6 +182,7 @@ void findProcessPages(int pid, t_list* processPages){
 void recibirDeCPU(int socket, connHandle* master)
 {
 	puts("CPU");
+	PCB* pcb= malloc(sizeof(PCB));
 	Mensaje* mensaje = lRecv(socket);
 	switch(mensaje->header.tipoOperacion)
 	{
@@ -190,22 +191,26 @@ void recibirDeCPU(int socket, connHandle* master)
 			break;
 		case 1:
 			puts("SE TERMINO LA EJECUCION DE UN PROCESO. SE DEBERIA ENVIAR A COLA FINALIZADO EL PCB");
-			PCB* pcb = deserializarPCB(mensaje->data);
-			printf("RECIBIDO PCB: PID: %i\n", pcb->pid);
-			free(pcb);
+			pcb = recibirPCB(mensaje);
 			break;
 		case 2:
 			puts("TERMINA EJECUCION DE PROCESO PERO ESTE NO ESTA FINALIZADO");
-			pcb = deserializarPCB(mensaje->data);
-			printf("RECIBIDO PCB: PID: %i\n", pcb->pid);
-			fromExecuteToReady(pcb->pid);
+			pcb = recibirPCB(mensaje);
+			cpuReturnsProcessTo(pcb,1);
 			break;
 		case 3:
 			puts("PROCESO PIDE MEMORIA");
 			MemoryRequest mr= deserializeMemReq(mensaje->data);
 			memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr));
+			break;
+		case 4:
+			puts("TERMINA EJECUCION DE PROCESO Y ESTE VA A BLOCKED");
+			pcb= recibirPCB(mensaje);
+			cpuReturnsProcessTo(pcb,3);
+			break;
 	}
 	destruirMensaje(mensaje);
+	free(pcb);
 }
 
 
@@ -244,6 +249,12 @@ void* serializarScript(int pid, int tamanio, int paginasTotales, int* tamanioSer
 	memcpy(buffer + sizeof(int), &paginasTotales, sizeof(int));
 	memcpy(buffer + sizeof(int)*2, script, tamanio);
 	return buffer;
+}
+
+PCB* recibirPCB(Mensaje* mensaje){
+	PCB* pcb = deserializarPCB(mensaje->data);
+	printf("RECIBIDO PCB: PID: %i\n", pcb->pid);
+	return pcb;
 }
 
 
