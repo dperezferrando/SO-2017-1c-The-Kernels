@@ -36,6 +36,8 @@ int maxPID;
 int conexionFS;
 int conexionMemoria;
 
+Mensaje* res;
+
 t_queue* colaNew;
 t_queue* colaCPUS;
 t_queue* colaReady;

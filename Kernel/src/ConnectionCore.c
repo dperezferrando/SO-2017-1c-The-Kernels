@@ -123,9 +123,9 @@ void* serializeMemReq(MemoryRequest mr){
 
 int memoryRequest(MemoryRequest mr, int size, void* msg){
 	PageOwnership* po= malloc(sizeof(PageOwnership));
-	if(sendMemoryRequest(mr,size,msg,po)==-1){return -1;};
-	Mensaje* res= lRecv(conexionMemoria);
-	if(res->header.tipoOperacion==-1){return -1;}
+	if(sendMemoryRequest(mr,size,msg,po)==-1) return -1;
+	if(!test) res= lRecv(conexionMemoria);
+	if(res->header.tipoOperacion==-1) return -1;
 	if (po->idpage!=0){//el pedido se grabo en la pagina ya asignada
 		HeapMetadata* hm= malloc(sizeof(HeapMetadata));
 		memcpy(hm,res->data+(sizeof(int)*2),sizeof(HeapMetadata));
@@ -144,13 +144,13 @@ int memoryRequest(MemoryRequest mr, int size, void* msg){
 }
 
 int sendMemoryRequest(MemoryRequest mr, int size, void* msg, PageOwnership* po){
-	if(!viableRequest(mr.size)){return -1;}
+	if(!viableRequest(mr.size)) return -1;
 	po->pid= mr.pid;
 	po->idpage= pageToStore(mr);
 	void* serializedMSG= serializeMemReq(mr);
 	memcpy(serializedMSG,&po->idpage,sizeof(int));
 	memcpy(serializedMSG,msg,size);
-	lSend(conexionMemoria,serializedMSG,3,sizeof(mr)+size);
+	if(!test) lSend(conexionMemoria,serializedMSG,3,sizeof(mr)+size);
 	return 1;
 }
 
