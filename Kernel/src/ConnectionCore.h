@@ -19,7 +19,7 @@ typedef struct connectionHandler{
 
 PCB* recibirPCB(Mensaje*);
 
-
+int PIDFindPO(int);
 int readyProcess();
 int executeProcess();
 int checkMultiprog();

@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "KernelConfiguration.h"
+#include "SocketLibrary.h"
 
 struct ProcessControl{
 	int pid;

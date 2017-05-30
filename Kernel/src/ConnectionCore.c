@@ -129,14 +129,17 @@ int memoryRequest(MemoryRequest mr, int size, void* msg){
 	if (po->idpage!=0){//el pedido se grabo en la pagina ya asignada
 		HeapMetadata* hm= malloc(sizeof(HeapMetadata));
 		memcpy(hm,res->data+(sizeof(int)*2),sizeof(HeapMetadata));
-		list_add(po->occSpaces,hm);
-		list_replace(ownedPages, PIDFindPO(mr.pid), po);
+		occupyPageSize(po,hm);
+		list_replace(ownedPages, &PIDFindPO, po);
 		return 0;
 	}
 		else{//se le otorgo una pagina y se grabo alli
 			memcpy(&po->pid,res->data,sizeof(int));
 			memcpy(&po->idpage,res->data+sizeof(int),sizeof(int));
-			po->occSpaces=list_create();
+			HeapMetadata* hm= malloc(sizeof(HeapMetadata));
+			memcpy(hm,res->data+(sizeof(int)*2),sizeof(HeapMetadata));
+			initializePageOwnership(po);
+			occupyPageSize(po,hm);
 			list_add(ownedPages,po);
 			free(res);
 			return 1;
@@ -150,7 +153,8 @@ int sendMemoryRequest(MemoryRequest mr, int size, void* msg, PageOwnership* po){
 	void* serializedMSG= serializeMemReq(mr);
 	memcpy(serializedMSG,&po->idpage,sizeof(int));
 	memcpy(serializedMSG,msg,size);
-	if(!test) lSend(conexionMemoria,serializedMSG,3,sizeof(mr)+size);
+	if(!test) lSend(conexionMemoria,serializedMSG,3,sizeof(mr)+size);//si el idPag es 0 no tiene pagina donde se puede grabar y necesita una nueva
+	free(serializedMSG);
 	return 1;
 }
 
@@ -161,12 +165,13 @@ int pageToStore(MemoryRequest mr){
 		int i,acc=0;
 		for(i=0;i<list_size(po->occSpaces);i++){
 			HeapMetadata* hw= list_get(po->occSpaces,i);
-			acc+=hw->size;
+			if(!hw->isFree)acc+=hw->size;
 		}
 		return acc<= mr.size+sizeof(HeapMetadata);
 	}
 	PageOwnership* po = list_find(processPages,&pageHasEnoughSpace);
-	if(po!=NULL) {return po->idpage;} else {return 0;}
+	if(po!=NULL) return po->idpage;
+	else return 0;
 }
 
 void findProcessPages(int pid, t_list* processPages){
@@ -174,6 +179,26 @@ void findProcessPages(int pid, t_list* processPages){
 		return po->pid== pid;
 	}
 	processPages= list_filter(ownedPages,&(_PIDFind));
+}
+
+void initializePageOwnership(PageOwnership* po){
+	HeapMetadata* hm= malloc(sizeof(HeapMetadata));
+	hm->isFree=1;
+	hm->size= config->PAG_SIZE-sizeof(HeapMetadata);
+	list_add(po->occSpaces,hm);
+}
+
+void occupyPageSize(PageOwnership* po,HeapMetadata* hm){
+	int i;
+	for(i=0;i<list_size(po->occSpaces);i++){
+		HeapMetadata* hw= list_get(po->occSpaces,i);
+		if(hw->isFree){
+			hw->size=-hm->size-sizeof(HeapMetadata);
+			list_add(po->occSpaces,hm);
+			list_add(po->occSpaces,hw);
+			break;
+		}
+	}
 }
 
 //------------------------------------------------Funciones de CPU----------------------------------------------------------//
