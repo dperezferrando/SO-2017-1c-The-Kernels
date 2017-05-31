@@ -6,12 +6,17 @@
 
 #include <commons/config.h>
 
+//Globales para serializar OpFS
+char* pathOpFS;
+char* bufferOpFS;
+int offsetOpFS;
+int sizeOpFS;
 
-typedef struct PCBSerializado
+typedef struct serializado
 {
 	char* data;
 	int size;
-} PCBSerializado;
+} serializado;
 
 typedef struct __attribute__((packed)) indCod{
 	int offset;
@@ -57,7 +62,8 @@ bool rutaCorrecta(t_config* configHandler);
 bool archivoConfigValido(t_config* configHandler,char* []);
 bool archivoConfigCompleto(t_config* configHandler, char* []);
 void* configurate(char* ,void*(t_config*), char* []);
-PCBSerializado serializarPCB (PCB* pcb);
+serializado serializarPCB (PCB* pcb);
+serializado serializarOpFS(int);
 PCB* deserializarPCB (char*);
 
 #endif

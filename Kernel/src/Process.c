@@ -80,7 +80,7 @@ int executeProcess(){
 		return -1;
 	} else{
 		PCB* pcb= fromReadyToExecute();
-		PCBSerializado pcbSerializado = serializarPCB(pcb);
+		serializado pcbSerializado = serializarPCB(pcb);
 		int CPU = (int)queue_pop(colaCPUS);
 		if(!test)lSend(CPU, pcbSerializado.data, 1, pcbSerializado.size);
 		if(!test)puts("PCB ENVIADO");

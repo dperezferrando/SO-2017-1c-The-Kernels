@@ -62,9 +62,9 @@ PCB* deserializarPCB(char* pcbSerializado) // A SER REEMPLAZADO POR LO DE NICO
 
 }
 
-PCBSerializado serializarPCB(PCB* pcb) // A SER REEMPLAZADO POR LO DE NICO
+serializado serializarPCB(PCB* pcb) // A SER REEMPLAZADO POR LO DE NICO
 {
-	PCBSerializado pcbSerializado;
+	serializado pcbSerializado;
 	pcbSerializado.size = sizeof(int)*4 + pcb->sizeIndiceCodigo;
 	pcbSerializado.data = malloc(pcbSerializado.size);
 	memcpy(pcbSerializado.data, &pcb->pid, sizeof(int));
@@ -74,6 +74,43 @@ PCBSerializado serializarPCB(PCB* pcb) // A SER REEMPLAZADO POR LO DE NICO
 	memcpy(pcbSerializado.data + (sizeof(int)*4), pcb->indiceCodigo, pcb->sizeIndiceCodigo);
 	return pcbSerializado;
 
+}
+
+serializado serializarOpFS(int tipoOperacion){ //Con parametros globales, No se si esta mejor pasar todos los parametros e ignorar algunos o hacer multiples funciones
+	serializado opFSSerializada;
+	int sizePathOpFS=sizeof(pathOpFS);
+	int sizeBufferOpFS=sizeof(bufferOpFS);
+	switch(tipoOperacion){
+		case 0||1||4:{
+			opFSSerializada.size = sizeof(int) + sizePathOpFS;
+			opFSSerializada.data = malloc(opFSSerializada.size);
+			break;
+		}
+		case 2:{
+			opFSSerializada.size = sizeof(int)*3 + sizePathOpFS;
+			opFSSerializada.data = malloc(opFSSerializada.size);
+			break;
+		}
+		case 3:{
+			opFSSerializada.size = sizeof(int)*4 + sizePathOpFS + sizeBufferOpFS;
+			opFSSerializada.data = malloc(opFSSerializada.size);
+			break;
+		}
+	}
+	if (tipoOperacion>=0 || tipoOperacion<=4){
+		sizePathOpFS=sizeof(pathOpFS);
+		memcpy(opFSSerializada.data, sizePathOpFS, sizeof(int));
+		memcpy(opFSSerializada.data + sizeof(int), pathOpFS, sizePathOpFS);
+		if(tipoOperacion==2 || tipoOperacion==3){
+			memcpy(opFSSerializada.data + sizeof(int) + sizePathOpFS, offsetOpFS, sizeof(int));
+			memcpy(opFSSerializada.data + sizeof(int)*2 + sizePathOpFS, sizeOpFS, sizeof(int));
+			if(tipoOperacion==3){
+				memcpy(opFSSerializada.data + sizeof(int)*3 + sizePathOpFS, sizeBufferOpFS, sizeof(int));
+				memcpy(opFSSerializada.data + sizeof(int)*3 + sizePathOpFS + sizeBufferOpFS, bufferOpFS, sizeBufferOpFS);
+			}
+		}
+	}
+	return opFSSerializada;
 }
 
 /*PCBSerializado serializarPCB (PCB* pcb){
