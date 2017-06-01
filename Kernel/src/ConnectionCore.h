@@ -47,5 +47,7 @@ void handleSockets(connHandle*, socketHandler);
 
 void* serializarScript(int, int, int, int*, void*);
 
+MemoryRequest deserializeMemReq(void*);
+
 
 #endif

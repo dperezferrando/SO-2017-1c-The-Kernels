@@ -171,7 +171,7 @@ int pageToStore(MemoryRequest mr){
 	}
 	PageOwnership* po = list_find(processPages,&pageHasEnoughSpace);
 	if(po!=NULL) return po->idpage;
-	else return 0;
+	else return -1;
 }
 
 void findProcessPages(int pid, t_list* processPages){

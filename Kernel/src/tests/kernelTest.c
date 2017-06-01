@@ -16,6 +16,13 @@ int kernelTest(int flag){
 	CU_add_test(processTest, "CPUReturnsProcessToReady", testCPUReturnsProcessToReady);
 	CU_add_test(processTest, "CPUReturnsProcessToBlocked", testCPUReturnsProcessToBlocked);
 
+
+	CU_pSuite heapTest = CU_add_suite("heap",NULL,NULL);
+	CU_add_test(heapTest, "serializationMemReqTest", testSerializationMemoryRequest);
+	CU_add_test(heapTest, "pageToStoreTestPageAvailable", pageToStoreTestPageAvailable);
+	CU_add_test(heapTest, "pageToStoreTestPageUnavailable", pageToStoreTestPageUnavailable);
+
+
 	CU_basic_run_tests();
 	CU_cleanup_registry();
 	return CU_get_error();

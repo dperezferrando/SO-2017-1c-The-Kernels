@@ -3,6 +3,7 @@
 
 
 #include "ProcessTest.h"
+#include "HeapManagementTest.h"
 
 
 int kernelTest(int);
