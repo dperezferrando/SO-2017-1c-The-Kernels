@@ -28,6 +28,7 @@ int main(int argc, char** argsv) {
 		return EXIT_SUCCESS;
 	}
 
+	test=0;
 
 	colaNew = queue_create();
 	colaReady = queue_create();

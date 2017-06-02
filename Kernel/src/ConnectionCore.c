@@ -180,14 +180,6 @@ t_list* findProcessPages(int pid){
 	}
 	return list_filter(ownedPages,&(_PIDFind));
 }
-/*
- * ProcessControl* PIDFind(int PID){
-	bool _PIDFind(ProcessControl* pc){
-		return pc->pid== PID;
-	}
-	return list_find(process,&(_PIDFind));
-}
- */
 
 void initializePageOwnership(PageOwnership* po){
 	po->occSpaces= list_create();
