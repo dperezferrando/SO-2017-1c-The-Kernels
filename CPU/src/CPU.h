@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 #include <commons/config.h>
 #include <commons/collections/list.h>
 #include <pthread.h>
@@ -73,6 +74,7 @@ posicionEnMemoria calcularPosicion();
 indStk* crearIndiceDeStack();
 variable* obtenerUltimaVariable(t_list* listaVariables);
 t_puntero convertirADireccionReal(posicionEnMemoria unaPosicion);
+void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor);
 
 
 

@@ -32,7 +32,7 @@ typedef struct __attribute__((packed)) IDIndCod{
 }IDIndCod;
 
 typedef struct __attribute__((packed)) indEtq{
-	t_dictionary* etiq;
+	//diccionario de etiquetas a posicion de etiqueta
 }indEtq;
 
 typedef struct __attribute__((packed)) indStk{
@@ -59,6 +59,11 @@ typedef struct __attribute__((packed)) posicionEnMemoria {
 	int offset;
 	int size;
 } posicionEnMemoria;
+
+typedef struct __attribute__ ((packed)) pedidoEscrituraMemoria {
+	posicionEnMemoria posicion;
+	int valor;
+} pedidoEscrituraMemoria;
 
 bool rutaCorrecta(t_config* configHandler);
 bool archivoConfigValido(t_config* configHandler,char* []);

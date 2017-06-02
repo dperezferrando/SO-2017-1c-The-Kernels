@@ -60,6 +60,11 @@ typedef struct __attribute__((packed)) posicionEnMemoria {
 	int size;
 } posicionEnMemoria;
 
+typedef struct __attribute__ ((packed)) pedidoEscrituraMemoria {
+	posicionEnMemoria posicion;
+	int valor;
+} pedidoEscrituraMemoria;
+
 bool rutaCorrecta(t_config* configHandler);
 bool archivoConfigValido(t_config* configHandler,char* []);
 bool archivoConfigCompleto(t_config* configHandler, char* []);

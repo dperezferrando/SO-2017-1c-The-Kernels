@@ -191,8 +191,20 @@ void conexion_cpu(int conexion)
 			}
 
 			case 3:
-				// ESCRIBIR
+			{
+				pedidoEscrituraMemoria* pedido = malloc(sizeof(pedidoEscrituraMemoria));
+				memcpy(pedido, mensaje->data, sizeof(pedidoEscrituraMemoria));
+				printf("CPU GUARDA INFO EN PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %i\n", pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor);
+				int* valorPuntero = &pedido->valor;
+				escribirBytes(pidActual, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, valorPuntero);
+				char* linea = solicitarBytes(pidActual, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
+				int valor;
+				memcpy(&valor, linea, sizeof(int));
+				printf("TESTO - LEYENDO VALOR EN LA POSICION GUARDADA, VALOR = %i\n", valor);
+				free(linea);
+				free(pedido);
 				break;
+			}
 
 			case 4:
 				puts("EL CPU SE TOMA EL PALO");

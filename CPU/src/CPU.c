@@ -181,7 +181,7 @@ posicionEnMemoria calcularPosicion()
 		}
 		else
 		{
-			variable* ultimaVariable = obtenerUltimaVariable(pcb->nivelDelStack);
+			variable* ultimaVariable = obtenerUltimaVariable(pcb->indiceStack[pcb->nivelDelStack].variables);
 			posicionEnMemoria posicionUltimaVariable = ultimaVariable->posicion;
 			unaPosicion.offset = posicionUltimaVariable.offset+4;
 			if(unaPosicion.offset > tamanioPagina)
@@ -196,9 +196,27 @@ posicionEnMemoria calcularPosicion()
 	return unaPosicion;
 }
 
+/*
+ * LA FUNCION QUE VA A EVITAR LA REPITICION DE LOGICA SIDA DE ARRIBA
+posicionEnMemoria generarPosicionEnBaseAUltimaVariableDe(t_list* lista)
+{
+	posicionEnMemoria posicion;
+	posicion.size = 4;
+
+}*/
+
 t_puntero convertirADireccionReal(posicionEnMemoria unaPosicion)
 {
 	return (unaPosicion.pagina*tamanioPagina) + unaPosicion.offset;
+}
+
+posicionEnMemoria convertirADireccionLogica(t_puntero posicionReal)
+{
+	posicionEnMemoria posicion;
+	posicion.pagina = floor((double)posicionReal/(double)tamanioPagina);
+	posicion.offset = posicionReal % tamanioPagina;
+	posicion.size = 4;
+	return posicion;
 }
 
 variable* obtenerUltimaVariable(t_list* listaVariables)
@@ -209,16 +227,18 @@ variable* obtenerUltimaVariable(t_list* listaVariables)
 }
 
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador){
-/*	t_puntero desplazamiento;
-	Mensaje* m;
-	lSend(memoria,(t_nombre_variable) identificador,0,strlen(identificador)+1);
-	m=lRecv(memoria);
-	desplazamiento=(t_puntero) m->data;
-	if(desplazamiento==-1){
-		puts("Error");
-	}*/
-
-	return 1;
+	puts("OBTENGO POSICION VARIABLE");
+	t_list* lista;
+	if(isalpha(identificador))
+		lista = pcb->indiceStack[pcb->nivelDelStack].variables;
+	else
+		lista = pcb->indiceStack[pcb->nivelDelStack].argumentos;
+	bool elIdEsElMismo(variable* variable)
+	{
+		return variable->identificador == identificador;
+	}
+	variable* unaVariable = list_find(lista, elIdEsElMismo);
+	return convertirADireccionReal(unaVariable->posicion);
 }
 
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor){//falta ersolver
@@ -228,9 +248,21 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 
 }
 
-void asignar(t_puntero direccionVariable, t_valor_variable valor)
+void asignar(t_puntero direccionReal, t_valor_variable valor)
 {
 	puts("ASIGNACION");
+	posicionEnMemoria posicion = convertirADireccionLogica(direccionReal);
+	escribirEnMemoria(posicion, valor);
+
+}
+
+void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor)
+{
+	pedidoEscrituraMemoria* pedido = malloc(sizeof(pedidoEscrituraMemoria));
+	pedido->posicion = posicion;
+	pedido->valor = valor;
+	lSend(memoria, pedido, 3,sizeof(pedidoEscrituraMemoria));
+	free(pedido);
 }
 
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero dondeRetornar)
