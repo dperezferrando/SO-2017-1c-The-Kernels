@@ -21,6 +21,7 @@ int kernelTest(int flag){
 	CU_add_test(heapTest, "serializationMemReqTest", testSerializationMemoryRequest);
 	CU_add_test(heapTest, "pageToStoreTestPageAvailable", pageToStoreTestPageAvailable);
 	CU_add_test(heapTest, "pageToStoreTestPageUnavailable", pageToStoreTestPageUnavailable);
+	CU_add_test(heapTest, "occupyPageSizeTest", occupyPageSizeTest);
 
 
 	CU_basic_run_tests();
