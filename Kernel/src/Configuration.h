@@ -31,7 +31,7 @@ typedef struct __attribute__((packed)) IDIndCod{
 }IDIndCod;
 
 typedef struct __attribute__((packed)) indEtq{
-	//diccionario de etiquetas a posicion de etiqueta
+	t_dictionary* etiq;
 }indEtq;
 
 typedef struct __attribute__((packed)) indStk{

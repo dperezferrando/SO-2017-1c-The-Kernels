@@ -15,6 +15,8 @@ PCB* createProcess(char* script, int tamanioScript){
 	pcb->cantPaginasCodigo = ceil((double)tamanioScript/(double)config->PAG_SIZE);
 	pcb->sizeIndiceCodigo = metadata->instrucciones_size*sizeof(indCod);
 	pcb->indiceCodigo = malloc(pcb->sizeIndiceCodigo);
+	pcb->indiceEtiqueta.etiq= dictionary_create();
+	pcb->indiceEtiqueta.etiq->elements_amount= metadata->cantidad_de_etiquetas;
 	pcb->exitCode = 0;
 	memcpy(pcb->indiceCodigo, metadata->instrucciones_serializado, metadata->instrucciones_size*sizeof(indCod));
 	pcb->programCounter = 0;

@@ -30,13 +30,15 @@ int main(int argc, char** argsv) {
 
 	test=0;
 
+	process= list_create();
+
+	colaCPUS = queue_create();
+
 	colaNew = queue_create();
 	colaReady = queue_create();
 	blockedList = list_create();
 	executeList = list_create();
 	colaFinished=queue_create();
-	colaCPUS = queue_create();
-	process= list_create();
 
 	handler();
 	destruirConfig(config);
