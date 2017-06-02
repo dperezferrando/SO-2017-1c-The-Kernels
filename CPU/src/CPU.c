@@ -28,10 +28,10 @@ int main(int argc, char** argsv) {
 			free(linea);
 			pcb->programCounter++;
 		}
-		PCBSerializado pcbSerializado = serializarPCB(pcb);
+		serializado pcbSerializado = serializarPCB(pcb);
 		lSend(kernel, pcbSerializado.data, 1, pcbSerializado.size);
+		free(pcb);
 	}
-	free(pcb);
 	free(config);
 	close(kernel);
 	close(memoria);

@@ -4,11 +4,12 @@
 int main(int argc, char** argsv) {
 	configFile* config;
 	metadata* metad;
-	config = configurate("/home/utnso/tp-2017-1c-The-Kernels/mnt/filesystem.conf", leerArchivoConfig, keys);
-	metad = configurate("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Metadata/Metadata.bin", leerArchivoMetadata, metaKeys);
+	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/mnt/filesystem.conf", leerArchivoConfig, keys);
+	metad = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Metadata/Metadata.bin", leerArchivoMetadata, metaKeys);
 	kernel = getBindedSocket("127.0.0.1", config->puerto);
+	lListen(kernel, 5);
 	puts("ESPERANDO AL KERNEL");
-	int conexion = lAccept(kernel, KERNEL_ID);
+	conexion = lAccept(kernel, KERNEL_ID);
 	esperarOperacion();
 	close(kernel);
 	free(config);
@@ -19,7 +20,7 @@ int main(int argc, char** argsv) {
 void esperarOperacion()
 {
 	puts("Esperando Operacion");
-	Mensaje* mensaje = lRecv(kernel);
+	Mensaje* mensaje = lRecv(conexion);
 	puts("Operacion recibida");
 	int sizePath;
 	char* path;
@@ -85,8 +86,8 @@ validarArchivo(char* path){
 }
 
 enviarTamanioArchivo(int tamanio){
-	lSend(kernel, "archivo existente", 1, sizeof(char)*17);
-	lSend(kernel,  tamanio, 1, sizeof(int));
+	lSend(conexion, "archivo existente", 1, sizeof(char)*17);
+	lSend(conexion,  tamanio, 1, sizeof(int));
 }
 
 crearArchivo(char* path){
