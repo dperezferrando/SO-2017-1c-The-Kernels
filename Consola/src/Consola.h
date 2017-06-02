@@ -5,6 +5,7 @@
 #include <string.h>
 #include <time.h>
 #include <pthread.h>
+#include <semaphore.h>
 #include <commons/config.h>
 #include <commons/string.h>
 #include <commons/txt.h>
@@ -12,6 +13,13 @@
 #include <commons/collections/list.h>
 #include "../../ConfigLibrary/src/Configuration.c"
 #include "../../SocketLibrary/src/SocketLibrary.c"
+
+Mensaje* respuesta = NULL;
+sem_t espera;
+sem_t liberarPrograma;
+sem_t final;
+sem_t liberarMensaje;
+pthread_t escucha;
 
 //------------------------------CONSTANTES------------------------------
 
@@ -51,7 +59,7 @@
 #define ESPERA 21
 
 //Otros
-#define MAX 1000
+#define MAX 100
 #define ERROR -1
 
 //------------------------------ESTRUCTURAS------------------------------
@@ -69,9 +77,10 @@ typedef struct {
 
 typedef struct {
 	int pid;
-	FILE* archivo;
+	char path[MAX];
 	time_t tiempoInicio;
 	pthread_t hiloPrograma;
+	sem_t semaforo;
 } Programa;
 
 //------------------------------VARIABLES GLOBALES------------------------------
@@ -121,3 +130,13 @@ void mensajeErrorConexion(); //Mensaje
 void mensajeEspera(); //Mensaje
 time_t obtenerTiempo(); //Obtiene el tiempo
 char* mostrarTiempo(time_t); //Muestra el tiempo
+void recorrerLista();
+void enviarArchivoAlKernel(char*);
+void imprimirMensajeKernel(char*);
+void hiloPrograma(Programa*);
+void finalizarConsolaPorDesconexion();
+void mensajeNoHayEspacio();
+void esperarMensajes(Programa*);
+void iniciarPrograma();
+void noHayEspacio();
+Programa* buscarProgramaPorPidNumerico(int pid);
