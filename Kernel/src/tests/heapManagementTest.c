@@ -43,17 +43,71 @@ void pageToStoreTestPageAvailable(){
 	mr.pid=1;
 	mr.size= config->PAG_SIZE-(sizeof(HeapMetadata)*3);
 	int res= pageToStore(mr);
-	PageOwnership* p2= list_get(ownedPages,0);
-	HeapMetadata* hm= list_get(p2->occSpaces,1);
 	CU_ASSERT_NOT_EQUAL(res,-1);
-	//CU_ASSERT_NOT_EQUAL(hm->isFree,1);
-	//CU_ASSERT_NOT_EQUAL(hm->size,8);
 	list_destroy(ownedPages);
+}
+
+
+void occupyPageSizeTest(){
+
+	config->PAG_SIZE= 256;
+	PageOwnership* po= malloc(sizeof(PageOwnership));
+	HeapMetadata* hmPop;
+	po->idpage=1;
+	po->pid=1;
+	initializePageOwnership(po);
+	HeapMetadata* hm= malloc(sizeof(HeapMetadata));
+	hm->isFree= 0;
+	hm->size= 56;
+
+
+	occupyPageSize(po,hm);
+
+	hmPop= list_get(po->occSpaces,0);
+	CU_ASSERT_EQUAL(hmPop->isFree,0);
+	CU_ASSERT_EQUAL(hmPop->size,56);
+	hmPop= list_get(po->occSpaces,1);
+	CU_ASSERT_EQUAL(hmPop->isFree,1);
+	CU_ASSERT_EQUAL(hmPop->size,184);
+
+
+	HeapMetadata* hm2= malloc(sizeof(HeapMetadata));
+	hm2->isFree= 0;
+	hm2->size=30;
+
+
+	occupyPageSize(po,hm2);
+
+	hmPop= list_get(po->occSpaces,1);
+	CU_ASSERT_EQUAL(hmPop->isFree,0);
+	CU_ASSERT_EQUAL(hmPop->size,30);
+	hmPop= list_get(po->occSpaces,2);
+	CU_ASSERT_EQUAL(hmPop->isFree,1);
+	CU_ASSERT_EQUAL(hmPop->size,146);
+
+
+	HeapMetadata* hm3= malloc(sizeof(HeapMetadata));
+	hm3->isFree= 0;
+	hm3->size=70;
+
+
+	occupyPageSize(po,hm3);
+
+	hmPop= list_get(po->occSpaces,2);
+	CU_ASSERT_EQUAL(hmPop->isFree,0);
+	CU_ASSERT_EQUAL(hmPop->size,70);
+	hmPop= list_get(po->occSpaces,3);
+	CU_ASSERT_EQUAL(hmPop->isFree,1);
+	CU_ASSERT_EQUAL(hmPop->size,68);
+
+
+	free(hmPop);
+	free(po);
+	free(hm);
 }
 
 void sendMemoryRequestTest(int viable){
 	MemoryRequest mr;
 	mr.pid=1;
 	mr.size= viable==1 ? config->PAG_SIZE+1 : config->PAG_SIZE-1;
-
 }

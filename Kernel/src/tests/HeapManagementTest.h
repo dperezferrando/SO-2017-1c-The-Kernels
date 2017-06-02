@@ -4,7 +4,7 @@
 #include "../ConnectionCore.h"
 #include "CUnit/Basic.h"
 
-
+void occupyPageSizeTest();
 void pageToStoreTestPageAvailable();
 void pageToStoreTestPageUnavailable();
 void testSerializationMemoryRequest();

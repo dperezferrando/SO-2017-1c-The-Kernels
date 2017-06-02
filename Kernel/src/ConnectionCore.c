@@ -193,11 +193,13 @@ void occupyPageSize(PageOwnership* po,HeapMetadata* hm){
 	int i;
 	for(i=0;i<list_size(po->occSpaces);i++){
 		HeapMetadata* hw= list_get(po->occSpaces,i);
-		if(hw->isFree==1 && hw->size >= (hm->size+sizeof(HeapMetadata))){
-			hw->size=-(hm->size+sizeof(HeapMetadata));
-			list_replace_and_destroy_element(po->occSpaces,i,hm,&free);//reemplazo el elemento libre por uno ocupado
-			list_add_in_index(po->occSpaces,i+1,hw);//agrego la estructura libre al lado
-			break;
+		if(hw->isFree==1){
+			if(hw->size >= (hm->size+sizeof(HeapMetadata))){
+				hw->size-=(hm->size+sizeof(HeapMetadata));
+				list_replace(po->occSpaces,i,hm);//reemplazo el elemento libre por uno ocupado
+				list_add_in_index(po->occSpaces,i+1,hw);//agrego la estructura libre al lado
+				break;
+			}
 		}
 	}
 }
