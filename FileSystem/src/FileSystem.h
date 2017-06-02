@@ -7,6 +7,7 @@
 #include "../../SocketLibrary/src/SocketLibrary.c"
 
 int kernel;
+int conexion;
 #define CONFIG_FILE "filesystem.conf"
 const char* keys[3] = {"PUERTO", "PUNTO_MONTAJE" , "NULL"};
 const char* metaKeys[4]={"TAMANIO_BLOQUES","CANTIDAD_BLOQUES","MAGIC_NUMBER","NULL"};
