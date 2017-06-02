@@ -205,6 +205,11 @@ int initializePCB(){
 	pcb->pid=1;
 	pcb->programCounter=1;
 	pcb->exitCode=1;
+	indCod* ic= malloc(sizeof(indCod));
+	ic->longitud=1;
+	ic->offset=3;
+	pcb->indiceCodigo= ic;
+	pcb->sizeIndiceCodigo= sizeof(ic);
 	return 0;
 }
 

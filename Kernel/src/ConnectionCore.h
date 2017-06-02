@@ -40,12 +40,15 @@ void enviarAlgoritmo(int);
 void aceptarNuevoCPU(int);
 void closeHandle(int, connHandle*);
 void recibirDeCPU(int, connHandle*);
-void findProcessPages(int , t_list*);
 void recibirDeConsola(int, connHandle*);
 void handleSockets(connHandle*, socketHandler);
 
 
 void* serializarScript(int, int, int, int*, void*);
+
+
+t_list* findProcessPages(int);
+
 
 MemoryRequest deserializeMemReq(void*);
 

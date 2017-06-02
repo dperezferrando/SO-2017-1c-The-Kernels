@@ -35,7 +35,6 @@ int main(int argc, char** argsv) {
 	executeList = list_create();
 	colaFinished=queue_create();
 	colaCPUS = queue_create();
-
 	process= list_create();
 
 	handler();

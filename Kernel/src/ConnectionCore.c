@@ -117,7 +117,7 @@ MemoryRequest deserializeMemReq(void* mr){
 void* serializeMemReq(MemoryRequest mr){
 	void* res= malloc(sizeof(mr));
 	memcpy(res,&mr.pid,sizeof(int));
-	memcpy(res,&mr.size,sizeof(int));
+	memcpy(res+sizeof(int),&mr.size,sizeof(int));
 	return res;
 }
 
@@ -138,7 +138,7 @@ int memoryRequest(MemoryRequest mr, int size, void* msg){
 			memcpy(&po->idpage,res->data+sizeof(int),sizeof(int));
 			HeapMetadata* hm= malloc(sizeof(HeapMetadata));
 			memcpy(hm,res->data+(sizeof(int)*2),sizeof(HeapMetadata));
-			initializePageOwnership(po);
+			initializePageOwnership(po);//aca queda el PageOwnership con la estructura que marca el espacio libre
 			occupyPageSize(po,hm);
 			list_add(ownedPages,po);
 			free(res);
@@ -159,29 +159,38 @@ int sendMemoryRequest(MemoryRequest mr, int size, void* msg, PageOwnership* po){
 }
 
 int pageToStore(MemoryRequest mr){
-	t_list* processPages= list_create();
-	findProcessPages(mr.pid,processPages);
+	t_list* processPages= findProcessPages(mr.pid);
+
 	bool pageHasEnoughSpace(PageOwnership* po){
 		int i,acc=0;
 		for(i=0;i<list_size(po->occSpaces);i++){
 			HeapMetadata* hw= list_get(po->occSpaces,i);
-			if(!hw->isFree)acc+=hw->size;
+			if(hw->isFree==1)acc+=hw->size;
 		}
-		return acc<= mr.size+sizeof(HeapMetadata);
+		return acc >= mr.size+sizeof(HeapMetadata);
 	}
-	PageOwnership* po = list_find(processPages,&pageHasEnoughSpace);
+	PageOwnership* po = list_find(processPages,&(pageHasEnoughSpace));
 	if(po!=NULL) return po->idpage;
 	else return -1;
 }
 
-void findProcessPages(int pid, t_list* processPages){
+t_list* findProcessPages(int pid){
 	bool _PIDFind(PageOwnership* po){
 		return po->pid== pid;
 	}
-	processPages= list_filter(ownedPages,&(_PIDFind));
+	return list_filter(ownedPages,&(_PIDFind));
 }
+/*
+ * ProcessControl* PIDFind(int PID){
+	bool _PIDFind(ProcessControl* pc){
+		return pc->pid== PID;
+	}
+	return list_find(process,&(_PIDFind));
+}
+ */
 
 void initializePageOwnership(PageOwnership* po){
+	po->occSpaces= list_create();
 	HeapMetadata* hm= malloc(sizeof(HeapMetadata));
 	hm->isFree=1;
 	hm->size= config->PAG_SIZE-sizeof(HeapMetadata);
@@ -192,10 +201,10 @@ void occupyPageSize(PageOwnership* po,HeapMetadata* hm){
 	int i;
 	for(i=0;i<list_size(po->occSpaces);i++){
 		HeapMetadata* hw= list_get(po->occSpaces,i);
-		if(hw->isFree){
-			hw->size=-hm->size-sizeof(HeapMetadata);
-			list_add(po->occSpaces,hm);
-			list_add(po->occSpaces,hw);
+		if(hw->isFree==1 && hw->size >= (hm->size+sizeof(HeapMetadata))){
+			hw->size=-(hm->size+sizeof(HeapMetadata));
+			list_replace_and_destroy_element(po->occSpaces,i,hm,&free);//reemplazo el elemento libre por uno ocupado
+			list_add_in_index(po->occSpaces,i+1,hw);//agrego la estructura libre al lado
 			break;
 		}
 	}
