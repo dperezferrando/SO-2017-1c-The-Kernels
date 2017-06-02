@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include <commons/config.h>
+#include <commons/collections/list.h>
 
 //Globales para serializar OpFS
 char* pathOpFS;
@@ -35,8 +36,8 @@ typedef struct __attribute__((packed)) indEtq{
 }indEtq;
 
 typedef struct __attribute__((packed)) indStk{
-	IDIndCod argumentos;
-	IDIndCod variables;
+	t_list* argumentos;
+	t_list* variables;
 	int  posicionDeRetorno;
 	indCod variableDeRetorno;
 }indStk;
@@ -47,9 +48,10 @@ typedef struct __attribute__((packed)) PCB{
 	int cantPaginasCodigo;
 	indCod* indiceCodigo;
 	indEtq indiceEtiqueta;
-	indStk indiceStack;
+	indStk* indiceStack;
 	int exitCode;
 	int sizeIndiceCodigo;
+	int nivelDelStack;
 }PCB;
 
 typedef struct __attribute__((packed)) posicionEnMemoria {

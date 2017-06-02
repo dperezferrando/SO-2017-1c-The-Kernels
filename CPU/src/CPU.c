@@ -9,10 +9,6 @@
  */
 #include "CPU.h"
 
-
-
-
-
 int main(int argc, char** argsv) {
 	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/CPU/Debug/CPU.conf", leer_archivo_configuracion, keys);
 	iniciarConexiones();
@@ -20,11 +16,11 @@ int main(int argc, char** argsv) {
 	{
 		esperarPCB();
 		informarAMemoriaDelPIDActual();
-		while(pcb->programCounter<5) // HARDCODEADO
+		while(finaliza == 0) // HARDCODEADO
 		{
 			char* linea = pedirInstruccionAMemoria(pcb, tamanioPagina);
-			//analizadorLinea(linea, &primitivas, &primitivas_kernel);
 			printf("Instruccion [%i]: %s\n", pcb->programCounter, linea);
+			analizadorLinea(linea, &primitivas, &primitivas_kernel);
 			free(linea);
 			pcb->programCounter++;
 		}
@@ -46,6 +42,8 @@ void iniciarConexiones()
 	puts("Esperando Tamaño Paginas");
 	Mensaje* tamanioPaginas = lRecv(kernel);
 	memcpy(&tamanioPagina, tamanioPaginas->data, sizeof(int));
+	Mensaje* algoritmo = lRecv(kernel);
+	memcpy(&quantum,algoritmo->data, sizeof(int));
 	free(tamanioPaginas);
 }
 
@@ -55,8 +53,19 @@ void esperarPCB()
 	Mensaje* mensaje = lRecv(kernel);
 	puts("PCB RECIBIDO");
 	pcb = deserializarPCB(mensaje->data);
+	pcb->indiceStack = crearIndiceDeStack();// AGUJEROS
 	destruirMensaje(mensaje);
 }
+
+indStk* crearIndiceDeStack()
+{
+	indStk* indice = malloc(sizeof(indStk));
+	indice->argumentos = list_create();
+	indice->variables = list_create();
+	pcb->nivelDelStack = 0;
+	return indice;
+}
+
 
 void informarAMemoriaDelPIDActual()
 {
@@ -116,27 +125,100 @@ void imprimir(configFile* c){
 
 // FUNCIONES ANSISOP PARSER
 t_puntero definirVariable(t_nombre_variable identificador){
-	t_puntero posicionMemoria;
-	Mensaje* m;
-	lSend(memoria,(t_nombre_variable) identificador,0,strlen(identificador)+1);
-	m = lRecv(memoria);
-	posicionMemoria=(t_puntero) m-> data;
-	return posicionMemoria;
+	posicionEnMemoria unaPosicion = calcularPosicion();
+	variable* unaVariable = malloc(sizeof(variable));
+	unaVariable->identificador = identificador;
+	unaVariable->posicion = unaPosicion;
+	if(isdigit(unaVariable->identificador))
+		list_add(pcb->indiceStack[pcb->nivelDelStack].argumentos, unaVariable);
+	else if(isalpha(unaVariable->identificador))
+		list_add(pcb->indiceStack[pcb->nivelDelStack].variables, unaVariable);
+	t_puntero direccionReal = convertirADireccionReal(unaVariable->posicion);
+	printf("Definiendo variable %c [STACK LEVEL: %i]: PAG: %i | OFFSET: %i | Size: %i:\n", unaVariable->identificador, pcb->nivelDelStack, unaVariable->posicion.pagina, unaVariable->posicion.offset, unaVariable->posicion.size);
+	return direccionReal;
 
 }
 
+posicionEnMemoria calcularPosicion()
+{
+	posicionEnMemoria unaPosicion;
+	unaPosicion.size = 4;
+	if(pcb->nivelDelStack == 0)
+	{
+		if(list_is_empty(pcb->indiceStack[0].variables))
+		{
+			unaPosicion.pagina = pcb->cantPaginasCodigo;
+			unaPosicion.offset = 0;
+		}
+		else
+		{
+			variable* ultimaVariable = obtenerUltimaVariable(pcb->indiceStack[0].variables);
+			posicionEnMemoria posicionUltimaVariable = ultimaVariable->posicion;
+			unaPosicion.offset = posicionUltimaVariable.offset+4;
+			if(unaPosicion.offset > tamanioPagina)
+			{
+				unaPosicion.pagina = posicionUltimaVariable.pagina+1;
+				unaPosicion.offset = 0;
+			}
+			else
+				unaPosicion.pagina = posicionUltimaVariable.pagina;
+		}
+	}
+	else
+	{
+		if(list_is_empty(pcb->indiceStack[pcb->nivelDelStack].variables))
+		{
+			variable* ultimaVariable = obtenerUltimaVariable(pcb->indiceStack[pcb->nivelDelStack].argumentos);
+			posicionEnMemoria posicionUltimaVariable = ultimaVariable->posicion;
+			unaPosicion.offset = posicionUltimaVariable.offset+4;
+			if(unaPosicion.offset > tamanioPagina)
+			{
+				unaPosicion.pagina = posicionUltimaVariable.pagina+1;
+				unaPosicion.offset = 0;
+			}
+			else
+				unaPosicion.pagina = posicionUltimaVariable.pagina;
+		}
+		else
+		{
+			variable* ultimaVariable = obtenerUltimaVariable(pcb->nivelDelStack);
+			posicionEnMemoria posicionUltimaVariable = ultimaVariable->posicion;
+			unaPosicion.offset = posicionUltimaVariable.offset+4;
+			if(unaPosicion.offset > tamanioPagina)
+			{
+				unaPosicion.pagina = posicionUltimaVariable.pagina+1;
+				unaPosicion.offset = 0;
+			}
+			else
+				unaPosicion.pagina = posicionUltimaVariable.pagina;
+		}
+	}
+	return unaPosicion;
+}
+
+t_puntero convertirADireccionReal(posicionEnMemoria unaPosicion)
+{
+	return (unaPosicion.pagina*tamanioPagina) + unaPosicion.offset;
+}
+
+variable* obtenerUltimaVariable(t_list* listaVariables)
+{
+	int ultimaPos = list_size(listaVariables)-1;
+	variable* unaVariable = list_get(listaVariables, ultimaPos);
+	return unaVariable;
+}
 
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador){
-	t_puntero desplazamiento;
+/*	t_puntero desplazamiento;
 	Mensaje* m;
 	lSend(memoria,(t_nombre_variable) identificador,0,strlen(identificador)+1);
 	m=lRecv(memoria);
 	desplazamiento=(t_puntero) m->data;
 	if(desplazamiento==-1){
 		puts("Error");
-	}
+	}*/
 
-	return desplazamiento;
+	return 1;
 }
 
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor){//falta ersolver
@@ -144,4 +226,30 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 	lSend(kernel, (t_valor_variable) valorAsignado,0,sizeof(t_valor_variable));
 	return valorAsignado;
 
+}
+
+void asignar(t_puntero direccionVariable, t_valor_variable valor)
+{
+	puts("ASIGNACION");
+}
+
+void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero dondeRetornar)
+{
+	puts("LLAMARCONRETORNO");
+}
+
+void finalizar(void)
+{
+	finaliza = 1;
+	puts("FINALIZAR");
+}
+
+void irAlLabel(t_nombre_etiqueta nombre)
+{
+	puts("IR A LABEL");
+}
+
+void retornar(t_valor_variable valorDeRetorno)
+{
+	puts("RETORNAR A NIVEL ANTERIOR DE STACK");
 }
