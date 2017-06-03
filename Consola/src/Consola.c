@@ -38,16 +38,20 @@ void atenderInstrucciones() {
 
 Instruccion obtenerInstruccion() {
 	Instruccion instruccion;
-	char mensaje[MAX];
-	char comando[MAX];
-	strcpy(mensaje, leerCaracteresEntrantes());
-	strcpy(comando, obtenerComandoDe(mensaje));
+	char* mensaje = leerCaracteresEntrantes();
+	char* comando = obtenerComandoDe(mensaje);
 	instruccion.comando = identificarComando(comando);
 	if(instruccion.comando != ERROR) {
-		if(elComandoLlevaParametros(comando))
-			strcpy(instruccion.argumento, obtenerArgumentoDe(mensaje));
+		if(elComandoLlevaParametros(comando)) {
+			char* argumento = obtenerArgumentoDe(mensaje);
+			strcpy(instruccion.argumento, argumento);
+			if(!sonIguales(argumento, ""))
+				free(argumento);
+		}
 	} else
 		mensajeConsola(ERROR_COMANDO);
+	free(comando);
+	free(mensaje);
 	return instruccion;
 }
 
@@ -146,14 +150,16 @@ void mensajeNoHayProcesos() {
 
 
 void informacionPrograma(Programa* programa) {
+	char* tiempoInicio = mostrarTiempo(programa->tiempoInicio);
+	char* tiempoFinal = mostrarTiempo(obtenerTiempo());
 	puts("----------------------------------------");
 	printf("ID PROCESO: %i\n", programa->pid);
-	printf("FECHA DE INICIO: %s\n", mostrarTiempo(programa->tiempoInicio));
-	printf("FECHA DE FINALIZACION: %s\n", mostrarTiempo(obtenerTiempo()));
+	printf("FECHA DE INICIO: %s\n", tiempoInicio);
+	printf("FECHA DE FINALIZACION: %s\n", tiempoFinal);
 	printf("TIEMPO DE EJECUCION: %f SEGUNDOS\n", difftime(obtenerTiempo(), programa->tiempoInicio));
 	puts("----------------------------------------");
-	mensajeIngresar();
-
+	free(tiempoInicio);
+	free(tiempoFinal);
 }
 
 void mensajeAyuda() {
@@ -174,141 +180,196 @@ void mensajeEspera() {
 	puts("------------------------------------------------------------");
 }
 
-
-//FUNCIONES NO DECLARATIVAS
-
-//DELEGAR
-void recibirRespuesta(Programa* programa) {
-	int estado = 1;
-	while(estado != 0) {
-		//NO SE QUE PORQUE DESPUES DEL RECV EL PUNTERO CAMBIA MAGICAMENTE
-		//printf("%p", programa);
-		Mensaje* mensaje = lRecv(kernel);
-		//printf("%p", programa);
-		//printf("RECUPERO EL PUNTERO %p, ", (Programa*)list_get(listaDeProgramas, list_size(listaDeProgramas)-1));
-		switch(mensaje->header.tipoOperacion) {
-			case -1:
-				mensajeConsola(ERROR_CONEXION);
-				exit(EXIT_FAILURE);
-				break;
-			case 1:
-				printf("Mensaje: %s\n", mensaje->data);
-				break;
-			case 2:
-				memcpy(&(((Programa*)list_get(listaDeProgramas, list_size(listaDeProgramas)-1))->pid), mensaje->data, sizeof(int));
-				printf("PID RECIBIDO: %i\n", ((Programa*)list_get(listaDeProgramas, list_size(listaDeProgramas)-1))->pid);
-				puts("ESPERANDO IMPRESIONES POR PANTALLA...");
-				puts("------------------------------------------");
-				break;
-
-		}
-		destruirMensaje(mensaje);
-	}
+void mensajeNoHayEspacio() {
+	puts("ERROR: NO HAY ESPACIO DISPONIBLE EN MEMORIA");
+	puts("------------------------------------------------------------");
+	mensajeIngresar();
 }
 
+
+void iniciarEstructuraPrograma(char* path) {
+	Programa* programa = malloc(sizeof(Programa));
+	list_add(listaDeProgramas, programa);
+	programa->tiempoInicio = obtenerTiempo();
+	strcpy(programa->path, path);
+	pthread_create(&(programa->hiloPrograma), NULL, (void *) hiloPrograma, programa);
+}
 
 void iniciar(char* path) {
-	FILE* archivo = fopen(path, "r");
-	if(archivo != NULL) {
-		Programa* programa = malloc(sizeof(Programa));
-		programa->tiempoInicio = obtenerTiempo();
-		programa->archivo = archivo;
-		pthread_create(&(programa->hiloPrograma), NULL, (void *) conexionKernel, programa);
-		list_add(listaDeProgramas, programa);
-	}
-	else
-		mensajeConsola(ERROR_ARCHIVO);
+	enviarArchivoAlKernel(path);
+	sem_wait(&espera);
+	if(respuesta->header.tipoOperacion != -2) {
+		iniciarEstructuraPrograma(path);
+	} else
+		mensajeNoHayEspacio();
 }
 
 
-void cerrar(char* pidPrograma) {
+void enviarArchivoAlKernel(char* path) {
+	FILE* archivo = fopen(path, "r");
+	if(archivo != NULL) {
+		char* texto = leerArchivo(archivo);
+		fclose(archivo);
+		puts("------------------------------------------");
+		printf("CONTENIDO DEL ARCHIVO: %s\n", texto);
+		puts("------------------------------------------");
+		lSend(kernel, texto, 1, strlen(texto));
+		free(texto);
+	}
+	else {
+		mensajeConsola(ERROR_ARCHIVO);
+	}
+}
 
+void hiloPrograma(Programa* programa) {
+	pthread_detach(pthread_self());
+	iniciarPrograma();
+	esperarMensajes(programa);
+}
+
+void iniciarSemaforo(Programa* programa) {
+	sem_init(&programa->semaforo,0,0);
+}
+
+void esperarMensajes(Programa* programa) {
+	iniciarSemaforo(programa);
+	int estado = 1;
+	int i = 0;
+	while(estado!=0) {
+		sem_wait(&programa->semaforo);
+		switch(respuesta->header.tipoOperacion) {
+			case 1: imprimirMensajeKernel(respuesta->data); break;
+			case 9:
+				sem_wait(&espera);
+				estado = 0;
+				for(i=0; programa != (Programa*)list_get(listaDeProgramas, i); i++);
+				list_remove(listaDeProgramas, i);
+				free(programa);
+				sem_post(&liberarMensaje);
+				break;
+			case -1: finalizarConsolaPorDesconexion(); break;
+		}
+	}
+}
+
+void escuchandoKernel() {
+	pthread_detach(pthread_self());
+	int estado = 1;
+	sem_init(&espera,0,0);
+	sem_init(&liberarPrograma, 0, 0);
+	sem_init(&final, 0, 0);
+	while(estado!=0) {
+		Mensaje* mensaje = lRecv(kernel);
+		respuesta = mensaje;
+		Programa* programa = NULL;
+		switch(respuesta->header.tipoOperacion) {
+		case 1: printf("%s\n", (char*)mensaje->data); break;
+		case 2: sem_post(&espera); break;
+		case 9:
+			programa = buscarProgramaPorPidNumerico(*(int*)respuesta->data);
+			sem_post(&programa->semaforo);
+			informacionPrograma(programa);
+			sem_post(&espera);
+			break;
+		case 3: estado = 0;sem_post(&liberarMensaje) ;break;
+		case -2: sem_post(&espera); break;
+		}
+		sem_wait(&liberarMensaje);
+		destruirMensaje(mensaje);
+	}
+	sem_post(&final);
+}
+
+void iniciarPrograma() {
+	memcpy(&(((Programa*)list_get(listaDeProgramas, list_size(listaDeProgramas)-1))->pid), respuesta->data, sizeof(int));
+	printf("PID RECIBIDO: %i\n", *(int*)respuesta->data);
+	puts("ESPERANDO IMPRESIONES POR PANTALLA...");
+	puts("------------------------------------------------------------");
+	sem_post(&liberarMensaje);
+}
+
+
+void imprimirMensajeKernel(char* data) {
+	printf("Mensaje: %s\n", data);
+}
+
+void finalizarConsolaPorDesconexion(mensaje) {
+	mensajeConsola(ERROR_CONEXION);
+	exit(EXIT_FAILURE);
+}
+
+void noHayEspacio() {
+	mensajeNoHayEspacio();
+	pthread_exit(NULL);
+}
+
+void cerrar(char* pidPrograma) {
 	Programa* programa = buscarProgramaPorPid(pidPrograma);
+
 	if(programa == NULL)
 		mensajeConsola(ERROR_PID);
 	else {
-		/*lSend(kernel, &programa->pid, 2, sizeof(int));
-		mensajeEspera();
-		Mensaje* mensaje = lRecv(kernel);
-		switch(mensaje->header.tipoOperacion) {
-			case -1:
-				mensajeConsola(ERROR_CONEXION);
-				exit(EXIT_FAILURE);
-				break;
-			case 1:
-				break;
-		}
-		destruirMensaje(mensaje);
-		*/
-		//ESTO IRIA EN CASE 1
-		informacionPrograma(programa);
-		free(programa);
+		lSend(kernel, &programa->pid, 9, sizeof(int));
 	}
-}
-
-void desconectar() {
-	/*
-	int i = -1;
-	lSend(kernel, &i, 2, sizeof(int));
-	mensajeEspera();
-	Mensaje* mensaje = lRecv(kernel);
-	switch(mensaje->header.tipoOperacion) {
-		case -1:
-			mensajeConsola(ERROR_CONEXION);
-			exit(EXIT_FAILURE);
-			break;
-		case 1:
-			//printf("Mensaje: %s\n", mensaje->data);
-
-			break;
-	}
-	destruirMensaje(mensaje);
-	*/
-	//ESTO IRIA EN CASE 1
-	mensajeConsola(CONSOLA_DESCONECTADA);
-	mensajeConsola(INGRESAR);
 }
 
 
 Programa* buscarProgramaPorPid(char* pid) {
 
 	bool buscarPorPid(void* unPrograma) {
+			char* bufferPid = NULL;
 			Programa* programa = (Programa*)unPrograma;
-			return sonIguales(string_itoa(programa->pid), pid);
+			bufferPid = string_itoa(programa->pid);
+			int cumple = sonIguales(bufferPid, pid);
+			free(bufferPid);
+			return cumple;
 	}
 
 	Programa* programa =(Programa*)list_find(listaDeProgramas, buscarPorPid);
 	int i;
 	for(i=0; programa != (Programa*)list_get(listaDeProgramas, i); i++);
 	if(programa != NULL) {
-		list_remove(listaDeProgramas, i);
 		return programa;
 	}
-	else
+	else {
 		return NULL;
+	}
 }
 
 
-void conexionKernel(Programa* programa) {
-	char* texto = leerArchivo(programa->archivo);
-	puts("------------------------------------------");
-	printf("CONTENIDO DEL ARCHIVO: %s\n", texto);
-	lSend(kernel, texto, 1, strlen(texto));
-	recibirRespuesta(programa);
+Programa* buscarProgramaPorPidNumerico(int pid) {
+
+	bool buscarPorPid(void* unPrograma) {
+			Programa* programa = (Programa*)unPrograma;
+			return programa->pid == pid;
+	}
+
+	Programa* programa =(Programa*)list_find(listaDeProgramas, buscarPorPid);
+	int i;
+	for(i=0; programa != (Programa*)list_get(listaDeProgramas, i); i++);
+	if(programa != NULL) {
+		return programa;
+	}
+	else {
+		return NULL;
+	}
 }
 
 
 void mostrarLista() {
-	int i;
 	if(list_is_empty(listaDeProgramas))
 		mensajeConsola(NO_HAY_PROCESOS);
-	else {
-		puts("---------------------------------------------");
-		for(i=0;i<list_size(listaDeProgramas); i++)
-			printf("EL PID DEL PROCESO N°%i ES: %i\n", i, ((Programa*)list_get(listaDeProgramas, i))->pid);
-		puts("----------------------------------------------");
-	}
+	else
+		recorrerLista();
 	mensajeConsola(INGRESAR);
+}
+
+void recorrerLista() {
+	int i;
+	puts("---------------------------------------------");
+	for(i=0;i<list_size(listaDeProgramas); i++)
+		printf("EL PID DEL PROCESO N°%i ES: %i\n", i, ((Programa*)list_get(listaDeProgramas, i))->pid);
+	puts("----------------------------------------------");
 }
 
 time_t obtenerTiempo() {
@@ -318,14 +379,14 @@ time_t obtenerTiempo() {
 
 char* mostrarTiempo(time_t tiempo) {
 	struct tm *tlocal = localtime(&tiempo);
-	char fecha[MAX];
+	char* fecha = malloc(MAX);
 	strftime(fecha,MAX,"%d/%m/%y | %H:%M:%S", tlocal);
 	return fecha;
 }
 
 char* leerCaracteresEntrantes() {
 	int i, caracterLeido;
-	char cadena[MAX];
+	char* cadena = malloc(MAX);
 	for(i = 0; (caracterLeido= getchar()) != '\n'; i++)
 		cadena[i] = caracterLeido;
 	cadena[i] = '\0';
@@ -334,17 +395,16 @@ char* leerCaracteresEntrantes() {
 
 char* obtenerComandoDe(char* cadenaALeer) {
 	int i;
-	char cadena[MAX];
 	for(i=0; cadenaALeer[i] != ' ' && cadenaALeer[i] != '\0'; i++);
-	strcpy(cadena, string_substring_until(cadenaALeer, i));
+	char* cadena = string_substring_until(cadenaALeer, i);
 	return cadena;
 }
 
 char* obtenerArgumentoDe(char* cadenaALeer) {
-	char comando[MAX];
-	strcpy(comando, obtenerComandoDe(cadenaALeer));
+	char* comando = obtenerComandoDe(cadenaALeer);
  	int indice = strlen(comando);
- 	if(indice == strlen(cadenaALeer)) {
+ 	free(comando);
+	if(indice == strlen(cadenaALeer)) {
  		return "";
  	}
  	return string_substring_from(cadenaALeer, indice+1);
@@ -358,16 +418,40 @@ void leerArchivoDeConfiguracion() {
 	config = configurate(PATH_CONFIG_FILE, leerArchivoConfig, keys);
 }
 
+
+//--------------PARA QUE NO PUTEE VALGRIND------------------
+int enviarHandShake2(int socket, int idPropia)
+{
+	int* idProceso = malloc(sizeof(int));
+	*idProceso = idPropia;
+	lSend(socket, idProceso, HANDSHAKE,sizeof(int));
+	free(idProceso);
+	Mensaje* confirmacion = lRecv(socket);
+	int conf = confirmacion->header.tipoOperacion != -1 && *((int*)confirmacion->data) != 0;
+	destruirMensaje(confirmacion);
+	return  conf;
+
+}
+
+int getConnectedSocket2(char* ip, char* port, int idPropia){
+	int(*action)(int,const struct sockaddr*,socklen_t)=&connect;
+	int socket = internalSocket(ip,port,action);
+	if(!enviarHandShake2(socket, idPropia))
+		errorIfEqual(0,0,"El servidor no admite conexiones para este proceso");
+	return socket;
+}
+//--------------PARA QUE NO PUTEE VALGRIND------------------
+
 void conectarConKernel() {
-	kernel = getConnectedSocket(config->ip_kernel, config->puerto_kernel, CONSOLA_ID);
+	kernel = getConnectedSocket2(config->ip_kernel, config->puerto_kernel, CONSOLA_ID);
 	mensajeConsola(CONSOLA_CONECTADA);
 }
 
+
 void atenderPedidos() {
 	listaDeProgramas = list_create();
-	pthread_t usuario;
-	pthread_create(&usuario, NULL, (void *) atenderInstrucciones, NULL);
-	pthread_join(usuario, NULL);
+	pthread_create(&escucha, NULL, (void *) escuchandoKernel, NULL);
+	atenderInstrucciones();
 }
 
 char* leerArchivo(FILE* archivo) {
@@ -398,12 +482,38 @@ configFile* leerArchivoConfig(t_config* configHandler) {
 	return config;
 }
 
+void desconectar() {
 
-//LA DECLARATIVIDAD NO SE MANCHA
+	void liberar(void* algo) {
+		free(algo);
+	}
+
+	int j;
+
+	for(j=0; j<list_size(listaDeProgramas); j++) {
+		pthread_cancel(((Programa*)(list_get(listaDeProgramas, j)))->hiloPrograma);
+	}
+	int* i = malloc(sizeof(int));
+	*i = 0;
+	lSend(kernel, i, 2, sizeof(int));
+	free(i);
+	mensajeConsola(CONSOLA_DESCONECTADA);
+	list_clean_and_destroy_elements(listaDeProgramas, liberar);
+		mensajeConsola(INGRESAR);
+}
 
 void finalizarProceso() {
+	desconectar();
+	list_destroy(listaDeProgramas);
+	int a = 0;
+	lSend(kernel, &a, 3, sizeof(int));
+	sem_wait(&final);
 	free(config);
 	close(kernel);
+	sem_destroy(&espera);
+	sem_destroy(&liberarMensaje);
+	sem_destroy(&liberarPrograma);
+	sem_destroy(&final);
 }
 
 void limpiar() {
@@ -417,4 +527,3 @@ int sonIguales(char* s1, char* s2) {
 	else
 		return 0;
 }
-
