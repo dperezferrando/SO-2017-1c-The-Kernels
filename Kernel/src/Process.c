@@ -15,12 +15,23 @@ PCB* createProcess(char* script, int tamanioScript){
 	pcb->cantPaginasCodigo = ceil((double)tamanioScript/(double)config->PAG_SIZE);
 	pcb->sizeIndiceCodigo = metadata->instrucciones_size*sizeof(indCod);
 	pcb->indiceCodigo = malloc(pcb->sizeIndiceCodigo);
-	pcb->indiceEtiqueta.etiq= dictionary_create();
-	pcb->indiceEtiqueta.etiq->elements_amount= metadata->cantidad_de_etiquetas;
-	pcb->exitCode = 0;
+	pcb->sizeIndiceEtiquetas = metadata->etiquetas_size;
+	pcb->indiceEtiqueta = malloc(pcb->sizeIndiceEtiquetas);
+	memcpy(pcb->indiceEtiqueta, metadata->etiquetas, pcb->sizeIndiceEtiquetas);
 	memcpy(pcb->indiceCodigo, metadata->instrucciones_serializado, metadata->instrucciones_size*sizeof(indCod));
+	pcb->nivelDelStack =0;
+	pcb->indiceStack = crearIndiceDeStack();
+	pcb->exitCode = 0;
 	pcb->programCounter = 0;
 	return pcb;
+}
+
+indStk* crearIndiceDeStack()
+{
+	indStk* indice = malloc(sizeof(indStk));
+	indice->argumentos = list_create();
+	indice->variables = list_create();
+	return indice;
 }
 
 

@@ -34,5 +34,5 @@ void _processChangeStateToList(t_list*, PCB*, int);
 void _processChangeStateToQueue(t_queue*, PCB*, int);
 
 int replacePCBinQueue(PCB*,t_queue*);
-
+indStk* crearIndiceDeStack();
 #endif

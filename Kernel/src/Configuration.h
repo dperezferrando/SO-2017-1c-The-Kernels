@@ -24,22 +24,23 @@ typedef struct __attribute__((packed)) indCod{
 	int longitud;
 }indCod;
 
-typedef struct __attribute__((packed)) IDIndCod{
-	int ID;
-	int* pagina;
-	int* offset;
-	int* longitud;
-}IDIndCod;
+typedef struct __attribute__((packed)) posicionEnMemoria {
+	int pagina;
+	int offset;
+	int size;
+} posicionEnMemoria;
 
-typedef struct __attribute__((packed)) indEtq{
-	//diccionario de etiquetas a posicion de etiqueta
-}indEtq;
+
+typedef struct __attribute__ ((packed)) variable {
+	char identificador;
+	posicionEnMemoria posicion;
+} variable;
 
 typedef struct __attribute__((packed)) indStk{
 	t_list* argumentos;
 	t_list* variables;
 	int  posicionDeRetorno;
-	indCod variableDeRetorno;
+	variable variableDeRetorno;
 }indStk;
 
 typedef struct __attribute__((packed)) PCB{
@@ -47,23 +48,20 @@ typedef struct __attribute__((packed)) PCB{
 	int programCounter;
 	int cantPaginasCodigo;
 	indCod* indiceCodigo;
-	indEtq indiceEtiqueta;
+	char* indiceEtiqueta;
 	indStk* indiceStack;
 	int exitCode;
 	int sizeIndiceCodigo;
+	int sizeIndiceEtiquetas;
 	int nivelDelStack;
 }PCB;
-
-typedef struct __attribute__((packed)) posicionEnMemoria {
-	int pagina;
-	int offset;
-	int size;
-} posicionEnMemoria;
 
 typedef struct __attribute__ ((packed)) pedidoEscrituraMemoria {
 	posicionEnMemoria posicion;
 	int valor;
 } pedidoEscrituraMemoria;
+
+
 
 bool rutaCorrecta(t_config* configHandler);
 bool archivoConfigValido(t_config* configHandler,char* []);
@@ -72,5 +70,6 @@ void* configurate(char* ,void*(t_config*), char* []);
 serializado serializarPCB (PCB* pcb);
 serializado serializarOpFS(int);
 PCB* deserializarPCB (char*);
-
+serializado serializarIndiceDeStack(indStk* indiceStack);
+indStk* deserializarIndiceDeStack(serializado indiceSerializado);
 #endif

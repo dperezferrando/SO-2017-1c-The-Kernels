@@ -53,17 +53,8 @@ void esperarPCB()
 	Mensaje* mensaje = lRecv(kernel);
 	puts("PCB RECIBIDO");
 	pcb = deserializarPCB(mensaje->data);
-	pcb->indiceStack = crearIndiceDeStack();// AGUJEROS
+	//pcb->indiceStack = crearIndiceDeStack();// AGUJEROS
 	destruirMensaje(mensaje);
-}
-
-indStk* crearIndiceDeStack()
-{
-	indStk* indice = malloc(sizeof(indStk));
-	indice->argumentos = list_create();
-	indice->variables = list_create();
-	pcb->nivelDelStack = 0;
-	return indice;
 }
 
 
@@ -227,7 +218,6 @@ variable* obtenerUltimaVariable(t_list* listaVariables)
 }
 
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador){
-	puts("OBTENGO POSICION VARIABLE");
 	t_list* lista;
 	if(isalpha(identificador))
 		lista = pcb->indiceStack[pcb->nivelDelStack].variables;
@@ -238,7 +228,9 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador){
 		return variable->identificador == identificador;
 	}
 	variable* unaVariable = list_find(lista, elIdEsElMismo);
-	return convertirADireccionReal(unaVariable->posicion);
+	t_puntero direccionReal = convertirADireccionReal(unaVariable->posicion);
+	printf("OBTENGO DIRECCION REAL VARIABLE '%c': %i\n", identificador, direccionReal);
+	return direccionReal;
 }
 
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor){//falta ersolver
@@ -250,9 +242,9 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 
 void asignar(t_puntero direccionReal, t_valor_variable valor)
 {
-	puts("ASIGNACION");
 	posicionEnMemoria posicion = convertirADireccionLogica(direccionReal);
 	escribirEnMemoria(posicion, valor);
+	printf("ASIGNACION\n");
 
 }
 

@@ -19,11 +19,6 @@ typedef struct configFile{
 } configFile;
 
 
-typedef struct variable {
-	char identificador;
-	posicionEnMemoria posicion;
-} variable;
-
 // GLOBALES
 const char* keys[5]={"IP_KERNEL", "PUERTO_KERNEL", "IP_MEMORIA", "PUERTO_MEMORIA", "NULL"};
 PCB* pcb;

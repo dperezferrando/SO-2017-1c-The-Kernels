@@ -52,12 +52,34 @@ void* configurate(char* ruta, void*(*handleConfigFile)(t_config*), char* keys[])
 PCB* deserializarPCB(char* pcbSerializado) // A SER REEMPLAZADO POR LO DE NICO
 {
 	PCB* pcb = malloc(sizeof(PCB));
-	memcpy(&pcb->pid, pcbSerializado, sizeof(int));
-	memcpy(&pcb->cantPaginasCodigo, pcbSerializado + sizeof(int), sizeof(int));
-	memcpy(&pcb->programCounter, pcbSerializado + (sizeof(int)*2), sizeof(int));
-	memcpy(&pcb->sizeIndiceCodigo, pcbSerializado + (sizeof(int)*3), sizeof(int));
+	char* puntero = pcbSerializado;
+	memcpy(&pcb->pid, puntero, sizeof(int));
+	puntero += sizeof(int);
+	memcpy(&pcb->cantPaginasCodigo, puntero, sizeof(int));
+	puntero += sizeof(int);
+	memcpy(&pcb->programCounter, puntero, sizeof(int));
+	puntero += sizeof(int);
+	memcpy(&pcb->sizeIndiceCodigo, puntero, sizeof(int));
+	puntero += sizeof(int);
 	pcb->indiceCodigo = malloc(pcb->sizeIndiceCodigo);
-	memcpy(pcb->indiceCodigo, pcbSerializado + (sizeof(int)*4), pcb->sizeIndiceCodigo);
+	memcpy(pcb->indiceCodigo, puntero, pcb->sizeIndiceCodigo);
+	puntero += pcb->sizeIndiceCodigo;
+	memcpy(&pcb->sizeIndiceEtiquetas, puntero, sizeof(int));
+	puntero += sizeof(int);
+	pcb->indiceEtiqueta = malloc(pcb->sizeIndiceEtiquetas);
+	memcpy(pcb->indiceEtiqueta, puntero, pcb->sizeIndiceEtiquetas);
+	puntero += pcb->sizeIndiceEtiquetas;
+	memcpy(&pcb->nivelDelStack, puntero, sizeof(int));
+	puntero += sizeof(int);
+	serializado indiceStackSerializado;
+	memcpy(&indiceStackSerializado.size, puntero, sizeof(int));
+	puntero += sizeof(int);
+	indiceStackSerializado.data = malloc(indiceStackSerializado.size);
+	memcpy(indiceStackSerializado.data, puntero, indiceStackSerializado.size);
+	puntero += indiceStackSerializado.size;
+	pcb->indiceStack = deserializarIndiceDeStack(indiceStackSerializado);
+	memcpy(puntero, &pcb->exitCode, sizeof(int));
+	free(indiceStackSerializado.data);
 	return pcb;
 
 }
@@ -65,14 +87,104 @@ PCB* deserializarPCB(char* pcbSerializado) // A SER REEMPLAZADO POR LO DE NICO
 serializado serializarPCB(PCB* pcb) // A SER REEMPLAZADO POR LO DE NICO
 {
 	serializado pcbSerializado;
-	pcbSerializado.size = sizeof(int)*4 + pcb->sizeIndiceCodigo;
+	serializado indiceStackSerializado = serializarIndiceDeStack(pcb->indiceStack);
+	pcbSerializado.size = sizeof(int)*8 + pcb->sizeIndiceCodigo + pcb->sizeIndiceEtiquetas + indiceStackSerializado.size;
 	pcbSerializado.data = malloc(pcbSerializado.size);
-	memcpy(pcbSerializado.data, &pcb->pid, sizeof(int));
-	memcpy(pcbSerializado.data + sizeof(int), &pcb->cantPaginasCodigo, sizeof(int));
-	memcpy(pcbSerializado.data + (sizeof(int)*2), &pcb->programCounter, sizeof(int));
-	memcpy(pcbSerializado.data + (sizeof(int)*3), &pcb->sizeIndiceCodigo, sizeof(int));
-	memcpy(pcbSerializado.data + (sizeof(int)*4), pcb->indiceCodigo, pcb->sizeIndiceCodigo);
+	char* puntero = pcbSerializado.data;
+	memcpy(puntero, &pcb->pid, sizeof(int));
+	puntero += sizeof(int);
+	memcpy(puntero, &pcb->cantPaginasCodigo, sizeof(int));
+	puntero += sizeof(int);
+	memcpy(puntero, &pcb->programCounter, sizeof(int));
+	puntero += sizeof(int);
+	memcpy(puntero, &pcb->sizeIndiceCodigo, sizeof(int));
+	puntero += sizeof(int);
+	memcpy(puntero, pcb->indiceCodigo, pcb->sizeIndiceCodigo);
+	puntero += pcb->sizeIndiceCodigo;
+	memcpy(puntero, &pcb->sizeIndiceEtiquetas, sizeof(int));
+	puntero += sizeof(int);
+	memcpy(puntero, pcb->indiceEtiqueta, pcb->sizeIndiceEtiquetas);
+	puntero += pcb->sizeIndiceEtiquetas;
+	memcpy(puntero, &pcb->nivelDelStack, sizeof(int));
+	puntero += sizeof(int);
+	memcpy(puntero, &indiceStackSerializado.size, sizeof(int));
+	puntero += sizeof(int);
+	memcpy(puntero, indiceStackSerializado.data, indiceStackSerializado.size);
+	puntero += indiceStackSerializado.size;
+	memcpy(puntero, &pcb->exitCode, sizeof(int));
+	free(indiceStackSerializado.data);
 	return pcbSerializado;
+
+}
+
+serializado serializarIndiceDeStack(indStk* indiceStack)
+{
+	serializado indiceStackSerializado;
+	int cantVars = list_size(indiceStack->variables);
+	int cantArgs = list_size(indiceStack->argumentos);
+	indiceStackSerializado.size = (cantVars+cantArgs)*sizeof(variable)+sizeof(variable)+sizeof(int)*3;
+	indiceStackSerializado.data = malloc(indiceStackSerializado.size);
+	char* puntero = indiceStackSerializado.data;
+	memcpy(puntero, &indiceStack->posicionDeRetorno, sizeof(int));
+	puntero += sizeof(int);
+	memcpy(puntero, &indiceStack->variableDeRetorno, sizeof(variable));
+	puntero += sizeof(variable);
+	memcpy(puntero, &cantVars, sizeof(int));
+	puntero += sizeof(int);
+	void serializar(variable* unaVariable)
+	{
+		memcpy(puntero, unaVariable, sizeof(variable));
+		puntero += sizeof(variable);
+	}
+	if(cantVars != 0)
+		list_iterate(indiceStack->variables, serializar);
+	memcpy(puntero, &cantArgs, sizeof(int));
+	puntero += sizeof(int);
+	if(cantArgs != 0)
+		list_iterate(indiceStack->argumentos, serializar);
+	return indiceStackSerializado;
+
+}
+
+indStk* deserializarIndiceDeStack(serializado indiceSerializado)
+{
+	indStk* indiceDeStack = malloc(sizeof(indStk));
+	char* puntero = indiceSerializado.data;
+	memcpy(&indiceDeStack->posicionDeRetorno, puntero, sizeof(int));
+	puntero += sizeof(int);
+	memcpy(&indiceDeStack->variableDeRetorno, puntero, sizeof(variable));
+	puntero += sizeof(variable);
+	int cantVars;
+	memcpy(&cantVars, puntero, sizeof(int));
+	puntero += sizeof(int);
+	indiceDeStack->variables = list_create();
+	indiceDeStack->argumentos = list_create();
+	if(cantVars != 0)
+	{
+		int i;
+		for(i = 0;i<cantVars;i++)
+		{
+			variable* var = malloc(sizeof(variable));
+			memcpy(var, puntero, sizeof(variable));
+			list_add(indiceDeStack->variables, var);
+			puntero+= sizeof(variable);
+		}
+	}
+	int cantArgs;
+	memcpy(&cantArgs, puntero, sizeof(int));
+	puntero += sizeof(int);
+	if(cantArgs != 0)
+	{
+		int i;
+		for(i = 0;i<cantArgs;i++)
+		{
+			variable* var = malloc(sizeof(variable));
+			memcpy(var, puntero, sizeof(variable));
+			list_add(indiceDeStack->argumentos, var);
+			puntero += sizeof(variable);
+		}
+	}
+	return indiceDeStack;
 
 }
 
