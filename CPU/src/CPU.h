@@ -11,6 +11,19 @@
 #include <parser/metadata_program.h>
 #include "../../ConfigLibrary/src/Configuration.c"
 #include "../../SocketLibrary/src/SocketLibrary.c"
+
+//DEFINES DE MEMORIA
+
+#define DESREFERENCIAR 100
+#define ESCRIBIR 3
+
+//DEFINES DE KERNEL
+
+#define OBTENERCOMPARTIDA 200
+#define ASIGNARCOMPARTIDA 201
+#define WAIT 202
+#define SIGNAL 203
+
 typedef struct configFile{
 	char ip_Kernel[16];
 	char puerto_Kernel[5];
@@ -37,6 +50,7 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero dondeRetornar);
 void finalizar(void);
 void irAlLabel(t_nombre_etiqueta nombre);
 void retornar(t_valor_variable valorDeRetorno);
+
 AnSISOP_funciones primitivas = {
 		.AnSISOP_definirVariable = definirVariable,
 		.AnSISOP_obtenerPosicionVariable= obtenerPosicionVariable,
@@ -48,7 +62,11 @@ AnSISOP_funciones primitivas = {
 		.AnSISOP_retornar = retornar
 };
 
-AnSISOP_funciones primitivas_kernel = {};
+AnSISOP_kernel primitivas_kernel = {
+		.AnSISOP_wait = wait,
+		.AnSISOP_signal = signal
+
+};
 
 
 posicionEnMemoria* obtenerPosicionMemoria(int, int, int);

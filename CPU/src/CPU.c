@@ -130,6 +130,74 @@ t_puntero definirVariable(t_nombre_variable identificador){
 
 }
 
+t_puntero obtenerPosicionVariable(t_nombre_variable identificador){
+	t_list* lista;
+	if(isalpha(identificador))
+		lista = pcb->indiceStack[pcb->nivelDelStack].variables;
+	else
+		lista = pcb->indiceStack[pcb->nivelDelStack].argumentos;
+	bool elIdEsElMismo(variable* variable)
+	{
+		return variable->identificador == identificador;
+	}
+	variable* unaVariable = list_find(lista, elIdEsElMismo);
+	t_puntero direccionReal = convertirADireccionReal(unaVariable->posicion);
+	printf("OBTENGO DIRECCION REAL VARIABLE '%c': %i\n", identificador, direccionReal);
+	return direccionReal;
+}
+
+t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor){//falta ersolver
+	t_valor_variable valorAsignado=valor;
+	lSend(kernel, (t_valor_variable) valorAsignado,ASIGNARCOMPARTIDA,sizeof(t_valor_variable));
+	return valorAsignado;
+
+}
+
+t_valor_variable obtenerValorCompartida(t_nombre_compartida nombre){
+	int tamanio = strlen(nombre)+1;
+	char * nombreVariable = malloc(tamanio);
+	char* bCero= "/0";
+
+	memcpy(nombreVariable, nombre, strlen(nombre));
+	memcpy(nombreVariable+(strlen(nombre)), bCero,strlen(bCero));
+
+
+	lSend(kernel, (char*) nombreVariable, OBTENERCOMPARTIDA,tamanio);
+
+	Mensaje *m = lRecv(kernel);
+	t_valor_variable valor = (t_valor_variable) m->data;
+
+	return valor;
+}
+
+void asignar(t_puntero direccionReal, t_valor_variable valor)
+{
+	posicionEnMemoria posicion = convertirADireccionLogica(direccionReal);
+	escribirEnMemoria(posicion, valor);
+	printf("ASIGNACION\n");
+
+}
+
+/*
+void finalizar(void){
+	indStk* aFinalizar;
+	aFinalizar=list_get(pcb->indiceStack, list_size(pcb->indiceStack)-1);
+
+	if(list_size(pcb->indiceStack)-1==0){
+		//finalizarProceso(pcb->pid);
+	}
+	else{
+		list_clean_and_destroy_elements(aFinalizar->argumentos, *liberar);
+		list_clean_and_destroy_elements(aFinalizar->variables, *liberar);
+		free(aFinalizar);
+		//pcb->programCounter= obtenerpcanterior
+	}
+
+}
+*/
+
+
+
 posicionEnMemoria calcularPosicion()
 {
 	posicionEnMemoria unaPosicion;
@@ -217,36 +285,6 @@ variable* obtenerUltimaVariable(t_list* listaVariables)
 	return unaVariable;
 }
 
-t_puntero obtenerPosicionVariable(t_nombre_variable identificador){
-	t_list* lista;
-	if(isalpha(identificador))
-		lista = pcb->indiceStack[pcb->nivelDelStack].variables;
-	else
-		lista = pcb->indiceStack[pcb->nivelDelStack].argumentos;
-	bool elIdEsElMismo(variable* variable)
-	{
-		return variable->identificador == identificador;
-	}
-	variable* unaVariable = list_find(lista, elIdEsElMismo);
-	t_puntero direccionReal = convertirADireccionReal(unaVariable->posicion);
-	printf("OBTENGO DIRECCION REAL VARIABLE '%c': %i\n", identificador, direccionReal);
-	return direccionReal;
-}
-
-t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor){//falta ersolver
-	t_valor_variable valorAsignado=valor;
-	lSend(kernel, (t_valor_variable) valorAsignado,0,sizeof(t_valor_variable));
-	return valorAsignado;
-
-}
-
-void asignar(t_puntero direccionReal, t_valor_variable valor)
-{
-	posicionEnMemoria posicion = convertirADireccionLogica(direccionReal);
-	escribirEnMemoria(posicion, valor);
-	printf("ASIGNACION\n");
-
-}
 
 void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor)
 {
@@ -268,12 +306,80 @@ void finalizar(void)
 	puts("FINALIZAR");
 }
 
-void irAlLabel(t_nombre_etiqueta nombre)
-{
-	puts("IR A LABEL");
+void irAlLabel(t_nombre_etiqueta nombre){
+	t_puntero_instruccion instruccionParaPCB;
+	//instruccionParaPCB = metadata_buscar_etiqueta(t_nombre_etiqueta, pcb->indiceEtiqueta, pcb->sizeIndiceEtiquetas);
+	pcb->programCounter = instruccionParaPCB;
 }
 
-void retornar(t_valor_variable valorDeRetorno)
-{
+void retornar(t_valor_variable valorDeRetorno){
 	puts("RETORNAR A NIVEL ANTERIOR DE STACK");
+
 }
+	//PRIMITIVAS ANSISOP KERNEL
+
+	void wait(t_nombre_semaforo nombre){
+		int tamanio = strlen(nombre)+1;
+		char * nombreSemaforo = malloc(tamanio);
+		char* bCero= "/0";
+
+		memcpy(nombreSemaforo, nombre, strlen(nombre));
+		memcpy(nombreSemaforo+(strlen(nombre)), bCero,strlen(bCero));
+
+		lSend(kernel, (char*) nombreSemaforo, WAIT, strlen(nombreSemaforo));
+
+		Mensaje *m =lRecv(kernel);
+
+		int bloqueado = (int) m->data;//No se si va esto
+		if(bloqueado){
+			puts("Se bloqueo maestro");
+		}
+
+		free(nombreSemaforo);
+	}
+
+	void signal(t_nombre_semaforo nombre){
+		int tamanio = strlen(nombre)+1;
+		char * nombreSemaforo = malloc(tamanio);
+		char* bCero= "/0";
+
+		memcpy(nombreSemaforo, nombre, strlen(nombre));
+		memcpy(nombreSemaforo+(strlen(nombre)), bCero,strlen(bCero));
+
+		lSend(kernel, (char*) nombreSemaforo, SIGNAL, strlen(nombreSemaforo));
+
+	}
+	/*
+	t_puntero reservar(t_valor_variable){
+		return;
+	}
+	void liberar(t_puntero){
+		return;
+	}
+
+	t_descriptor_archivo abrir(t_direccion_archivo, t_banderas){
+		return;
+	}
+
+	void borrar(t_descriptor_archivo){
+		return;
+	}
+
+	void cerrar(t_descriptor_archivo){
+		return;
+	}
+
+	void moverCursor(t_descriptor_archivo, t_valor_variable){
+		return;
+	}
+
+	void escribir(t_descriptor_archivo, void*, t_valor_variable){
+		return;
+	}
+
+	void leer(t_descriptor_archivo, t_puntero, t_valor_variable){
+		return;
+	}
+	*/
+
+
