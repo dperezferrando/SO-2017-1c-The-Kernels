@@ -50,6 +50,8 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero dondeRetornar);
 void finalizar(void);
 void irAlLabel(t_nombre_etiqueta nombre);
 void retornar(t_valor_variable valorDeRetorno);
+void signal(char*);
+void wait(char*);
 
 AnSISOP_funciones primitivas = {
 		.AnSISOP_definirVariable = definirVariable,
@@ -88,6 +90,6 @@ indStk* crearIndiceDeStack();
 variable* obtenerUltimaVariable(t_list* listaVariables);
 t_puntero convertirADireccionReal(posicionEnMemoria unaPosicion);
 void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor);
-
+posicionEnMemoria convertirADireccionLogica(t_puntero posicionReal);
 
 
