@@ -29,7 +29,8 @@ int main(int argc, char** argsv) {
 	int conexion = lAccept(kernel, KERNEL_ID);
 	pthread_create(&conexionKernel, NULL, (void *) conexion_kernel, conexion);
 	pthread_create(&esperarCPUS, NULL, (void *) esperar_cpus, NULL);
-	//pthread_create(&consolaMemoria, NULL, (void*) recibir_comandos, NULL);
+	pthread_create(&consolaMemoria, NULL, (void*) recibir_comandos, NULL);
+	pthread_join(&consolaMemoria, NULL);
 	pthread_join(conexionKernel, NULL);
 	pthread_join(esperarCPUS, NULL);
 	free(config);
@@ -102,36 +103,176 @@ void conexion_kernel(int conexion)
 		switch(mensaje->header.tipoOperacion)
 		{
 			case -1:
+				// MURIO LA CONEXION
 				puts("MURIO EL KERNEL /FF");
 				exit(EXIT_FAILURE);
 				break;
 			case 1:
 			{
+				// INICAR PROCESO
 				int pid, cantidadPaginas;
 				char* script = deserializarScript(mensaje->data, &pid, &cantidadPaginas, &(mensaje->header.tamanio));
-				printf("ARRANCANDO PROCESO PID: %i | Paginas: %i\n", pid, cantidadPaginas);
-				if(!sePuedeIniciarPrograma(pid, cantidadPaginas))
+				if(!sePuedenAsignarPaginas(pid, cantidadPaginas))
 				{
 					lSend(conexion, NULL,-2,0);
 					break;
 				}
+				printf("ARRANCANDO PROCESO PID: %i | Paginas: %i\n", pid, cantidadPaginas);
 				lSend(conexion, NULL, 104,0);
 				inicializarPrograma(pid, cantidadPaginas, script, mensaje->header.tamanio);
 				free(script);
 				break;
 			}
+			case 2:
+			{
+				// ESCRIBIR EN MEMORIA [REPITE LOGICA NOSHIT]
+				int pid;
+				pedidoEscrituraMemoria* pedido = malloc(sizeof(pedidoEscrituraMemoria));
+				memcpy(&pid, mensaje->data, sizeof(int));
+				memcpy(pedido, mensaje->data, sizeof(pedidoEscrituraMemoria));
+				printf("CPU GUARDA INFO EN PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %i\n", pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor);
+				int* valorPuntero = &pedido->valor;
+				escribirBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, valorPuntero);
+				char* linea = solicitarBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
+				int valor;
+				memcpy(&valor, linea, sizeof(int));
+				printf("TESTO - LEYENDO VALOR EN LA POSICION GUARDADA, VALOR = %i\n", valor);
+				free(linea);
+				free(pedido);
+				break;
+			}
+			case 3:
+			{
+				//OTORGAR PAGINAS HEAP
+				int pid, cantidadPaginas;
+				memcpy(&pid, mensaje->data, sizeof(int));
+				memcpy(&cantidadPaginas, mensaje->data, sizeof(int));
+				if(!sePuedenAsignarPaginas(pid, cantidadPaginas))
+				{
+					lSend(conexion, NULL,-2,0);
+					break;
+				}
+				lSend(conexion, NULL, 104,0);
+				crearEntradas(pid, cantidadPaginas);
+				printf("OTORGANDO PAGINAS HEAP A PROCESO: %i | Paginas: %i\n", pid, cantidadPaginas);
+				//https://github.com/sisoputnfrba/foro/issues/652
+				break;
+
+			}
 			case 9:
 			{
+				// FINALIZAR PROCESO
 				int pid;
 				memcpy(&pid, mensaje->data, sizeof(int));
 				printf("EL KERNEL MANDO A AJUSTICIAR EL PROCESO: %i\n", pid);
-				//finalizarPrograma(pid);
+				finalizarPrograma(pid);
 			}
 		}
 		destruirMensaje(mensaje);
 
 	}
 
+}
+
+void finalizarPrograma(int pid)
+{
+	int pag = 0;
+	entradaTabla* pointer;
+	do
+	{
+		pointer = obtenerEntradaDe(pid, pag);
+		pointer->pid = -1;
+		pointer->pagina = -1;
+		pag++;
+		pointer++;
+	}
+	while(pointer->pid == pid);
+
+}
+
+char* leerCaracteresEntrantes() {
+	int i, caracterLeido;
+	char* cadena = malloc(30);
+	for(i = 0; (caracterLeido= getchar()) != '\n'; i++)
+		cadena[i] = caracterLeido;
+	cadena[i] = '\0';
+	return cadena;
+}
+
+void recibir_comandos()
+{
+	while(1)
+	{
+		char* entrada = leerCaracteresEntrantes();
+		char** comando = string_split(entrada, " ");
+		printf("COMANDO: %s ARG: %s\n", comando[0], comando[1]);
+		if(!strcmp(comando[0], "dump"))
+		{
+			if(!strcmp(comando[1], "estructuras"))
+				mostrarTablaPaginas();
+			else if(!strcmp(comando[1], "cache"))
+				puts("TODO");
+			else if(!strcmp(comando[1], "contenido"))
+				puts("TODO");
+		}
+		else if(!strcmp(comando[0], "retardo"))
+		{
+			config->retardo_memoria = atoi(comando[1]);
+			printf("NUEVO RETARDO SETEADO: %ims\n", config->retardo_memoria);
+		}
+		else if(!strcmp(comando[0], "flush"))
+			puts("TODO");
+		else if(!strcmp(comando[0], "size"))
+		{
+			if(!strcmp(comando[1], "memory"))
+			{
+				printf("CANTIDAD TOTAL DE FRAMES: %i | OCUPADOS: %i (%i ADMIN) | LIBRES: %i\n", config->marcos, cantidadFramesOcupados(), cantPaginasAdmin, cantidadFramesLibres());
+			}
+			else
+			{
+				int pid = atoi(comando[1]);
+				int cantPaginas = tamanioProceso(pid);
+				printf("CANTIDAD DE PAGINAS PROCEO PID %i: %i\n", pid, cantPaginas);
+			}
+		}
+
+		free(comando[0]);
+		free(comando[1]);
+		free(entrada);
+
+	}
+}
+
+int tamanioProceso(int pid)
+{
+	entradaTabla* puntero = (entradaTabla*)memoria+cantPaginasAdmin;
+	int contador = 0;
+	while(puntero->frame != (config->marcos-1))
+	{
+		if(puntero->pid == pid)
+			contador++;
+		puntero++;
+	}
+	return contador;
+}
+
+int cantidadFramesOcupados()
+{
+	entradaTabla* puntero = (entradaTabla*)memoria+cantPaginasAdmin;
+	int contador = cantPaginasAdmin;
+	while(puntero->frame != (config->marcos-1))
+	{
+		if(puntero->pid > -1)
+			contador++;
+		puntero++;
+	}
+
+	return contador;
+}
+
+int cantidadFramesLibres()
+{
+	return config->marcos - cantidadFramesOcupados();
 }
 
 char* deserializarScript(void* data, int* pid, int* paginasTotales, int* tamanioArchivo)
@@ -192,6 +333,7 @@ void conexion_cpu(int conexion)
 
 			case 3:
 			{
+				// ESCRIBIR EN MEMORIA
 				pedidoEscrituraMemoria* pedido = malloc(sizeof(pedidoEscrituraMemoria));
 				memcpy(pedido, mensaje->data, sizeof(pedidoEscrituraMemoria));
 				printf("CPU GUARDA INFO EN PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %i\n", pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor);
@@ -264,37 +406,6 @@ int bestHashingAlgorithmInTheFuckingWorld(int pid, int pagina)
 	return cantPaginasAdmin; // TO DO OBV
 }
 
-
-/*int sePuedeIniciarPrograma(int pid, int cantidadDePaginas) // ROTISIMO
-{
-	entradaTabla* comienzo = obtenerEntradaAproximada(pid, 0);
-	entradaTabla* pointer = comienzo;
-	int i =0, j = comienzo->frame;
-	puts("A");
-	do
-	{
-		if(pointer->pid == -1)
-			i++;
-		pointer++;
-		j++;
-		if(j == config->marcos)
-		{
-			j=0;
-			pointer = (entradaTabla*)memoria;
-
-
-		}
-	/*	puts("-----------");
-		printf("FRAME POINTER: %i\n", pointer->frame);
-		printf("FRAME UTILIZABLE: %i\n", ((entradaTabla*)memoriaUtilizable)->frame);
-		printf("FRAME COMIENZO: %i\n", comienzo->frame);
-		puts("-----------");*/
-
-	/*}
-	while(i < cantidadDePaginas && pointer != comienzo);
-	return i == cantidadDePaginas;
-}*/
-
 void inicializarPrograma(int pid, int cantidadPaginas, char* archivo, int tamanio)
 {
 	crearEntradas(pid, cantidadPaginas);
@@ -320,7 +431,7 @@ void escribirCodigoPrograma(int pid, char* archivo, int tamanio)
 }
 
 
-int sePuedeIniciarPrograma(int pid, int cantidadDePaginas) // ROTISIMO
+int sePuedenAsignarPaginas(int pid, int cantidadDePaginas)
 {
 	entradaTabla* comienzo = obtenerEntradaAproximada(pid, 0);
 	entradaTabla* pointer = comienzo;

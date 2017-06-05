@@ -4,6 +4,7 @@
 #include <math.h>
 #include <commons/config.h>
 #include <commons/collections/list.h>
+#include <commons/string.h>
 #include <pthread.h>
 #include "../../ConfigLibrary/src/Configuration.c"
 #include "../../SocketLibrary/src/SocketLibrary.c"
@@ -42,6 +43,9 @@ char* solicitarBytes(int, int, int, int);
 int escribirBytes(int,int,int,int,void*);
 void inicializarPrograma(int,int,char*,int);
 void escribirCodigoPrograma(int, char*, int);
-
+int sePuedenAsignarPaginas(int, int);
+void recibir_comandos();
+entradaTabla* obtenerEntradaDe(int pid, int pagina);
+void finalizarPrograma(int pid);
 
 

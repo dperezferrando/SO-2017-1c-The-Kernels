@@ -71,25 +71,13 @@ void recibirDeConsola(int socket, connHandle* master)
 
 			break;
 		}
-
-		case 2: //Abortar procesos
-		break;
-
-		case 3:
-			//Nada importante solo para que cierre un hilo
-			lSend(socket, mensaje->data, 3, sizeof(int));
-			break;
-
 		case 9:
-			lSend(socket, mensaje->data, 9, sizeof(int));
 			killProcess(mensaje->data);
 			int tamanioScriptSerializado = 0;
 			void* buffer= serializarScript( * ( (int*) mensaje->data ) , 0 , 0 , & tamanioScriptSerializado, "");
 			//solo me interesa mandarle el kill, no tengo ningun mensaje que pasarle hasta ahora al menos
 			lSend(conexionMemoria, buffer, 9, tamanioScriptSerializado);
-
 			break;
-
 	}
 
 	destruirMensaje(mensaje);
