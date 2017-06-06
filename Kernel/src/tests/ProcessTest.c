@@ -93,9 +93,8 @@ void testExecuteProcess(int cpuOK){
 	readyProcess();
 	int sizeReady=0,sizeExecute=1,expected=1;
 	if(cpuOK) queue_push(colaCPUS, (int*)10);
-
+	puts("1");
 	int state= executeProcess();
-
 	if(!cpuOK){
 		sizeReady=1;
 		sizeExecute=0;
@@ -206,10 +205,30 @@ int initializePCB(){
 	pcb->programCounter=1;
 	pcb->exitCode=1;
 	indCod* ic= malloc(sizeof(indCod));
+	indStk* is= malloc(sizeof(indStk));
 	ic->longitud=1;
 	ic->offset=3;
+
+	is->argumentos= list_create();
+	is->variables= list_create();
+	is->posicionDeRetorno= 0;
+
+	variable a;
+	a.identificador= 'a';
+	posicionEnMemoria p;
+	p.offset=0;
+	p.pagina=0;
+	p.size=0;
+	a.posicion=p;
+
+	is->variableDeRetorno=a;
+
 	pcb->indiceCodigo= ic;
 	pcb->sizeIndiceCodigo= sizeof(ic);
+	pcb->indiceEtiqueta= "hola";
+	pcb->sizeIndiceEtiquetas= 4;
+	pcb->exitCode= 0;
+	pcb->nivelDelStack=0;
 	return 0;
 }
 

@@ -93,11 +93,14 @@ int executeProcess(){
 		return -1;
 	} else{
 		PCB* pcb= fromReadyToExecute();
-		serializado pcbSerializado = serializarPCB(pcb);
+		serializado pcbSerializado;
 		int CPU = (int)queue_pop(colaCPUS);
-		if(!test)lSend(CPU, pcbSerializado.data, 1, pcbSerializado.size);
-		if(!test)puts("PCB ENVIADO");
-		free(pcbSerializado.data);
+		if(!test){
+			pcbSerializado = serializarPCB(pcb);
+			lSend(CPU, pcbSerializado.data, 1, pcbSerializado.size);
+			puts("PCB ENVIADO");
+			free(pcbSerializado.data);
+		}
 		return 1;
 		}
 }

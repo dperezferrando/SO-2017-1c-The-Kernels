@@ -22,6 +22,10 @@ int kernelTest(int flag){
 	CU_add_test(heapTest, "pageToStoreTestPageAvailable", pageToStoreTestPageAvailable);
 	CU_add_test(heapTest, "pageToStoreTestPageUnavailable", pageToStoreTestPageUnavailable);
 	CU_add_test(heapTest, "occupyPageSizeTest", occupyPageSizeTest);
+	CU_add_test(heapTest, "sendMemoryRequestNewPageTest", sendMemoryRequestNewPageTest);
+	CU_add_test(heapTest, "sendMemoryRequestNotNewPageTest", sendMemoryRequestNotNewPageTest);
+	CU_add_test(heapTest, "grabarPedidoTestNewPage", grabarPedidoTestNewPage);
+	CU_add_test(heapTest, "grabarPedidoTestNotNewPage", grabarPedidoTestNotNewPage);
 
 
 	CU_basic_run_tests();

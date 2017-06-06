@@ -126,35 +126,47 @@ void* serializeMemReq(MemoryRequest mr){
 	return res;
 }
 
-int memoryRequest(MemoryRequest mr, int size, void* msg){
+int memoryRequest(MemoryRequest mr, int size, void* contenido){
 	PageOwnership* po= malloc(sizeof(PageOwnership));
-	if(sendMemoryRequest(mr,size,msg,po)==-1) return -1;
+	HeapMetadata* hm= initializeHeapMetadata(mr.size);
+	if(sendMemoryRequest(mr,size,contenido,po)==-1) return -1;
 	if(!test) res= lRecv(conexionMemoria);
 	if(res->header.tipoOperacion==-1) return -1;
-	if (po->idpage!=0){//el pedido se grabo en la pagina ya asignada
-		HeapMetadata* hm= malloc(sizeof(HeapMetadata));
-		memcpy(hm,res->data+(sizeof(int)*2),sizeof(HeapMetadata));
-		occupyPageSize(po,hm);
+	int operation= grabarPedido(po,mr,hm);
+	free(res);
+	return operation;
+}
+
+HeapMetadata* initializeHeapMetadata(int size){
+	HeapMetadata* hm= malloc(sizeof(HeapMetadata));
+	hm->isFree=0;
+	hm->size= size;
+	return hm;
+}
+
+int grabarPedido(PageOwnership* po, MemoryRequest mr, HeapMetadata* hm){
+
+	if (po->idpage==-1){//el pedido se grabo en pagina nueva
+		memcpy(po,res->data,sizeof(int));
+		initializePageOwnership(po);//aca queda el PageOwnership con la estructura que marca el espacio libre
+	}
+	int pos= occupyPageSize(po,hm);//guarda el heapMetadata correspondiente en el PageOwnership
+	storeVariable(po,mr.variable,pos);//guarda la estructura de control de variables
+
+	if (po->idpage!=-1){
 		list_replace(ownedPages, &PIDFindPO, po);
 		return 0;
 	}
-		else{//se le otorgo una pagina y se grabo alli
-			memcpy(&po->pid,res->data,sizeof(int));
-			memcpy(&po->idpage,res->data+sizeof(int),sizeof(int));
-			HeapMetadata* hm= malloc(sizeof(HeapMetadata));
-			memcpy(hm,res->data+(sizeof(int)*2),sizeof(HeapMetadata));
-			initializePageOwnership(po);//aca queda el PageOwnership con la estructura que marca el espacio libre
-			occupyPageSize(po,hm);
-			list_add(ownedPages,po);
-			free(res);
-			return 1;
-		}
+
+	list_add(ownedPages,po);
+	return 1;
+
 }
 
 int sendMemoryRequest(MemoryRequest mr, int size, void* msg, PageOwnership* po){
 	if(!viableRequest(mr.size)) return -1;
 	po->pid= mr.pid;
-	po->idpage= pageToStore(mr);
+	po->idpage= pageToStore(mr);//busco la pagina para guardarlo, si no hay -1
 	void* serializedMSG= serializeMemReq(mr);
 	memcpy(serializedMSG,&po->idpage,sizeof(int));
 	memcpy(serializedMSG,msg,size);
@@ -188,14 +200,15 @@ t_list* findProcessPages(int pid){
 
 void initializePageOwnership(PageOwnership* po){
 	po->occSpaces= list_create();
+	po->control= list_create();
 	HeapMetadata* hm= malloc(sizeof(HeapMetadata));
 	hm->isFree=1;
 	hm->size= config->PAG_SIZE-sizeof(HeapMetadata);
 	list_add(po->occSpaces,hm);
 }
 
-void occupyPageSize(PageOwnership* po,HeapMetadata* hm){
-	int i;
+int occupyPageSize(PageOwnership* po,HeapMetadata* hm){
+	int i,pos;
 	for(i=0;i<list_size(po->occSpaces);i++){
 		HeapMetadata* hw= list_get(po->occSpaces,i);
 		if(hw->isFree==1){
@@ -203,10 +216,19 @@ void occupyPageSize(PageOwnership* po,HeapMetadata* hm){
 				hw->size-=(hm->size+sizeof(HeapMetadata));
 				list_replace(po->occSpaces,i,hm);//reemplazo el elemento libre por uno ocupado
 				list_add_in_index(po->occSpaces,i+1,hw);//agrego la estructura libre al lado
+				pos= i;
 				break;
 			}
 		}
 	}
+	return i;
+}
+
+void storeVariable(PageOwnership* po, char* name, int pos){
+	HeapControl* hc= malloc(sizeof(HeapControl));
+	hc->name=name;
+	hc->listPosition= pos;
+	list_add(po->control,hc);
 }
 
 //------------------------------------------------Funciones de CPU----------------------------------------------------------//

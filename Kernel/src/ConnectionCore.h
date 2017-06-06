@@ -24,6 +24,7 @@ int readyProcess();
 int executeProcess();
 int checkMultiprog();
 int enviarScriptAMemoria(PCB*,char*, int);
+int grabarPedido(PageOwnership*, MemoryRequest, HeapMetadata*);
 int sendMemoryRequest(MemoryRequest, int, void*, PageOwnership*);
 
 
@@ -41,6 +42,8 @@ void aceptarNuevoCPU(int);
 void closeHandle(int, connHandle*);
 void recibirDeCPU(int, connHandle*);
 void recibirDeConsola(int, connHandle*);
+void initializePageOwnership(PageOwnership*);
+void storeVariable(PageOwnership*, char*, int);
 void handleSockets(connHandle*, socketHandler);
 
 
@@ -51,6 +54,11 @@ t_list* findProcessPages(int);
 
 
 MemoryRequest deserializeMemReq(void*);
+HeapMetadata* initializeHeapMetadata(int);
 
 
 #endif
+
+
+
+

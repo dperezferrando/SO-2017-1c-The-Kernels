@@ -18,6 +18,7 @@ struct ProcessControl{
 struct MemoryRequest{
 	int pid;
 	int size;
+	char* variable;
 } typedef MemoryRequest;
 
 struct HeapMetadata{
@@ -25,10 +26,16 @@ struct HeapMetadata{
 	bool isFree;
 } typedef HeapMetadata;
 
+struct HeapControl{
+	char* name;
+	int listPosition;
+} typedef HeapControl;
+
 struct PageOwnership{
 	int pid;
 	int idpage;
 	t_list* occSpaces;
+	t_list* control;
 } typedef PageOwnership;
 
 bool test;

@@ -12,6 +12,21 @@ void testSerializationMemoryRequest(){
 	CU_ASSERT_EQUAL(mr.size,mr2.size);
 }
 
+void sendMemoryRequestNewPageTest(){
+	sendMemoryRequestTest(1);
+}
+
+void sendMemoryRequestNotNewPageTest(){
+	sendMemoryRequestTest(0);
+}
+
+void grabarPedidoTestNewPage(){
+	grabarPedidoTest(1);
+}
+
+void grabarPedidoTestNotNewPage(){
+	grabarPedidoTest(0);
+}
 
 void pageToStoreTestPageUnavailable(){
 	PageOwnership* po= malloc(sizeof(PageOwnership));
@@ -106,8 +121,63 @@ void occupyPageSizeTest(){
 	free(hm);
 }
 
-void sendMemoryRequestTest(int viable){
+void sendMemoryRequestTest(int newPage){
+	config->PAG_SIZE=256;
 	MemoryRequest mr;
 	mr.pid=1;
-	mr.size= viable==1 ? config->PAG_SIZE+1 : config->PAG_SIZE-1;
+	mr.size= 50;
+	ownedPages= list_create();
+	PageOwnership* po= malloc(sizeof(PageOwnership));
+	po->pid=1;
+	po->idpage=1;
+	initializePageOwnership(po);
+	if(!newPage) list_add(ownedPages,po);
+	PageOwnership* pp= malloc(sizeof(PageOwnership));
+	pp->pid=1;
+	sendMemoryRequest(mr,4,"hola",pp);
+	if(newPage) {CU_ASSERT_EQUAL(pp->idpage,-1);}
+	else {CU_ASSERT_NOT_EQUAL(pp->idpage,-1);}
+	list_destroy(ownedPages);
+	list_destroy(po->control);
+	list_destroy(po->occSpaces);
+	free(po);
+	free(pp);
+}
+
+void grabarPedidoTest(int newPage){
+	config->PAG_SIZE= 256;
+	ownedPages= list_create();
+	PageOwnership* pp= malloc(sizeof(PageOwnership));
+	if(!newPage){
+		pp->pid=1;
+		pp->idpage=1;
+		initializePageOwnership(pp);
+		list_add(ownedPages,pp);
+	}
+	PageOwnership* po= malloc(sizeof(PageOwnership));
+	MemoryRequest* mr= malloc(sizeof(MemoryRequest));
+	mr->pid= newPage ? -1 : 1;
+	mr->size= 56;
+	mr->variable= "a";
+	po->idpage= newPage ? -1 : 1;
+	res=malloc(sizeof(Mensaje));
+	res->header.tipoOperacion=1;
+	res->data= malloc(sizeof(int));
+	int a= 10;
+	memcpy(res->data,&a,sizeof(int));
+	HeapMetadata* hm= initializeHeapMetadata(mr->size);
+	sendMemoryRequest(*mr,4,"hola",po);
+	int resp= grabarPedido(po,*mr,hm);
+
+	list_destroy(ownedPages);
+	free(po);
+	free(pp);
+	free(mr);
+	free(res);
+	free(hm);
+
+
+	if(newPage){CU_ASSERT_EQUAL(resp,1);}
+	else {CU_ASSERT_EQUAL(resp,0);}
+
 }
