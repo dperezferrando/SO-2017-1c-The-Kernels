@@ -29,6 +29,13 @@ typedef struct entradaTabla {
 	int pagina;
 } entradaTabla;
 
+typedef struct entradaCache {
+	int pid;
+	int pagina;
+	char* data;
+
+} entradaCache;
+
 void imprimirConfigFile(configFile*);
 configFile* leerArchivoConfig(t_config*);
 void conexion_kernel();
@@ -37,7 +44,7 @@ void esperar_cpus();
 void levantarSockets();
 void arrancarMemoria();
 void mostrarTablaPaginas();
-void crearEntradas(int, int);
+void crearEntradas(int, int, int);
 int bestHashingAlgorithmInTheFuckingWorld(int, int);
 char* solicitarBytes(int, int, int, int);
 int escribirBytes(int,int,int,int,void*);
@@ -47,5 +54,7 @@ int sePuedenAsignarPaginas(int, int);
 void recibir_comandos();
 entradaTabla* obtenerEntradaDe(int pid, int pagina);
 void finalizarPrograma(int pid);
+void morirElegantemente();
+void destruirEntradaCache(entradaCache* entrada);
 
 

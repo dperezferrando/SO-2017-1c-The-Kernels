@@ -13,6 +13,7 @@
 // VARIABLES GLOBALES PORQUE ACA VALE TODO VIEJA
 int kernel, cpu; // SOCKETS
 char* memoria; // CACHO DE MEMORIA
+t_list* cache; // CACHO DE CACHE
 char* memoriaUtilizable;
 int cantPaginasAdmin; // PAGINAS OCUPADAS POR LA TABLA
 configFile* config;
@@ -33,10 +34,7 @@ int main(int argc, char** argsv) {
 	pthread_join(&consolaMemoria, NULL);
 	pthread_join(conexionKernel, NULL);
 	pthread_join(esperarCPUS, NULL);
-	free(config);
-	free(memoria);
-	close(kernel);
-	close(cpu);
+	morirElegantemente();
 	return EXIT_SUCCESS;
 }
 
@@ -71,8 +69,11 @@ void arrancarMemoria()
 		pointer++;
 	}
 	memoriaUtilizable = (char*)pointer;
+	if(config->entradas_cache != 0)
+		cache = list_create();
 
 }
+
 
 void mostrarTablaPaginas()
 {
@@ -105,6 +106,7 @@ void conexion_kernel(int conexion)
 			case -1:
 				// MURIO LA CONEXION
 				puts("MURIO EL KERNEL /FF");
+				morirElegantemente();
 				exit(EXIT_FAILURE);
 				break;
 			case 1:
@@ -153,11 +155,25 @@ void conexion_kernel(int conexion)
 					break;
 				}
 				lSend(conexion, NULL, 104,0);
-				crearEntradas(pid, cantidadPaginas);
+				int paginaInicial = tamanioProceso(pid);
+				crearEntradas(pid, cantidadPaginas, paginaInicial);
 				printf("OTORGANDO PAGINAS HEAP A PROCESO: %i | Paginas: %i\n", pid, cantidadPaginas);
 				//https://github.com/sisoputnfrba/foro/issues/652
 				break;
 
+			}
+			case 4:
+			{
+				// LIBERAR PAGINA HEAP
+				int pid, pagina;
+				memcpy(&pid, mensaje->data, sizeof(int));
+				memcpy(&pagina, mensaje->data, sizeof(int));
+				entradaTabla* pointer;
+				pointer = obtenerEntradaDe(pid, pagina);
+				pointer->pagina = -1;
+				pointer->pid = -1;
+				free(pointer);
+				break;
 			}
 			case 9:
 			{
@@ -174,6 +190,7 @@ void conexion_kernel(int conexion)
 
 }
 
+
 void finalizarPrograma(int pid)
 {
 	int pag = 0;
@@ -187,6 +204,7 @@ void finalizarPrograma(int pid)
 		pointer++;
 	}
 	while(pointer->pid == pid);
+	free(pointer);
 
 }
 
@@ -408,7 +426,7 @@ int bestHashingAlgorithmInTheFuckingWorld(int pid, int pagina)
 
 void inicializarPrograma(int pid, int cantidadPaginas, char* archivo, int tamanio)
 {
-	crearEntradas(pid, cantidadPaginas);
+	crearEntradas(pid, cantidadPaginas, 0);
 	escribirCodigoPrograma(pid, archivo, tamanio);
 
 }
@@ -451,21 +469,16 @@ int sePuedenAsignarPaginas(int pid, int cantidadDePaginas)
 
 
 		}
-	/*	puts("-----------");
-		printf("FRAME POINTER: %i\n", pointer->frame);
-		printf("FRAME UTILIZABLE: %i\n", ((entradaTabla*)memoriaUtilizable)->frame);
-		printf("FRAME COMIENZO: %i\n", comienzo->frame);
-		puts("-----------");*/
 
 	}
 	while(i < cantidadDePaginas && pointer != comienzo);
 	return i == cantidadDePaginas;
 }
 
-void crearEntradas(int pid, int cantidadPaginas)
+void crearEntradas(int pid, int cantidadPaginas, int paginaInicial)
 {
 	entradaTabla* pointer = obtenerEntradaAproximada(pid, 0);
-	int i =0;
+	int i = paginaInicial;
 	while(i<cantidadPaginas)
 	{
 		if(pointer->pid == -1)
@@ -479,13 +492,21 @@ void crearEntradas(int pid, int cantidadPaginas)
 
 }
 
-/*void recibirComandos()
+void destruirEntradaCache(entradaCache* entrada)
 {
-	char comando[]
-	puts("PROCESO MEMORIA - INGRESA UN COMANDO");
-	scanf("%s", comando);
+	free(entrada->data);
 }
-*/
+
+void morirElegantemente()
+{
+	free(config);
+	free(memoria);
+	list_destroy_and_destroy_elements(cache, destruirEntradaCache);
+	close(kernel);
+	close(cpu);
+}
+
+
 void imprimirConfig(configFile* config)
 {
 	puts("--------PROCESO MEMORIA--------");
@@ -511,3 +532,5 @@ configFile* leerArchivoConfig(t_config* configHandler)
 	imprimirConfig(config);
 	return config;
 }
+
+
