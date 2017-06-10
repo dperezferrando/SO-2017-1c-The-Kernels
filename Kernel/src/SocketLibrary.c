@@ -33,7 +33,7 @@ int recibirHandShake(int socket, int idEsperada) // bool
 	if(handshake->header.tipoOperacion != 0)
 		return 0;
 	int id = (*(int*)handshake->data);
-	free(handshake);
+	destruirMensaje(handshake);
 	*confirmacion = id == idEsperada;
 	lSend(socket, confirmacion, HANDSHAKE,sizeof(int));
 	int conf = *confirmacion;

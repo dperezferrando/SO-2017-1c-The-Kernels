@@ -60,5 +60,7 @@ char* obtenerPosicionAOperarEnCache(int pid, int pagina, int offset);
 char* obtenerPosicionAOperar(int pid, int pagina, int offset);
 int cantidadEntradasCacheDelProceso(int pid);
 void reemplazarLRU(entradaCache* entrada);
-
+char* deserializarScript(void* data, int* pid, int* paginasTotales, int* tamanioArchivo);
+void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido);
+char* leerDondeCorresponda(int pid, posicionEnMemoria* posicion);
 

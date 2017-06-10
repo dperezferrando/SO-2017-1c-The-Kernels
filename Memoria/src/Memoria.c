@@ -17,12 +17,10 @@ t_list* cache; // CACHO DE CACHE
 char* memoriaUtilizable;
 int cantPaginasAdmin; // PAGINAS OCUPADAS POR LA TABLA
 configFile* config;
-
-char* deserializarScript(void* data, int* pid, int* paginasTotales, int* tamanioArchivo);
+pthread_t conexionKernel, esperarCPUS, consolaMemoria;
 
 int main(int argc, char** argsv) {
 
-	pthread_t conexionKernel, esperarCPUS, consolaMemoria;
 	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/Memoria/Debug/memoria.conf", leerArchivoConfig, keys);
 	arrancarMemoria();
 	levantarSockets();
@@ -31,7 +29,7 @@ int main(int argc, char** argsv) {
 	pthread_create(&conexionKernel, NULL, (void *) conexion_kernel, conexion);
 	pthread_create(&esperarCPUS, NULL, (void *) esperar_cpus, NULL);
 	pthread_create(&consolaMemoria, NULL, (void*) recibir_comandos, NULL);
-	pthread_join(&consolaMemoria, NULL);
+	pthread_join(consolaMemoria, NULL);
 	pthread_join(conexionKernel, NULL);
 	pthread_join(esperarCPUS, NULL);
 	morirElegantemente();
@@ -63,7 +61,7 @@ void arrancarMemoria()
 		}
 		else
 		{
-			pointer->pagina = 1;
+			pointer->pagina = -1;
 			pointer->pid = -1;
 		}
 		pointer++;
@@ -127,19 +125,12 @@ void conexion_kernel(int conexion)
 			}
 			case 2:
 			{
-				// ESCRIBIR EN MEMORIA [REPITE LOGICA NOSHIT]
+				// ESCRIBIR EN MEMORIA
 				int pid;
 				pedidoEscrituraMemoria* pedido = malloc(sizeof(pedidoEscrituraMemoria));
 				memcpy(&pid, mensaje->data, sizeof(int));
 				memcpy(pedido, mensaje->data, sizeof(pedidoEscrituraMemoria));
-				printf("CPU GUARDA INFO EN PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %i\n", pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor);
-				int* valorPuntero = &pedido->valor;
-				escribirBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, valorPuntero);
-				char* linea = solicitarBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
-				int valor;
-				memcpy(&valor, linea, sizeof(int));
-				printf("TESTO - LEYENDO VALOR EN LA POSICION GUARDADA, VALOR = %i\n", valor);
-				free(linea);
+				escribirDondeCorresponda(pid, pedido);
 				free(pedido);
 				break;
 			}
@@ -221,7 +212,6 @@ void agregarACache(int pid, int pagina)
 		list_add_in_index(cache, 0, entrada);
 	else
 		reemplazarLRU(entrada);
-	free(puntero);
 }
 
 int cantidadEntradasCacheDelProceso(int pid)
@@ -304,6 +294,12 @@ char* solicitarBytesACache(int pid, int pagina, int offset, int tamanio)
 	return data;
 }
 
+void mostrarEntradaCache(entradaCache* entrada)
+{
+
+	printf("PID: %i | PAGINA: %i | CONTENIDO: %s\n", entrada->pid, entrada->pagina, entrada->data);
+}
+
 char* leerCaracteresEntrantes() {
 	int i, caracterLeido;
 	char* cadena = malloc(30);
@@ -325,9 +321,14 @@ void recibir_comandos()
 			if(!strcmp(comando[1], "estructuras"))
 				mostrarTablaPaginas();
 			else if(!strcmp(comando[1], "cache"))
-				puts("TODO");
+			{
+				puts("----------------DUMP CACHE----------------");
+				printf("ENTRADAS MAXIMA CACHE: %i | ENTRADAS MAXIMAS POR PROCESO: %i\n", config->entradas_cache, config->cache_x_proc);
+				list_iterate(cache, mostrarEntradaCache);
+				puts("----------------DUMP CACHE----------------");
+			}
 			else if(!strcmp(comando[1], "contenido"))
-				puts("TODO");
+				mostrarDatosProcesos();
 		}
 		else if(!strcmp(comando[0], "retardo"))
 		{
@@ -335,7 +336,7 @@ void recibir_comandos()
 			printf("NUEVO RETARDO SETEADO: %ims\n", config->retardo_memoria);
 		}
 		else if(!strcmp(comando[0], "flush"))
-			puts("TODO");
+			list_clean(cache);
 		else if(!strcmp(comando[0], "size"))
 		{
 			if(!strcmp(comando[1], "memory"))
@@ -384,6 +385,23 @@ int cantidadFramesOcupados()
 	return contador;
 }
 
+void mostrarDatosProcesos()
+{
+	entradaTabla* puntero = (entradaTabla*)memoria+cantPaginasAdmin;
+	while(puntero->frame != (config->marcos-1))
+	{
+		if(puntero->pid >= 0)
+		{
+			char* punteroAFrame = obtenerPosicionAOperar(puntero->pid, puntero->pagina, 0);
+			char* data = malloc(config->marco_size);
+			memcpy(data, punteroAFrame, config->marco_size);
+			printf("FRAME: %i | PID: %i | PAG: %i | DATA:\n %i\n", puntero->frame, puntero->pid, puntero->pagina, data);
+			free(data);
+		}
+		puntero++;
+	}
+}
+
 int cantidadFramesLibres()
 {
 	return config->marcos - cantidadFramesOcupados();
@@ -391,7 +409,7 @@ int cantidadFramesLibres()
 
 char* deserializarScript(void* data, int* pid, int* paginasTotales, int* tamanioArchivo)
 {
-	*tamanioArchivo = *tamanioArchivo-sizeof(int);
+	*tamanioArchivo = *tamanioArchivo-(sizeof(int)*2);
 	char* archivo = malloc(*tamanioArchivo);
 	memcpy(pid, data, sizeof(int));
 	memcpy(paginasTotales, data + sizeof(int), sizeof(int));
@@ -437,24 +455,10 @@ void conexion_cpu(int conexion)
 				// LEER
 				posicionEnMemoria* posicion = malloc(sizeof(posicionEnMemoria));
 				memcpy(posicion, mensaje->data, sizeof(posicionEnMemoria));
-				printf("CPU QUIERE LEER PAG: %i | OFFSET: %i | SIZE: %i\n", posicion->pagina, posicion->offset, posicion->size);
-				char* linea;
-				if(existeEnCache(pidActual, posicion->pagina))
-				{
-					puts("EXISTE EN CACHE");
-					linea = solicitarBytesACache(pidActual, posicion->pagina, posicion->offset, posicion->size);
-				}
-				else
-				{
-					puts("NO EXISTE EN CACHE - COMO SLEEP");
-					sleep(config->retardo_memoria);
-					puts("SLEEP LISTO, SOLICITO Y AGREGO A CACHE");
-					linea = solicitarBytes(pidActual, posicion->pagina, posicion->offset, posicion->size);
-					agregarACache(pidActual, posicion->pagina);
-				}
+				char* linea = leerDondeCorresponda(pidActual, posicion);
 				lSend(conexion, linea, 3, posicion->size);
-				free(linea);
 				free(posicion);
+				free(linea);
 				break;
 			}
 
@@ -463,31 +467,7 @@ void conexion_cpu(int conexion)
 				// ESCRIBIR EN MEMORIA
 				pedidoEscrituraMemoria* pedido = malloc(sizeof(pedidoEscrituraMemoria));
 				memcpy(pedido, mensaje->data, sizeof(pedidoEscrituraMemoria));
-				printf("CPU GUARDA INFO EN PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %i\n", pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor);
-				int* valorPuntero = &pedido->valor;
-				if(existeEnCache(pidActual, pedido->posicion.pagina))
-				{
-					puts("EXISTE EN CACHE");
-					escribirBytesCache(pidActual, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, valorPuntero);
-				}
-				else
-				{
-					puts("NO EXISTE EN CACHE - RETARDO");
-					sleep(config->retardo_memoria);
-					puts("RETARDO LISTO");
-					if(!escribirBytes(pidActual, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, valorPuntero))
-						puts("FUCKED UP- NOESCRIBIO");
-					else
-					{
-						puts("SE ESCRIBIO EN MEMORIA - AGREGANDO A CACHE LA PAGINA");
-						agregarACache(pidActual, pedido->posicion.pagina);
-					}
-				}
-				char* linea = solicitarBytes(pidActual, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
-				int valor;
-				memcpy(&valor, linea, sizeof(int));
-				printf("TESTO - LEYENDO VALOR EN LA POSICION GUARDADA, VALOR = %i\n", valor);
-				free(linea);
+				escribirDondeCorresponda(pidActual, pedido);
 				free(pedido);
 				break;
 			}
@@ -503,6 +483,57 @@ void conexion_cpu(int conexion)
 	}
 	close(conexion);
 
+}
+
+char* leerDondeCorresponda(int pid, posicionEnMemoria* posicion)
+{
+	printf("CPU QUIERE LEER PAG: %i | OFFSET: %i | SIZE: %i\n", posicion->pagina, posicion->offset, posicion->size);
+	char* linea;
+	if(config->entradas_cache > 0 && existeEnCache(pid, posicion->pagina))
+	{
+		puts("EXISTE EN CACHE");
+		linea = solicitarBytesACache(pid, posicion->pagina, posicion->offset, posicion->size);
+	}
+	else
+	{
+		puts("NO EXISTE EN CACHE - COMO SLEEP");
+		sleep(config->retardo_memoria);
+		puts("SLEEP LISTO, SOLICITO Y AGREGO A CACHE");
+		linea = solicitarBytes(pid, posicion->pagina, posicion->offset, posicion->size);
+		agregarACache(pid, posicion->pagina);
+	}
+	return linea;
+}
+
+void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
+{
+	printf("CPU GUARDA INFO EN PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %i\n", pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor);
+	int* valorPuntero = &pedido->valor;
+	char* linea;
+	if(config->entradas_cache > 0 && existeEnCache(pid, pedido->posicion.pagina))
+	{
+		puts("EXISTE EN CACHE");
+		escribirBytesCache(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, valorPuntero);
+		linea = solicitarBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
+	}
+	else
+	{
+		puts("NO EXISTE EN CACHE - RETARDO");
+		sleep(config->retardo_memoria);
+		puts("RETARDO LISTO");
+		if(!escribirBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, valorPuntero))
+			puts("FUCKED UP- NOESCRIBIO");
+		else
+		{
+			puts("SE ESCRIBIO EN MEMORIA - AGREGANDO A CACHE LA PAGINA");
+			agregarACache(pid, pedido->posicion.pagina);
+			linea = solicitarBytesACache(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
+		}
+	}
+	int valor;
+	memcpy(&valor, linea, sizeof(int));
+	printf("TESTO - LEYENDO VALOR EN LA POSICION GUARDADA, VALOR = %i\n", valor);
+	free(linea);
 }
 
 
@@ -626,6 +657,9 @@ void morirElegantemente()
 	list_destroy_and_destroy_elements(cache, destruirEntradaCache);
 	close(kernel);
 	close(cpu);
+	pthread_cancel(consolaMemoria);
+	pthread_cancel(conexionKernel);
+	pthread_cancel(esperarCPUS);
 }
 
 
