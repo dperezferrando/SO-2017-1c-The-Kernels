@@ -208,6 +208,102 @@ void finalizarPrograma(int pid)
 
 }
 
+void agregarACache(int pid, int pagina)
+{
+	char* puntero = obtenerPosicionAOperar(pid, pagina, 0);
+	entradaCache* entrada = malloc(sizeof(entradaCache));
+	entrada->pagina = pagina;
+	entrada->pid = pid;
+	entrada->data = malloc(config->marco_size);
+	memcpy(entrada->data, puntero, config->marco_size);
+	int cantEntradasProceso = cantidadEntradasCacheDelProceso(pid);
+	if(list_size(cache) < config->entradas_cache && cantEntradasProceso < config->cache_x_proc)
+		list_add_in_index(cache, 0, entrada);
+	else
+		reemplazarLRU(entrada);
+	free(puntero);
+}
+
+int cantidadEntradasCacheDelProceso(int pid)
+{
+	bool esEntradaDelProceso(entradaCache* entrada)
+	{
+		return entrada->pid == pid;
+	}
+	return list_count_satisfying(cache, esEntradaDelProceso);
+}
+
+void destruirEntradaCache(entradaCache* entrada)
+{
+	free(entrada->data);
+	free(entrada);
+}
+
+void reemplazarLRU(entradaCache* entrada)
+{
+	int tamanioLista = list_size(cache);
+	if(cantidadEntradasCacheDelProceso(entrada->pid) < config->cache_x_proc && tamanioLista >= config->entradas_cache)
+	{
+		int indexMenosUsado = tamanioLista-1;
+		list_remove_and_destroy_element(cache, indexMenosUsado, destruirEntradaCache);
+		list_add_in_index(cache, 0, entrada);
+	}
+	else
+	{
+		int index;
+		void calcularIndexMenosUsado(entradaCache* unaEntrada)
+		{
+			int i = 0;
+			if(entrada->pid == unaEntrada->pid)
+				i++;
+			if(i<config->cache_x_proc)
+				index++;
+		}
+		list_iterate(cache, calcularIndexMenosUsado);
+		list_remove_and_destroy_element(cache, index, destruirEntradaCache);
+		list_add_in_index(cache, 0, entrada);
+	}
+}
+
+bool existeEnCache(int pid, int pagina)
+{
+	bool mismoPIDyPagina(entradaCache* unaEntrada)
+	{
+		return pid == unaEntrada->pid && pagina == unaEntrada->pagina;
+	}
+	return list_any_satisfy(cache, mismoPIDyPagina);
+}
+
+int escribirBytesCache(int pid, int pagina, int offset, int tamanio, void* buffer)
+{
+	if(tamanio+offset > config->marco_size)
+		return 0;
+	char* punteroAFrame = obtenerPosicionAOperarEnCache(pid, pagina, offset);
+	memcpy(punteroAFrame, buffer, tamanio);
+	escribirBytes(pid, pagina, offset, tamanio, buffer);
+	return 1;
+}
+
+char* obtenerPosicionAOperarEnCache(int pid, int pagina, int offset)
+{
+	bool mismoPIDyPagina(entradaCache* unaEntrada)
+	{
+		return pid == unaEntrada->pid && pagina == unaEntrada->pagina;
+	}
+	entradaCache* entrada = list_remove_by_condition(cache, mismoPIDyPagina);
+	char* punteroAFrame = entrada->data+offset;
+	list_add_in_index(cache, 0, entrada);
+	return punteroAFrame;
+}
+
+char* solicitarBytesACache(int pid, int pagina, int offset, int tamanio)
+{
+	char* punteroAFrame = obtenerPosicionAOperarEnCache(pid, pagina, offset);
+	char* data = malloc(tamanio);
+	memcpy(data, punteroAFrame, tamanio);
+	return data;
+}
+
 char* leerCaracteresEntrantes() {
 	int i, caracterLeido;
 	char* cadena = malloc(30);
@@ -342,7 +438,20 @@ void conexion_cpu(int conexion)
 				posicionEnMemoria* posicion = malloc(sizeof(posicionEnMemoria));
 				memcpy(posicion, mensaje->data, sizeof(posicionEnMemoria));
 				printf("CPU QUIERE LEER PAG: %i | OFFSET: %i | SIZE: %i\n", posicion->pagina, posicion->offset, posicion->size);
-				char* linea = solicitarBytes(pidActual, posicion->pagina, posicion->offset, posicion->size);
+				char* linea;
+				if(existeEnCache(pidActual, posicion->pagina))
+				{
+					puts("EXISTE EN CACHE");
+					linea = solicitarBytesACache(pidActual, posicion->pagina, posicion->offset, posicion->size);
+				}
+				else
+				{
+					puts("NO EXISTE EN CACHE - COMO SLEEP");
+					sleep(config->retardo_memoria);
+					puts("SLEEP LISTO, SOLICITO Y AGREGO A CACHE");
+					linea = solicitarBytes(pidActual, posicion->pagina, posicion->offset, posicion->size);
+					agregarACache(pidActual, posicion->pagina);
+				}
 				lSend(conexion, linea, 3, posicion->size);
 				free(linea);
 				free(posicion);
@@ -356,7 +465,24 @@ void conexion_cpu(int conexion)
 				memcpy(pedido, mensaje->data, sizeof(pedidoEscrituraMemoria));
 				printf("CPU GUARDA INFO EN PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %i\n", pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor);
 				int* valorPuntero = &pedido->valor;
-				escribirBytes(pidActual, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, valorPuntero);
+				if(existeEnCache(pidActual, pedido->posicion.pagina))
+				{
+					puts("EXISTE EN CACHE");
+					escribirBytesCache(pidActual, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, valorPuntero);
+				}
+				else
+				{
+					puts("NO EXISTE EN CACHE - RETARDO");
+					sleep(config->retardo_memoria);
+					puts("RETARDO LISTO");
+					if(!escribirBytes(pidActual, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, valorPuntero))
+						puts("FUCKED UP- NOESCRIBIO");
+					else
+					{
+						puts("SE ESCRIBIO EN MEMORIA - AGREGANDO A CACHE LA PAGINA");
+						agregarACache(pidActual, pedido->posicion.pagina);
+					}
+				}
 				char* linea = solicitarBytes(pidActual, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
 				int valor;
 				memcpy(&valor, linea, sizeof(int));
@@ -492,10 +618,6 @@ void crearEntradas(int pid, int cantidadPaginas, int paginaInicial)
 
 }
 
-void destruirEntradaCache(entradaCache* entrada)
-{
-	free(entrada->data);
-}
 
 void morirElegantemente()
 {

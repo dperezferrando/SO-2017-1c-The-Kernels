@@ -56,5 +56,9 @@ entradaTabla* obtenerEntradaDe(int pid, int pagina);
 void finalizarPrograma(int pid);
 void morirElegantemente();
 void destruirEntradaCache(entradaCache* entrada);
+char* obtenerPosicionAOperarEnCache(int pid, int pagina, int offset);
+char* obtenerPosicionAOperar(int pid, int pagina, int offset);
+int cantidadEntradasCacheDelProceso(int pid);
+void reemplazarLRU(entradaCache* entrada);
 
 
