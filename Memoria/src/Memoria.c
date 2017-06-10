@@ -18,6 +18,10 @@ char* memoriaUtilizable;
 int cantPaginasAdmin; // PAGINAS OCUPADAS POR LA TABLA
 configFile* config;
 pthread_t conexionKernel, esperarCPUS, consolaMemoria;
+pthread_mutex_t memoriaSem;
+pthread_mutex_t cacheSem;
+
+
 
 int main(int argc, char** argsv) {
 
@@ -32,7 +36,7 @@ int main(int argc, char** argsv) {
 	pthread_join(consolaMemoria, NULL);
 	pthread_join(conexionKernel, NULL);
 	pthread_join(esperarCPUS, NULL);
-	morirElegantemente();
+//	morirElegantemente();
 	return EXIT_SUCCESS;
 }
 
@@ -68,7 +72,11 @@ void arrancarMemoria()
 	}
 	memoriaUtilizable = (char*)pointer;
 	if(config->entradas_cache != 0)
+	{
 		cache = list_create();
+		pthread_mutex_init(&cacheSem, NULL);
+	}
+	pthread_mutex_init(&memoriaSem, NULL);
 
 }
 
@@ -94,7 +102,6 @@ void levantarSockets()
 
 void conexion_kernel(int conexion)
 {
-
 	puts("KERNEL CONECTADO - ESPERANDO MENSAJE <3");
 	while(1)
 	{
@@ -280,9 +287,11 @@ char* obtenerPosicionAOperarEnCache(int pid, int pagina, int offset)
 	{
 		return pid == unaEntrada->pid && pagina == unaEntrada->pagina;
 	}
+	pthread_mutex_lock(&cacheSem);
 	entradaCache* entrada = list_remove_by_condition(cache, mismoPIDyPagina);
 	char* punteroAFrame = entrada->data+offset;
 	list_add_in_index(cache, 0, entrada);
+	pthread_mutex_unlock(&cacheSem);
 	return punteroAFrame;
 }
 
@@ -350,10 +359,11 @@ void recibir_comandos()
 				printf("CANTIDAD DE PAGINAS PROCEO PID %i: %i\n", pid, cantPaginas);
 			}
 		}
-
 		free(comando[0]);
 		free(comando[1]);
+		free(comando);
 		free(entrada);
+		//pthread_exit(NULL);
 
 	}
 }
@@ -431,6 +441,7 @@ void esperar_cpus()
 
 void conexion_cpu(int conexion)
 {
+
 	int conectado = 1;
 	while(conectado)
 	{
@@ -482,6 +493,7 @@ void conexion_cpu(int conexion)
 		destruirMensaje(mensaje);
 	}
 	close(conexion);
+	pthread_exit(NULL);
 
 }
 
@@ -540,7 +552,9 @@ void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
 entradaTabla* obtenerEntradaAproximada(int pid, int pagina)
 {
 	int frameAprox = bestHashingAlgorithmInTheFuckingWorld(pid, pagina);
+	pthread_mutex_lock(&memoriaSem);
 	entradaTabla* pointer = (entradaTabla*)memoria+frameAprox;
+	pthread_mutex_unlock(&memoriaSem);
 	return pointer;
 }
 
@@ -555,7 +569,9 @@ entradaTabla* obtenerEntradaDe(int pid, int pagina)
 char* obtenerPosicionAOperar(int pid, int pagina, int offset)
 {
 	entradaTabla* pointer = obtenerEntradaDe(pid, pagina);
+	pthread_mutex_lock(&memoriaSem);
 	char* punteroAFrame = memoria + (pointer->frame*config->marco_size)+offset;
+	pthread_mutex_unlock(&memoriaSem);
 	return punteroAFrame;
 }
 
@@ -563,7 +579,9 @@ char* solicitarBytes(int pid, int pagina, int offset, int tamanio)
 {
 	char* punteroAFrame = obtenerPosicionAOperar(pid, pagina, offset);
 	char* data = malloc(tamanio);
+	pthread_mutex_lock(&memoriaSem);
 	memcpy(data, punteroAFrame, tamanio);
+	pthread_mutex_unlock(&memoriaSem);
 	return data;
 }
 
@@ -572,7 +590,9 @@ int escribirBytes(int pid, int pagina, int offset, int tamanio, void* buffer)
 	if(tamanio+offset > config->marco_size)
 		return 0;
 	char* punteroAFrame = obtenerPosicionAOperar(pid, pagina, offset);
+	pthread_mutex_lock(&memoriaSem);
 	memcpy(punteroAFrame, buffer, tamanio);
+	pthread_mutex_unlock(&memoriaSem);
 	return 1;
 }
 
@@ -654,12 +674,12 @@ void morirElegantemente()
 {
 	free(config);
 	free(memoria);
+	pthread_mutex_lock(&cacheSem);
 	list_destroy_and_destroy_elements(cache, destruirEntradaCache);
+	pthread_mutex_unlock(&cacheSem);
 	close(kernel);
 	close(cpu);
-	pthread_cancel(consolaMemoria);
-	pthread_cancel(conexionKernel);
-	pthread_cancel(esperarCPUS);
+
 }
 
 

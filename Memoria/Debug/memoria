@@ -1,147 +1,64 @@
-==4228== Memcheck, a memory error detector
-==4228== Copyright (C) 2002-2013, and GNU GPL'd, by Julian Seward et al.
-==4228== Using Valgrind-3.10.0.SVN and LibVEX; rerun with -h for copyright info
-==4228== Command: ./Memoria
-==4228== Parent PID: 2154
-==4228== 
-==4228== Thread 4:
-==4228== Conditional jump or move depends on uninitialised value(s)
-==4228==    at 0x40FEFEF: vfprintf (vfprintf.c:1661)
-==4228==    by 0x41042AE: printf (printf.c:33)
-==4228==    by 0x804B28E: mostrarEntradaCache (Memoria.c:307)
-==4228==    by 0x404D900: list_iterate (in /usr/lib/libcommons.so)
-==4228==    by 0x804B3C8: recibir_comandos (Memoria.c:334)
-==4228==    by 0x40A1F6F: start_thread (pthread_create.c:312)
-==4228==    by 0x41A350D: clone (clone.S:129)
-==4228== 
-==4228== 
-==4228== HEAP SUMMARY:
-==4228==     in use at exit: 1,600 bytes in 12 blocks
-==4228==   total heap usage: 178 allocs, 166 frees, 132,965 bytes allocated
-==4228== 
-==4228== Thread 1:
-==4228== 12 bytes in 1 blocks are still reachable in loss record 1 of 12
-==4228==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==4228==    by 0x8049BF2: lRecv (SocketLibrary.c:78)
-==4228==    by 0x804A9B1: conexion_kernel (Memoria.c:101)
-==4228==    by 0x40A1F6F: start_thread (pthread_create.c:312)
-==4228==    by 0x41A350D: clone (clone.S:129)
-==4228== 
-==4228== 12 bytes in 1 blocks are still reachable in loss record 2 of 12
-==4228==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==4228==    by 0x8049BF2: lRecv (SocketLibrary.c:78)
-==4228==    by 0x804B720: conexion_cpu (Memoria.c:428)
-==4228==    by 0x40A1F6F: start_thread (pthread_create.c:312)
-==4228==    by 0x41A350D: clone (clone.S:129)
-==4228== 
-==4228== 12 bytes in 1 blocks are definitely lost in loss record 3 of 12
-==4228==    at 0x402C324: realloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==4228==    by 0x404F7F8: _string_split (in /usr/lib/libcommons.so)
-==4228==    by 0x404F298: string_split (in /usr/lib/libcommons.so)
-==4228==    by 0x804B300: recibir_comandos (Memoria.c:324)
-==4228==    by 0x40A1F6F: start_thread (pthread_create.c:312)
-==4228==    by 0x41A350D: clone (clone.S:129)
-==4228== 
-==4228== 30 bytes in 1 blocks are definitely lost in loss record 4 of 12
-==4228==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==4228==    by 0x804B2A2: leerCaracteresEntrantes (Memoria.c:312)
-==4228==    by 0x804B2EA: recibir_comandos (Memoria.c:323)
-==4228==    by 0x40A1F6F: start_thread (pthread_create.c:312)
-==4228==    by 0x41A350D: clone (clone.S:129)
-==4228== 
-==4228== 34 bytes in 1 blocks are still reachable in loss record 5 of 12
-==4228==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==4228==    by 0x4005055: local_strdup (dl-load.c:162)
-==4228==    by 0x4008502: _dl_map_object (dl-load.c:2509)
-==4228==    by 0x4012C53: dl_open_worker (dl-open.c:235)
-==4228==    by 0x400EC25: _dl_catch_error (dl-error.c:187)
-==4228==    by 0x4012683: _dl_open (dl-open.c:661)
-==4228==    by 0x41DB44A: do_dlopen (dl-libc.c:87)
-==4228==    by 0x400EC25: _dl_catch_error (dl-error.c:187)
-==4228==    by 0x41DB53A: dlerror_run (dl-libc.c:46)
-==4228==    by 0x41DB5C0: __libc_dlopen_mode (dl-libc.c:163)
-==4228==    by 0x40AA9E9: pthread_cancel_init (unwind-forcedunwind.c:52)
-==4228==    by 0x40A70EC: pthread_cancel (pthread_cancel.c:39)
-==4228== 
-==4228== 34 bytes in 1 blocks are still reachable in loss record 6 of 12
-==4228==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==4228==    by 0x400A962: _dl_new_object (dl-object.c:165)
-==4228==    by 0x4005EF7: _dl_map_object_from_fd (dl-load.c:1059)
-==4228==    by 0x40081C3: _dl_map_object (dl-load.c:2605)
-==4228==    by 0x4012C53: dl_open_worker (dl-open.c:235)
-==4228==    by 0x400EC25: _dl_catch_error (dl-error.c:187)
-==4228==    by 0x4012683: _dl_open (dl-open.c:661)
-==4228==    by 0x41DB44A: do_dlopen (dl-libc.c:87)
-==4228==    by 0x400EC25: _dl_catch_error (dl-error.c:187)
-==4228==    by 0x41DB53A: dlerror_run (dl-libc.c:46)
-==4228==    by 0x41DB5C0: __libc_dlopen_mode (dl-libc.c:163)
-==4228==    by 0x40AA9E9: pthread_cancel_init (unwind-forcedunwind.c:52)
-==4228== 
-==4228== 136 bytes in 1 blocks are possibly lost in loss record 7 of 12
-==4228==    at 0x402C109: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==4228==    by 0x401117E: allocate_dtv (dl-tls.c:296)
-==4228==    by 0x40118EB: _dl_allocate_tls (dl-tls.c:460)
-==4228==    by 0x40A27A2: pthread_create@@GLIBC_2.1 (allocatestack.c:589)
-==4228==    by 0x804A6F9: main (Memoria.c:29)
-==4228== 
-==4228== 136 bytes in 1 blocks are possibly lost in loss record 8 of 12
-==4228==    at 0x402C109: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==4228==    by 0x401117E: allocate_dtv (dl-tls.c:296)
-==4228==    by 0x40118EB: _dl_allocate_tls (dl-tls.c:460)
-==4228==    by 0x40A27A2: pthread_create@@GLIBC_2.1 (allocatestack.c:589)
-==4228==    by 0x804A71D: main (Memoria.c:30)
-==4228== 
-==4228== 136 bytes in 1 blocks are possibly lost in loss record 9 of 12
-==4228==    at 0x402C109: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==4228==    by 0x401117E: allocate_dtv (dl-tls.c:296)
-==4228==    by 0x40118EB: _dl_allocate_tls (dl-tls.c:460)
-==4228==    by 0x40A27A2: pthread_create@@GLIBC_2.1 (allocatestack.c:589)
-==4228==    by 0x804A741: main (Memoria.c:31)
-==4228== 
-==4228== 136 bytes in 1 blocks are possibly lost in loss record 10 of 12
-==4228==    at 0x402C109: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==4228==    by 0x401117E: allocate_dtv (dl-tls.c:296)
-==4228==    by 0x40118EB: _dl_allocate_tls (dl-tls.c:460)
-==4228==    by 0x40A27A2: pthread_create@@GLIBC_2.1 (allocatestack.c:589)
-==4228==    by 0x804B6EC: esperar_cpus (Memoria.c:417)
-==4228==    by 0x40A1F6F: start_thread (pthread_create.c:312)
-==4228==    by 0x41A350D: clone (clone.S:129)
-==4228== 
-==4228== 288 bytes in 1 blocks are still reachable in loss record 11 of 12
-==4228==    at 0x402C109: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==4228==    by 0x4010327: _dl_check_map_versions (dl-version.c:293)
-==4228==    by 0x401317D: dl_open_worker (dl-open.c:278)
-==4228==    by 0x400EC25: _dl_catch_error (dl-error.c:187)
-==4228==    by 0x4012683: _dl_open (dl-open.c:661)
-==4228==    by 0x41DB44A: do_dlopen (dl-libc.c:87)
-==4228==    by 0x400EC25: _dl_catch_error (dl-error.c:187)
-==4228==    by 0x41DB53A: dlerror_run (dl-libc.c:46)
-==4228==    by 0x41DB5C0: __libc_dlopen_mode (dl-libc.c:163)
-==4228==    by 0x40AA9E9: pthread_cancel_init (unwind-forcedunwind.c:52)
-==4228==    by 0x40A70EC: pthread_cancel (pthread_cancel.c:39)
-==4228==    by 0x804BEB8: morirElegantemente (Memoria.c:640)
-==4228== 
-==4228== 634 bytes in 1 blocks are still reachable in loss record 12 of 12
-==4228==    at 0x402C109: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==4228==    by 0x400A6A8: _dl_new_object (dl-object.c:75)
-==4228==    by 0x4005EF7: _dl_map_object_from_fd (dl-load.c:1059)
-==4228==    by 0x40081C3: _dl_map_object (dl-load.c:2605)
-==4228==    by 0x4012C53: dl_open_worker (dl-open.c:235)
-==4228==    by 0x400EC25: _dl_catch_error (dl-error.c:187)
-==4228==    by 0x4012683: _dl_open (dl-open.c:661)
-==4228==    by 0x41DB44A: do_dlopen (dl-libc.c:87)
-==4228==    by 0x400EC25: _dl_catch_error (dl-error.c:187)
-==4228==    by 0x41DB53A: dlerror_run (dl-libc.c:46)
-==4228==    by 0x41DB5C0: __libc_dlopen_mode (dl-libc.c:163)
-==4228==    by 0x40AA9E9: pthread_cancel_init (unwind-forcedunwind.c:52)
-==4228== 
-==4228== LEAK SUMMARY:
-==4228==    definitely lost: 42 bytes in 2 blocks
-==4228==    indirectly lost: 0 bytes in 0 blocks
-==4228==      possibly lost: 544 bytes in 4 blocks
-==4228==    still reachable: 1,014 bytes in 6 blocks
-==4228==         suppressed: 0 bytes in 0 blocks
-==4228== 
-==4228== For counts of detected and suppressed errors, rerun with: -v
-==4228== Use --track-origins=yes to see where uninitialised values come from
-==4228== ERROR SUMMARY: 7 errors from 7 contexts (suppressed: 0 from 0)
+==7515== Memcheck, a memory error detector
+==7515== Copyright (C) 2002-2013, and GNU GPL'd, by Julian Seward et al.
+==7515== Using Valgrind-3.10.0.SVN and LibVEX; rerun with -h for copyright info
+==7515== Command: ./Memoria
+==7515== Parent PID: 2154
+==7515== 
+==7515== 
+==7515== HEAP SUMMARY:
+==7515==     in use at exit: 586 bytes in 6 blocks
+==7515==   total heap usage: 178 allocs, 172 frees, 132,963 bytes allocated
+==7515== 
+==7515== 12 bytes in 1 blocks are still reachable in loss record 1 of 6
+==7515==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==7515==    by 0x8049CD2: lRecv (SocketLibrary.c:78)
+==7515==    by 0x804AAB2: conexion_kernel (Memoria.c:108)
+==7515==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==7515==    by 0x41A350D: clone (clone.S:129)
+==7515== 
+==7515== 30 bytes in 1 blocks are still reachable in loss record 2 of 6
+==7515==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==7515==    by 0x804B311: leerCaracteresEntrantes (Memoria.c:314)
+==7515==    by 0x804B359: recibir_comandos (Memoria.c:325)
+==7515==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==7515==    by 0x41A350D: clone (clone.S:129)
+==7515== 
+==7515== 136 bytes in 1 blocks are possibly lost in loss record 3 of 6
+==7515==    at 0x402C109: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==7515==    by 0x401117E: allocate_dtv (dl-tls.c:296)
+==7515==    by 0x40118EB: _dl_allocate_tls (dl-tls.c:460)
+==7515==    by 0x40A27A2: pthread_create@@GLIBC_2.1 (allocatestack.c:589)
+==7515==    by 0x804A7D9: main (Memoria.c:33)
+==7515== 
+==7515== 136 bytes in 1 blocks are possibly lost in loss record 4 of 6
+==7515==    at 0x402C109: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==7515==    by 0x401117E: allocate_dtv (dl-tls.c:296)
+==7515==    by 0x40118EB: _dl_allocate_tls (dl-tls.c:460)
+==7515==    by 0x40A27A2: pthread_create@@GLIBC_2.1 (allocatestack.c:589)
+==7515==    by 0x804A7FD: main (Memoria.c:34)
+==7515== 
+==7515== 136 bytes in 1 blocks are possibly lost in loss record 5 of 6
+==7515==    at 0x402C109: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==7515==    by 0x401117E: allocate_dtv (dl-tls.c:296)
+==7515==    by 0x40118EB: _dl_allocate_tls (dl-tls.c:460)
+==7515==    by 0x40A27A2: pthread_create@@GLIBC_2.1 (allocatestack.c:589)
+==7515==    by 0x804A821: main (Memoria.c:35)
+==7515== 
+==7515== 136 bytes in 1 blocks are possibly lost in loss record 6 of 6
+==7515==    at 0x402C109: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==7515==    by 0x401117E: allocate_dtv (dl-tls.c:296)
+==7515==    by 0x40118EB: _dl_allocate_tls (dl-tls.c:460)
+==7515==    by 0x40A27A2: pthread_create@@GLIBC_2.1 (allocatestack.c:589)
+==7515==    by 0x804B843: esperar_cpus (Memoria.c:437)
+==7515==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==7515==    by 0x41A350D: clone (clone.S:129)
+==7515== 
+==7515== LEAK SUMMARY:
+==7515==    definitely lost: 0 bytes in 0 blocks
+==7515==    indirectly lost: 0 bytes in 0 blocks
+==7515==      possibly lost: 544 bytes in 4 blocks
+==7515==    still reachable: 42 bytes in 2 blocks
+==7515==         suppressed: 0 bytes in 0 blocks
+==7515== 
+==7515== For counts of detected and suppressed errors, rerun with: -v
+==7515== ERROR SUMMARY: 4 errors from 4 contexts (suppressed: 0 from 0)
