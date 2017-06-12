@@ -15,6 +15,7 @@
 //DEFINES DE MEMORIA
 
 #define DESREFERENCIAR 100
+#define LEER 2
 #define ESCRIBIR 3
 
 //DEFINES DE KERNEL
@@ -47,6 +48,8 @@ t_puntero obtenerPosicionVariable(t_nombre_variable);
 t_valor_variable asignarValorCompartida(t_nombre_compartida, t_valor_variable);
 void asignar(t_puntero direccionVariable, t_valor_variable valor);
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero dondeRetornar);
+void llamarSinRetorno(t_nombre_etiqueta etiqueta);
+t_valor_variable dereferenciar(t_puntero posicion);
 void finalizar(void);
 void irAlLabel(t_nombre_etiqueta nombre);
 void retornar(t_valor_variable valorDeRetorno);
@@ -59,9 +62,11 @@ AnSISOP_funciones primitivas = {
 		.AnSISOP_asignarValorCompartida	= asignarValorCompartida,
 		.AnSISOP_asignar = asignar,
 		.AnSISOP_llamarConRetorno = llamarConRetorno,
+		.AnSISOP_llamarSinRetorno = llamarSinRetorno,
 		.AnSISOP_finalizar = finalizar,
 		.AnSISOP_irAlLabel = irAlLabel,
-		.AnSISOP_retornar = retornar
+		.AnSISOP_retornar = retornar,
+		.AnSISOP_dereferenciar = dereferenciar
 };
 
 AnSISOP_kernel primitivas_kernel = {
@@ -73,7 +78,7 @@ AnSISOP_kernel primitivas_kernel = {
 
 posicionEnMemoria* obtenerPosicionMemoria(int, int, int);
 void iniciarConexiones(void);
-void esperarPCB(void);
+int esperarPCB(void);
 void informarAMemoriaDelPIDActual(void);
 char* conseguirDatosDeLaMemoria(PCB*, int);
 t_puntero definirVariable(t_nombre_variable);
@@ -90,6 +95,7 @@ indStk* crearIndiceDeStack();
 variable* obtenerUltimaVariable(t_list* listaVariables);
 t_puntero convertirADireccionReal(posicionEnMemoria unaPosicion);
 void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor);
+char* leerEnMemoria(posicionEnMemoria posicion);
 posicionEnMemoria convertirADireccionLogica(t_puntero posicionReal);
 
 

@@ -77,7 +77,7 @@ PCB* deserializarPCB(char* pcbSerializado) // A SER REEMPLAZADO POR LO DE NICO
 	indiceStackSerializado.data = malloc(indiceStackSerializado.size);
 	memcpy(indiceStackSerializado.data, puntero, indiceStackSerializado.size);
 	puntero += indiceStackSerializado.size;
-	pcb->indiceStack = deserializarIndiceDeStack(indiceStackSerializado);
+	pcb->indiceStack = deserializarIndiceDeStack(indiceStackSerializado, pcb->nivelDelStack);
 	memcpy(puntero, &pcb->exitCode, sizeof(int));
 	free(indiceStackSerializado.data);
 	return pcb;
@@ -87,7 +87,7 @@ PCB* deserializarPCB(char* pcbSerializado) // A SER REEMPLAZADO POR LO DE NICO
 serializado serializarPCB(PCB* pcb) // A SER REEMPLAZADO POR LO DE NICO
 {
 	serializado pcbSerializado;
-	serializado indiceStackSerializado = serializarIndiceDeStack(pcb->indiceStack);
+	serializado indiceStackSerializado = serializarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
 	pcbSerializado.size = sizeof(int)*8 + pcb->sizeIndiceCodigo + pcb->sizeIndiceEtiquetas + indiceStackSerializado.size;
 	pcbSerializado.data = malloc(pcbSerializado.size);
 	char* puntero = pcbSerializado.data;
@@ -117,76 +117,104 @@ serializado serializarPCB(PCB* pcb) // A SER REEMPLAZADO POR LO DE NICO
 
 }
 
-serializado serializarIndiceDeStack(indStk* indiceStack)
+serializado serializarIndiceDeStack(indStk* indiceStack, int ultimoNivel)
 {
 	serializado indiceStackSerializado;
-	int cantVars = list_size(indiceStack->variables);
-	int cantArgs = list_size(indiceStack->argumentos);
-	indiceStackSerializado.size = (cantVars+cantArgs)*sizeof(variable)+sizeof(variable)+sizeof(int)*3;
-	indiceStackSerializado.data = malloc(indiceStackSerializado.size);
-	char* puntero = indiceStackSerializado.data;
-	memcpy(puntero, &indiceStack->posicionDeRetorno, sizeof(int));
-	puntero += sizeof(int);
-	memcpy(puntero, &indiceStack->variableDeRetorno, sizeof(variable));
-	puntero += sizeof(variable);
-	memcpy(puntero, &cantVars, sizeof(int));
-	puntero += sizeof(int);
-	void serializar(variable* unaVariable)
+	indiceStackSerializado.size = 0;
+	int i;
+	for(i = 0;i<=ultimoNivel;i++)
 	{
-		memcpy(puntero, unaVariable, sizeof(variable));
-		puntero += sizeof(variable);
+		int cantVars = list_size(indiceStack[i].variables);
+		int cantArgs = list_size(indiceStack[i].argumentos);
+		indiceStackSerializado.size += (cantVars+cantArgs)*sizeof(variable)+sizeof(variable)+sizeof(int)*3;
 	}
-	if(cantVars != 0)
-		list_iterate(indiceStack->variables, serializar);
-	memcpy(puntero, &cantArgs, sizeof(int));
-	puntero += sizeof(int);
-	if(cantArgs != 0)
-		list_iterate(indiceStack->argumentos, serializar);
+	indiceStackSerializado.data = malloc(indiceStackSerializado.size);
+	for(i = 0;i<=ultimoNivel;i++)
+	{
+		int cantVars = list_size(indiceStack[i].variables);
+		int cantArgs = list_size(indiceStack[i].argumentos);
+		char* puntero = indiceStackSerializado.data;
+		memcpy(puntero, &indiceStack[i].posicionDeRetorno, sizeof(int));
+		puntero += sizeof(int);
+		memcpy(puntero, &indiceStack[i].variableDeRetorno, sizeof(variable));
+		puntero += sizeof(variable);
+		memcpy(puntero, &cantVars, sizeof(int));
+		puntero += sizeof(int);
+		void serializar(variable* unaVariable)
+		{
+			memcpy(puntero, unaVariable, sizeof(variable));
+			puntero += sizeof(variable);
+		}
+		if(cantVars != 0)
+			list_iterate(indiceStack[i].variables, serializar);
+		memcpy(puntero, &cantArgs, sizeof(int));
+		puntero += sizeof(int);
+		if(cantArgs != 0)
+			list_iterate(indiceStack[i].argumentos, serializar);
+	}
 	return indiceStackSerializado;
 
 }
 
-indStk* deserializarIndiceDeStack(serializado indiceSerializado)
+indStk* deserializarIndiceDeStack(serializado indiceSerializado, int ultimoNivel)
 {
-	indStk* indiceDeStack = malloc(sizeof(indStk));
+	indStk* indiceDeStack = malloc(sizeof(indStk)*(ultimoNivel+1));
 	char* puntero = indiceSerializado.data;
-	memcpy(&indiceDeStack->posicionDeRetorno, puntero, sizeof(int));
-	puntero += sizeof(int);
-	memcpy(&indiceDeStack->variableDeRetorno, puntero, sizeof(variable));
-	puntero += sizeof(variable);
-	int cantVars;
-	memcpy(&cantVars, puntero, sizeof(int));
-	puntero += sizeof(int);
-	indiceDeStack->variables = list_create();
-	indiceDeStack->argumentos = list_create();
-	if(cantVars != 0)
+	int i;
+	for(i = 0;i<=ultimoNivel;i++)
 	{
-		int i;
-		for(i = 0;i<cantVars;i++)
+		memcpy(&indiceDeStack[i].posicionDeRetorno, puntero, sizeof(int));
+		puntero += sizeof(int);
+		memcpy(&indiceDeStack[i].variableDeRetorno, puntero, sizeof(variable));
+		puntero += sizeof(variable);
+		int cantVars;
+		memcpy(&cantVars, puntero, sizeof(int));
+		puntero += sizeof(int);
+		indiceDeStack[i].variables = list_create();
+		indiceDeStack[i].argumentos = list_create();
+		if(cantVars != 0)
 		{
-			variable* var = malloc(sizeof(variable));
-			memcpy(var, puntero, sizeof(variable));
-			list_add(indiceDeStack->variables, var);
-			puntero+= sizeof(variable);
+			int i;
+			for(i = 0;i<cantVars;i++)
+			{
+				variable* var = malloc(sizeof(variable));
+				memcpy(var, puntero, sizeof(variable));
+				list_add(indiceDeStack[i].variables, var);
+				puntero+= sizeof(variable);
+			}
 		}
-	}
-	int cantArgs;
-	memcpy(&cantArgs, puntero, sizeof(int));
-	puntero += sizeof(int);
-	if(cantArgs != 0)
-	{
-		int i;
-		for(i = 0;i<cantArgs;i++)
+		int cantArgs;
+		memcpy(&cantArgs, puntero, sizeof(int));
+		puntero += sizeof(int);
+		if(cantArgs != 0)
 		{
-			variable* var = malloc(sizeof(variable));
-			memcpy(var, puntero, sizeof(variable));
-			list_add(indiceDeStack->argumentos, var);
-			puntero += sizeof(variable);
+			int i;
+			for(i = 0;i<cantArgs;i++)
+			{
+				variable* var = malloc(sizeof(variable));
+				memcpy(var, puntero, sizeof(variable));
+				list_add(indiceDeStack[i].argumentos, var);
+				puntero += sizeof(variable);
+			}
 		}
 	}
 	return indiceDeStack;
 
 }
+
+indStk* crearIndiceDeStack()
+{
+	indStk* indice = malloc(sizeof(indStk));
+	indice->argumentos = list_create();
+	indice->variables = list_create();
+	indice->posicionDeRetorno = 0;
+	indice->variableDeRetorno.posicion.offset = -1;
+	indice->variableDeRetorno.posicion.pagina = -1;
+	indice->variableDeRetorno.posicion.size = -1;
+	indice->variableDeRetorno.identificador = string_new();
+	return indice;
+}
+
 
 serializado serializarOpFS(int tipoOperacion){ //Con parametros globales, No se si esta mejor pasar todos los parametros e ignorar algunos o hacer multiples funciones
 	serializado opFSSerializada;

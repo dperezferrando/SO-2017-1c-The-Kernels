@@ -14,7 +14,11 @@ int main(int argc, char** argsv) {
 	iniciarConexiones();
 	while(1) // EN UN FUTURO ESTO SE CAMBIA POR EL ENVIO DE LA SEÑAL SIGUSR1
 	{
-		esperarPCB();
+		if(esperarPCB() == -1)
+		{
+			puts("MURIO EL KERNEL");
+			break;
+		}
 		informarAMemoriaDelPIDActual();
 		while(finaliza == 0) // HARDCODEADO
 		{
@@ -47,14 +51,18 @@ void iniciarConexiones()
 	free(tamanioPaginas);
 }
 
-void esperarPCB()
+int esperarPCB()
 {
 	puts("Esperando PCB");
 	Mensaje* mensaje = lRecv(kernel);
+	if(mensaje->header.tipoOperacion == -1)
+		return mensaje->header.tipoOperacion;
 	puts("PCB RECIBIDO");
 	pcb = deserializarPCB(mensaje->data);
 	//pcb->indiceStack = crearIndiceDeStack();// AGUJEROS
+	int op = mensaje->header.tipoOperacion;
 	destruirMensaje(mensaje);
+	return op;
 }
 
 
@@ -116,6 +124,7 @@ void imprimir(configFile* c){
 
 // FUNCIONES ANSISOP PARSER
 t_puntero definirVariable(t_nombre_variable identificador){
+	puts("DEFINIR VARIABLES");
 	posicionEnMemoria unaPosicion = calcularPosicion();
 	variable* unaVariable = malloc(sizeof(variable));
 	unaVariable->identificador = identificador;
@@ -131,6 +140,7 @@ t_puntero definirVariable(t_nombre_variable identificador){
 }
 
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador){
+	printf("OBTENER POSICION VARIABLE %c\n", identificador);
 	t_list* lista;
 	if(isalpha(identificador))
 		lista = pcb->indiceStack[pcb->nivelDelStack].variables;
@@ -172,30 +182,13 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida nombre){
 
 void asignar(t_puntero direccionReal, t_valor_variable valor)
 {
+	printf("ASIGNACION\n");
 	posicionEnMemoria posicion = convertirADireccionLogica(direccionReal);
 	escribirEnMemoria(posicion, valor);
-	printf("ASIGNACION\n");
+	printf("ENVIO PEDIDO DE ESCRITURA A MEMORIA PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %i\n", posicion.pagina, posicion.offset, posicion.size, valor);
+
 
 }
-
-/*
-void finalizar(void){
-	indStk* aFinalizar;
-	aFinalizar=list_get(pcb->indiceStack, list_size(pcb->indiceStack)-1);
-
-	if(list_size(pcb->indiceStack)-1==0){
-		//finalizarProceso(pcb->pid);
-	}
-	else{
-		list_clean_and_destroy_elements(aFinalizar->argumentos, *liberar);
-		list_clean_and_destroy_elements(aFinalizar->variables, *liberar);
-		free(aFinalizar);
-		//pcb->programCounter= obtenerpcanterior
-	}
-
-}
-*/
-
 
 
 posicionEnMemoria calcularPosicion()
@@ -295,60 +288,128 @@ void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor)
 	free(pedido);
 }
 
+char* leerEnMemoria(posicionEnMemoria posicion)
+{
+	lSend(memoria, &posicion, LEER, sizeof(posicionEnMemoria));
+	Mensaje* respuesta = lRecv(memoria);
+	char* data = malloc(respuesta->header.tamanio);
+	memcpy(data, respuesta->data, respuesta->header.tamanio);
+	destruirMensaje(respuesta);
+	return data;
+
+}
+
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero dondeRetornar)
 {
-	puts("LLAMARCONRETORNO");
+	puts("LLAMAR CON RETORNO");
+	pcb->nivelDelStack++;
+	pcb->indiceStack = realloc(pcb->indiceStack, sizeof(indStk)*(pcb->nivelDelStack+1));
+	int returnpos = pcb->programCounter;
+	//pcb->programCounter = metadata_buscar_etiqueta(etiqueta, pcb->indiceEtiqueta, pcb->sizeIndiceEtiquetas);
+	variable var;
+	var.identificador = '\0';
+	var.posicion= convertirADireccionLogica(dondeRetornar);
+	pcb->indiceStack[pcb->nivelDelStack].posicionDeRetorno = returnpos;
+	pcb->indiceStack[pcb->nivelDelStack].variableDeRetorno = var;
+	pcb->indiceStack[pcb->nivelDelStack].variables = list_create();
+	pcb->indiceStack[pcb->nivelDelStack].argumentos = list_create();
+	printf("[STACK LEVEL: %i a %i] LLAMA A %s - SE GUARDA RETURN POS: %i y LA RETURN VAR ES: PAG: %i OFFSET: %i SIZE: %i\n",pcb->nivelDelStack-1, pcb->nivelDelStack, etiqueta, returnpos, var.posicion.pagina, var.posicion.offset, var.posicion.size);
+	irAlLabel(etiqueta);
+}
+
+void llamarSinRetorno(t_nombre_etiqueta etiqueta)
+{
+	puts("LLAMAR SIN RETORNO");
+}
+
+t_valor_variable dereferenciar(t_puntero posicion)
+{
+	puts("DEREFERENCIAR");
+	posicionEnMemoria direccionLogica = convertirADireccionLogica(posicion);
+	char* info = leerEnMemoria(direccionLogica);
+	t_valor_variable valor = (int)(*info);
+	printf("OBTENGO DE MEMORIA EL SIGUIENTE VALOR: %i\n", valor);
+	free(info);
+	return valor;
+
 }
 
 void finalizar(void)
 {
-	finaliza = 1;
-	puts("FINALIZAR");
+	printf("FINALIZAR [STACK LEVEL: %i]\n", pcb->nivelDelStack);
+	if(pcb->nivelDelStack == 0)
+		finaliza = 1;
+	else
+	{
+		pcb->programCounter = pcb->indiceStack[pcb->nivelDelStack].posicionDeRetorno;
+		list_clean_and_destroy_elements(pcb->indiceStack[pcb->nivelDelStack].argumentos, free);
+		list_clean_and_destroy_elements(pcb->indiceStack[pcb->nivelDelStack].variables, free);
+		pcb->nivelDelStack--;
+		pcb->indiceStack = realloc(pcb->indiceStack, sizeof(indStk)*(pcb->nivelDelStack+1));
+	}
+
 }
 
+
+
+/*void finalizar(void){
+	indStk* aFinalizar;
+	aFinalizar=list_get(pcb->indiceStack, list_size(pcb->indiceStack)-1);
+
+	if(list_size(pcb->indiceStack)-1==0){
+		//finalizarProceso(pcb->pid);
+	}
+	else{
+		list_clean_and_destroy_elements(aFinalizar->argumentos, *liberar);
+		list_clean_and_destroy_elements(aFinalizar->variables, *liberar);
+		free(aFinalizar);
+		//pcb->programCounter= obtenerpcanterior
+	}
+
+}*/
+
+
+
+
 void irAlLabel(t_nombre_etiqueta nombre){
+	puts("IR A LABEL");
 	t_puntero_instruccion instruccionParaPCB;
-	//instruccionParaPCB = metadata_buscar_etiqueta(t_nombre_etiqueta, pcb->indiceEtiqueta, pcb->sizeIndiceEtiquetas);
-	pcb->programCounter = instruccionParaPCB;
+	instruccionParaPCB = metadata_buscar_etiqueta(nombre, pcb->indiceEtiqueta, pcb->sizeIndiceEtiquetas);
+	pcb->programCounter = instruccionParaPCB-1;
+	printf("IR A LABEL: %s PC: %i\n", nombre, pcb->programCounter);
 }
 
 void retornar(t_valor_variable valorDeRetorno){
-	puts("RETORNAR A NIVEL ANTERIOR DE STACK");
+	puts("ASIGNAR VARIABLE RETORNO");
+	t_puntero dirReal = convertirADireccionReal(pcb->indiceStack[pcb->nivelDelStack].variableDeRetorno.posicion);
+	asignar(dirReal,valorDeRetorno);
 
 }
 	//PRIMITIVAS ANSISOP KERNEL
 
-	void wait(t_nombre_semaforo nombre){
-		int tamanio = strlen(nombre)+1;
-		char * nombreSemaforo = malloc(tamanio);
-		char* bCero= "/0";
-
-		memcpy(nombreSemaforo, nombre, strlen(nombre));
-		memcpy(nombreSemaforo+(strlen(nombre)), bCero,strlen(bCero));
-
-		lSend(kernel, (char*) nombreSemaforo, WAIT, strlen(nombreSemaforo));
-
-		Mensaje *m =lRecv(kernel);
-
-		int bloqueado = (int) m->data;//No se si va esto
-		if(bloqueado){
-			puts("Se bloqueo maestro");
-		}
-
-		free(nombreSemaforo);
+void wait(t_nombre_semaforo nombre){
+	int tamanio = strlen(nombre)+1;
+	char * nombreSemaforo = malloc(tamanio);
+	char* bCero= "/0";
+	memcpy(nombreSemaforo, nombre, strlen(nombre));
+	memcpy(nombreSemaforo+(strlen(nombre)), bCero,strlen(bCero));
+	lSend(kernel, (char*) nombreSemaforo, WAIT, strlen(nombreSemaforo));
+	Mensaje *m =lRecv(kernel);
+	int bloqueado = (int) m->data;//No se si va esto
+	if(bloqueado){
+		puts("Se bloqueo maestro");
 	}
+	free(nombreSemaforo);
+}
 
-	void signal(t_nombre_semaforo nombre){
-		int tamanio = strlen(nombre)+1;
-		char * nombreSemaforo = malloc(tamanio);
-		char* bCero= "/0";
-
-		memcpy(nombreSemaforo, nombre, strlen(nombre));
-		memcpy(nombreSemaforo+(strlen(nombre)), bCero,strlen(bCero));
-
-		lSend(kernel, (char*) nombreSemaforo, SIGNAL, strlen(nombreSemaforo));
-
-	}
+void signal(t_nombre_semaforo nombre){
+	int tamanio = strlen(nombre)+1;
+	char * nombreSemaforo = malloc(tamanio);
+	char* bCero= "/0";
+	memcpy(nombreSemaforo, nombre, strlen(nombre));
+	memcpy(nombreSemaforo+(strlen(nombre)), bCero,strlen(bCero));
+	lSend(kernel, (char*) nombreSemaforo, SIGNAL, strlen(nombreSemaforo));
+}
 	/*
 	t_puntero reservar(t_valor_variable){
 		return;

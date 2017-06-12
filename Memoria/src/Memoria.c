@@ -467,7 +467,7 @@ void conexion_cpu(int conexion)
 				posicionEnMemoria* posicion = malloc(sizeof(posicionEnMemoria));
 				memcpy(posicion, mensaje->data, sizeof(posicionEnMemoria));
 				char* linea = leerDondeCorresponda(pidActual, posicion);
-				lSend(conexion, linea, 3, posicion->size);
+				lSend(conexion, linea, 2, posicion->size);
 				free(posicion);
 				free(linea);
 				break;

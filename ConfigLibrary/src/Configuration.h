@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include <commons/config.h>
+#include <commons/string.h>
 #include <commons/collections/list.h>
 
 //Globales para serializar OpFS
@@ -70,6 +71,7 @@ void* configurate(char* ,void*(t_config*), char* []);
 serializado serializarPCB (PCB* pcb);
 serializado serializarOpFS(int);
 PCB* deserializarPCB (char*);
-serializado serializarIndiceDeStack(indStk* indiceStack);
-indStk* deserializarIndiceDeStack(serializado indiceSerializado);
+serializado serializarIndiceDeStack(indStk* indiceStack, int);
+indStk* deserializarIndiceDeStack(serializado indiceSerializado, int);
+indStk* crearIndiceDeStack();
 #endif
