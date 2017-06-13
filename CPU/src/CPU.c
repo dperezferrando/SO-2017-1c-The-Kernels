@@ -124,8 +124,8 @@ void imprimir(configFile* c){
 
 // FUNCIONES ANSISOP PARSER
 t_puntero definirVariable(t_nombre_variable identificador){
-	puts("DEFINIR VARIABLES");
-	posicionEnMemoria unaPosicion = calcularPosicion();
+	printf("DEFINIR VARIABLE: %c\n", identificador);
+	posicionEnMemoria unaPosicion = calcularPosicion(pcb->nivelDelStack);
 	variable* unaVariable = malloc(sizeof(variable));
 	unaVariable->identificador = identificador;
 	unaVariable->posicion = unaPosicion;
@@ -134,7 +134,7 @@ t_puntero definirVariable(t_nombre_variable identificador){
 	else if(isalpha(unaVariable->identificador))
 		list_add(pcb->indiceStack[pcb->nivelDelStack].variables, unaVariable);
 	t_puntero direccionReal = convertirADireccionReal(unaVariable->posicion);
-	printf("Definiendo variable %c [STACK LEVEL: %i]: PAG: %i | OFFSET: %i | Size: %i:\n", unaVariable->identificador, pcb->nivelDelStack, unaVariable->posicion.pagina, unaVariable->posicion.offset, unaVariable->posicion.size);
+	printf("VARIABLE DEFINIDA %c [STACK LEVEL: %i]: PAG: %i | OFFSET: %i | Size: %i:\n", unaVariable->identificador, pcb->nivelDelStack, unaVariable->posicion.pagina, unaVariable->posicion.offset, unaVariable->posicion.size);
 	return direccionReal;
 
 }
@@ -185,17 +185,17 @@ void asignar(t_puntero direccionReal, t_valor_variable valor)
 	printf("ASIGNACION\n");
 	posicionEnMemoria posicion = convertirADireccionLogica(direccionReal);
 	escribirEnMemoria(posicion, valor);
-	printf("ENVIO PEDIDO DE ESCRITURA A MEMORIA PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %i\n", posicion.pagina, posicion.offset, posicion.size, valor);
+	printf("ASIGNO VARIABLE - PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %i\n", posicion.pagina, posicion.offset, posicion.size, valor);
 
 
 }
 
 
-posicionEnMemoria calcularPosicion()
+posicionEnMemoria calcularPosicion(int nivelDelStack)
 {
 	posicionEnMemoria unaPosicion;
 	unaPosicion.size = 4;
-	if(pcb->nivelDelStack == 0)
+	if(nivelDelStack == 0)
 	{
 		if(list_is_empty(pcb->indiceStack[0].variables))
 		{
@@ -204,7 +204,7 @@ posicionEnMemoria calcularPosicion()
 		}
 		else
 		{
-			variable* ultimaVariable = obtenerUltimaVariable(pcb->indiceStack[0].variables);
+		/*	variable* ultimaVariable = obtenerUltimaVariable(pcb->indiceStack[0].variables);
 			posicionEnMemoria posicionUltimaVariable = ultimaVariable->posicion;
 			unaPosicion.offset = posicionUltimaVariable.offset+4;
 			if(unaPosicion.offset > tamanioPagina)
@@ -213,27 +213,36 @@ posicionEnMemoria calcularPosicion()
 				unaPosicion.offset = 0;
 			}
 			else
-				unaPosicion.pagina = posicionUltimaVariable.pagina;
+				unaPosicion.pagina = posicionUltimaVariable.pagina;*/
+			unaPosicion = generarPosicionEnBaseAUltimaVariableDe(pcb->indiceStack[0].variables);
+
 		}
 	}
 	else
 	{
-		if(list_is_empty(pcb->indiceStack[pcb->nivelDelStack].variables))
+		if(list_is_empty(pcb->indiceStack[nivelDelStack].variables))
 		{
-			variable* ultimaVariable = obtenerUltimaVariable(pcb->indiceStack[pcb->nivelDelStack].argumentos);
-			posicionEnMemoria posicionUltimaVariable = ultimaVariable->posicion;
-			unaPosicion.offset = posicionUltimaVariable.offset+4;
-			if(unaPosicion.offset > tamanioPagina)
+			if(!list_is_empty(pcb->indiceStack[nivelDelStack].argumentos))
 			{
-				unaPosicion.pagina = posicionUltimaVariable.pagina+1;
-				unaPosicion.offset = 0;
+				/*variable* ultimaVariable = obtenerUltimaVariable(pcb->indiceStack[nivelDelStack].argumentos);
+				posicionEnMemoria posicionUltimaVariable = ultimaVariable->posicion;
+
+				unaPosicion.offset = posicionUltimaVariable.offset+4;
+				if(unaPosicion.offset > tamanioPagina)
+				{
+					unaPosicion.pagina = posicionUltimaVariable.pagina+1;
+					unaPosicion.offset = 0;
+				}
+				else
+					unaPosicion.pagina = posicionUltimaVariable.pagina;*/
+				unaPosicion = generarPosicionEnBaseAUltimaVariableDe(pcb->indiceStack[nivelDelStack].argumentos);
 			}
 			else
-				unaPosicion.pagina = posicionUltimaVariable.pagina;
+				unaPosicion = calcularPosicion(nivelDelStack-1);
 		}
 		else
 		{
-			variable* ultimaVariable = obtenerUltimaVariable(pcb->indiceStack[pcb->nivelDelStack].variables);
+		/*	variable* ultimaVariable = obtenerUltimaVariable(pcb->indiceStack[nivelDelStack].variables);
 			posicionEnMemoria posicionUltimaVariable = ultimaVariable->posicion;
 			unaPosicion.offset = posicionUltimaVariable.offset+4;
 			if(unaPosicion.offset > tamanioPagina)
@@ -242,20 +251,32 @@ posicionEnMemoria calcularPosicion()
 				unaPosicion.offset = 0;
 			}
 			else
-				unaPosicion.pagina = posicionUltimaVariable.pagina;
+				unaPosicion.pagina = posicionUltimaVariable.pagina;*/
+			unaPosicion = generarPosicionEnBaseAUltimaVariableDe(pcb->indiceStack[nivelDelStack].variables);
 		}
 	}
 	return unaPosicion;
 }
 
-/*
- * LA FUNCION QUE VA A EVITAR LA REPITICION DE LOGICA SIDA DE ARRIBA
+
+
 posicionEnMemoria generarPosicionEnBaseAUltimaVariableDe(t_list* lista)
 {
 	posicionEnMemoria posicion;
 	posicion.size = 4;
+	variable* ultimaVariable = obtenerUltimaVariable(lista);
+	posicionEnMemoria posicionUltimaVariable = ultimaVariable->posicion;
+	posicion.offset = posicionUltimaVariable.offset+4;
+	if(posicion.offset > tamanioPagina) // ESTO ESTA MAL, HAY QUE CAMBIARLO. UNA INSTRUCCION PUEDE QUEDAR PARTE EN UNA PAGINA Y PARTE EN OTRA
+	{
+		posicion.pagina = posicionUltimaVariable.pagina+1;
+		posicion.offset = 0;
+	}
+	else
+		posicion.pagina = posicionUltimaVariable.pagina;
+	return posicion;
 
-}*/
+}
 
 t_puntero convertirADireccionReal(posicionEnMemoria unaPosicion)
 {

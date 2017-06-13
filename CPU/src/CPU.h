@@ -90,12 +90,13 @@ void conexion_memoria();
 void conexion_kernel();
 char* serializarPosicionEnMemoria(int, int, int);
 char* pedirInstruccionAMemoria(PCB* pcb, int tamanioPagina);
-posicionEnMemoria calcularPosicion();
+posicionEnMemoria calcularPosicion(int);
 indStk* crearIndiceDeStack();
 variable* obtenerUltimaVariable(t_list* listaVariables);
 t_puntero convertirADireccionReal(posicionEnMemoria unaPosicion);
 void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor);
 char* leerEnMemoria(posicionEnMemoria posicion);
 posicionEnMemoria convertirADireccionLogica(t_puntero posicionReal);
+posicionEnMemoria generarPosicionEnBaseAUltimaVariableDe(t_list*);
 
 
