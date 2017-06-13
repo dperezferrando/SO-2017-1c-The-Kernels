@@ -25,6 +25,8 @@
 #define ASIGNARCOMPARTIDA 201
 #define WAIT 202
 #define SIGNAL 203
+#define RESERVAR_MEMORIA_HEAP 204
+#define LIBERAR_PUNTERO 205
 
 typedef struct configFile{
 	char ip_Kernel[16];

@@ -384,15 +384,29 @@ void signal(t_nombre_semaforo nombre){
 	memcpy(nombreSemaforo+(strlen(nombre)), bCero,strlen(bCero));
 	lSend(kernel, (char*) nombreSemaforo, SIGNAL, strlen(nombreSemaforo));
 }
-	/*
-	t_puntero reservar(t_valor_variable){
-		return;
-	}
-	void liberar(t_puntero){
-		return;
+
+t_puntero reservar(t_valor_variable nroBytes){
+	int tamanioAReservar = nroBytes;
+	lSend(kernel, &tamanioAReservar, RESERVAR_MEMORIA_HEAP, sizeof(tamanioAReservar));
+
+	Mensaje *m =lRecv(kernel);
+	t_puntero puntero= (t_puntero) m->data;
+	if(puntero<0){
+		puts("No se pudo reservar memoria en el heap");
 	}
 
-	t_descriptor_archivo abrir(t_direccion_archivo, t_banderas){
+	return puntero;
+
+}
+
+
+void liberar(t_puntero puntero ){
+
+	lSend(kernel, (t_puntero) &puntero, LIBERAR_PUNTERO, sizeof(t_puntero));
+	return;
+}
+
+/*	t_descriptor_archivo abrir(t_direccion_archivo, t_banderas){
 		return;
 	}
 
@@ -415,6 +429,7 @@ void signal(t_nombre_semaforo nombre){
 	void leer(t_descriptor_archivo, t_puntero, t_valor_variable){
 		return;
 	}
-	*/
 
 
+
+*/
