@@ -6,6 +6,7 @@
 #include <math.h>
 #include <commons/config.h>
 #include <commons/collections/list.h>
+#include <commons/string.h>
 #include <pthread.h>
 #include <parser/parser.h>
 #include <parser/metadata_program.h>
@@ -76,7 +77,7 @@ AnSISOP_kernel primitivas_kernel = {
 };
 
 
-posicionEnMemoria* obtenerPosicionMemoria(int, int, int);
+posicionEnMemoria obtenerPosicionMemoria(int, int, int);
 void iniciarConexiones(void);
 int esperarPCB(void);
 void informarAMemoriaDelPIDActual(void);

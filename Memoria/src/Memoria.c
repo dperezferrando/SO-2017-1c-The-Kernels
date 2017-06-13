@@ -247,10 +247,9 @@ void reemplazarLRU(entradaCache* entrada)
 	}
 	else
 	{
-		int index;
+		int index = 0, i = 0;
 		void calcularIndexMenosUsado(entradaCache* unaEntrada)
 		{
-			int i = 0;
 			if(entrada->pid == unaEntrada->pid)
 				i++;
 			if(i<config->cache_x_proc)
@@ -405,7 +404,7 @@ void mostrarDatosProcesos()
 			char* punteroAFrame = obtenerPosicionAOperar(puntero->pid, puntero->pagina, 0);
 			char* data = malloc(config->marco_size);
 			memcpy(data, punteroAFrame, config->marco_size);
-			printf("FRAME: %i | PID: %i | PAG: %i | DATA:\n %i\n", puntero->frame, puntero->pid, puntero->pagina, data);
+			printf("FRAME: %i | PID: %i | PAG: %i | DATA:\n %s\n", puntero->frame, puntero->pid, puntero->pagina, data);
 			free(data);
 		}
 		puntero++;
