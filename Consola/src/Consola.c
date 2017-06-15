@@ -2,7 +2,7 @@
  ============================================================================
  Name        : Consola.c
  Author      : Dario Poma
- Version     : 1.0
+ Version     : 2.0
  Copyright   : ---
  Description : Una hermosa consola...
  ============================================================================
@@ -11,6 +11,7 @@
 #include "Consola.h"
 
 int main(void) {
+	iniciarSemaforosDeControl();
 	leerArchivoDeConfiguracion();
 	conectarConKernel();
 	atenderPedidos();
@@ -18,10 +19,24 @@ int main(void) {
 	return EXIT_SUCCESS;
 }
 
+void atenderPedidos() {
+	crearListaDeProgramas();
+	crearHiloReceptor();
+	atenderInstrucciones();
+}
+
+void finalizarProceso() {
+	desconectar();
+	enviarAlKernel(&nada, FINALIZAR);
+	sem_wait(&finalizacionHiloReceptor);
+	liberar(config);
+	close(kernel);
+	destruirListaDeProgramas();
+}
+
 void atenderInstrucciones() {
 	Instruccion instruccion;
 	instruccion.comando = 0;
-	mensajeConsola(INGRESAR);
 	while(instruccion.comando != EXIT) {
 		instruccion = obtenerInstruccion();
 		switch(instruccion.comando) {
@@ -30,287 +45,242 @@ void atenderInstrucciones() {
 			case DISCONNECT: desconectar(); break;
 			case CLEAR: limpiar(); break;
 			case LIST: mostrarLista(); break;
-			case HELP: mensajeConsola(AYUDA); break;
+			case HELP: mensajeAyuda(); break;
 			default: break;
 		}
 	}
 }
 
-Instruccion obtenerInstruccion() {
-	Instruccion instruccion;
-	char* mensaje = leerCaracteresEntrantes();
-	char* comando = obtenerComandoDe(mensaje);
-	instruccion.comando = identificarComando(comando);
-	if(instruccion.comando != ERROR) {
-		if(elComandoLlevaParametros(comando)) {
-			char* argumento = obtenerArgumentoDe(mensaje);
-			strcpy(instruccion.argumento, argumento);
-			if(!sonIguales(argumento, ""))
-				free(argumento);
-		}
-	} else
-		mensajeConsola(ERROR_COMANDO);
-	free(comando);
-	free(mensaje);
-	return instruccion;
+
+void iniciar(char* path) {
+	crearHiloPrograma(path);
 }
 
-int identificarComando(char* comando) {
-	if(sonIguales(comando, C_RUN))
-		return RUN;
-	else if(sonIguales(comando, C_CLOSE))
-		return CLOSE;
-	else if(sonIguales(comando, C_DISCONNECT))
-		return DISCONNECT;
-	else if(sonIguales(comando, C_EXIT))
-		return EXIT;
-	else if(sonIguales(comando, C_CLEAR))
-		return CLEAR;
-	else if(sonIguales(comando, C_LIST))
-			return LIST;
-	else if(sonIguales(comando, C_HELP))
-			return HELP;
+void cerrar(char* pidPrograma) {
+	sem_wait(&mutexLista);
+	Programa* programa = buscarProgramaPorPid(pidPrograma);
+	if(existeElPrograma(programa)) {
+		enviarAlKernel(obtenerPid(programa), CERRAR_PROCESO);
+	}
 	else
-		return ERROR;
+		mensajeErrorPid();
+	sem_post(&mutexLista);
 }
 
-void mensajeConsola(int mensaje) {
-	switch(mensaje) {
-	case INGRESAR: mensajeIngresar(); break;
-	case ERROR_COMANDO: mensajeComandoInvalido(); break;
-	case CONSOLA_CONECTADA: mensajeConsolaConectada(); break;
-	case ERROR_ARCHIVO: mensajeErrorArchivo(); break;
-	case AYUDA: mensajeAyuda(); break;
-	case ERROR_PID: mensajeErrorPid(); break;
-	case CONSOLA_DESCONECTADA: mensajeConsolaDesconectada(); break;
-	case NO_HAY_PROCESOS: mensajeNoHayProcesos(); break;
-	case ERROR_CONEXION: mensajeErrorConexion(); break;
-	case ESPERA: mensajeEspera(); break;
+void limpiar() {
+	system("clear");
+	mensajeIngresar();
+}
+
+void desbloquearHilos() {
+	int i = 0;
+	sem_wait(&mutexLista);
+	for(i=0; i<list_size(listaDeProgramas); i++)
+		sem_post(&((Programa*)list_get(listaDeProgramas, i))->semaforo);
+	sem_post(&mutexLista);
+}
+
+void desconectar() {
+	enviarAlKernel(&nada, ABORTAR_PROCESO);
+}
+
+
+void abortar() {
+	if(listaDeProgramasEstaVacia())
+		sem_post(&destruccionMensaje);
+	else {
+	desbloquearHilos();
+	mensajeConsolaDesconectada();
+	mensajeIngresar();
 	}
 }
 
-
-//MENSAJES CONSOLA
-void mensajeIngresar() {
-	printf("Consola: ");
-}
-
-void mensajeComandoInvalido() {
-	puts("-------------------------------");
-	puts("ERROR: COMANDO INVALIDO");
-	puts("-------------------------------");
+void mostrarLista() {
+	sem_wait(&mutexLista);
+	if(listaDeProgramasEstaVacia()) {
+		sem_post(&mutexLista);
+		mensajeNoHayProcesos();
+	}
+	else {
+		sem_post(&mutexLista);
+		recorrerLista();
+	}
 	mensajeIngresar();
 }
 
-void mensajeConsolaConectada() {
-	puts("CONSOLA CONECTADA");
-	puts("--------------------------------------");
-	puts("PARA VER LOS COMANDOS INGRESE 'HELP'");
-	puts("--------------------------------------");
-}
+//-----------------------------------FUNCIONES HILO PROGRAMA-----------------------------------
 
-void mensajeConsolaDesconectada() {
-	puts("-------------------------------");
-	puts("CONSOLA DESCONECTADA");
-	puts("-------------------------------");
-}
-
-void mensajeErrorConexion() {
-	puts("-------------------------------");
-	puts("ERROR: LA CONEXION FINALIZO");
-	puts("-------------------------------");
-}
-
-void mensajeErrorArchivo() {
-	puts("--------------------------------");
-	puts("ERROR: ARCHIVO O RUTA INCORRECTA");
-	puts("--------------------------------");
-	mensajeIngresar();
-}
-
-void mensajeErrorPid() {
-	puts("--------------------------------------");
-	puts("ERROR: IDENTIFICADOR DE PROCESO INEXISTENTE");
-	puts("--------------------------------------");
-	mensajeIngresar();
-}
-
-void mensajeDesconectarTodo() {
-	puts("-------------------------------------------");
-	puts("TODOS LOS PROCESOS HAN SIDO DESCONECTADOS");
-	puts("-------------------------------------------");
-	mensajeIngresar();
-}
-
-void mensajeNoHayProcesos() {
-	puts("----------------------------------");
-	puts("NO HAY PROCESOS EJECUTANDOSE");
-	puts("----------------------------------");
-}
-
-
-void informacionPrograma(Programa* programa) {
-	char* tiempoInicio = mostrarTiempo(programa->tiempoInicio);
-	char* tiempoFinal = mostrarTiempo(obtenerTiempo());
-	puts("----------------------------------------");
-	printf("ID PROCESO: %i\n", programa->pid);
-	printf("FECHA DE INICIO: %s\n", tiempoInicio);
-	printf("FECHA DE FINALIZACION: %s\n", tiempoFinal);
-	printf("TIEMPO DE EJECUCION: %f SEGUNDOS\n", difftime(obtenerTiempo(), programa->tiempoInicio));
-	puts("----------------------------------------");
-	free(tiempoInicio);
-	free(tiempoFinal);
-}
-
-void mensajeAyuda() {
-	puts("------------------------------------------------------------");
-	puts("RUN <RUTA_ARCHIVO> ---> INICIA UN PROCESO");
-	puts("CLOSE <ID_PROCESO> ---> FINALIZA UN PROCESO");
-	puts("DISCONNECT -----------> DESCONECTA TODOS LOS PROCESOS");
-	puts("CLEAR ----------------> LIMPIA LA PANTALLA");
-	puts("LIST -----------------> MUESTRA LOS PROCESOS EN EJECUCION");
-	puts("EXIT -----------------> SALIR DEL PROGRAMA");
-	puts("------------------------------------------------------------");
-	mensajeIngresar();
-}
-
-void mensajeEspera() {
-	puts("------------------------------------------------------------");
-	puts("ESPERANDO RESPUESTA DEL KERNEL...");
-	puts("------------------------------------------------------------");
-}
-
-void mensajeNoHayEspacio() {
-	puts("ERROR: NO HAY ESPACIO DISPONIBLE EN MEMORIA");
-	puts("------------------------------------------------------------");
-	mensajeIngresar();
-}
-
-
-void iniciarEstructuraPrograma(char* path) {
+void crearHiloPrograma(char* path) {
 	Programa* programa = malloc(sizeof(Programa));
-	list_add(listaDeProgramas, programa);
-	programa->tiempoInicio = obtenerTiempo();
 	strcpy(programa->path, path);
 	pthread_create(&(programa->hiloPrograma), NULL, (void *) hiloPrograma, programa);
 }
 
-void iniciar(char* path) {
-	enviarArchivoAlKernel(path);
-	sem_wait(&espera);
-	if(respuesta->header.tipoOperacion != -2) {
-		iniciarEstructuraPrograma(path);
-	} else
-		mensajeNoHayEspacio();
-}
-
-
-void enviarArchivoAlKernel(char* path) {
-	FILE* archivo = fopen(path, "r");
-	if(archivo != NULL) {
-		char* texto = leerArchivo(archivo);
-		fclose(archivo);
-		puts("------------------------------------------");
-		printf("CONTENIDO DEL ARCHIVO: %s\n", texto);
-		puts("------------------------------------------");
-		lSend(kernel, texto, 1, strlen(texto));
-		free(texto);
-	}
-	else {
-		mensajeConsola(ERROR_ARCHIVO);
-	}
+void iniciarPrograma(Programa* programa) {
+	programa->impresiones = 0;
+	programa->tiempoInicio = obtenerTiempo();
+	sem_wait(&mutexMensaje);
+	programa->pid = pidEnviadoPorKernel();
+	sem_post(&mutexMensaje);
+	iniciarSemaforo(&programa->semaforo, 0);
+	agregarAListaDeProgramas(programa);
 }
 
 void hiloPrograma(Programa* programa) {
 	pthread_detach(pthread_self());
-	iniciarPrograma();
-	esperarMensajes(programa);
-}
-
-void iniciarSemaforo(Programa* programa) {
-	sem_init(&programa->semaforo,0,0);
+	FILE* archivo = abrirArchivo(programa->path);
+	if(archivoValido(archivo)) {
+		enviarArchivoAlKernel(archivo);
+		sem_wait(&nuevoMensaje);
+		sem_wait(&mutexMensaje);
+		if(operacionDelMensajeEs(NUEVO_PID)) {
+			sem_post(&mutexMensaje);
+			iniciarPrograma(programa);
+			mensajeInicioPrograma(programa->pid);
+			esperarMensajes(programa);
+		}
+		else {
+			sem_post(&mutexMensaje);
+			mensajeNoHayEspacio();
+			sem_post(&destruccionMensaje);
+			free(programa);
+			pthread_exit(NULL);
+		}
+	}
+	else
+		mensajeErrorArchivo();
 }
 
 void esperarMensajes(Programa* programa) {
-	iniciarSemaforo(programa);
-	int estado = 1;
-	int i = 0;
-	while(estado!=0) {
+	int estado = ACTIVADO;
+	while(estado != DESACTIVADO) {
 		sem_wait(&programa->semaforo);
-		switch(respuesta->header.tipoOperacion) {
-			case 1: imprimirMensajeKernel(respuesta->data); break;
-			case 9:
-				sem_wait(&espera);
-				estado = 0;
-				for(i=0; programa != (Programa*)list_get(listaDeProgramas, i); i++);
-				list_remove(listaDeProgramas, i);
-				free(programa);
-				sem_post(&liberarMensaje);
+		sem_wait(&mutexMensaje);
+		switch(tipoOperacion()) {
+			case NUEVO_MENSAJE:
+				imprimirMensaje(mensaje->data); programa->impresiones++; sem_post(&mutexMensaje);
 				break;
-			case -1: finalizarConsolaPorDesconexion(); break;
+			case CERRAR_PROCESO: sem_post(&mutexMensaje);cerrarPrograma(programa); estado = DESACTIVADO; break;
+			case ABORTAR_PROCESO: sem_post(&mutexMensaje); desconectarPrograma(programa); estado = DESACTIVADO; break;
 		}
 	}
 }
+
+void desconectarPrograma(Programa* programa) {
+	informacionPrograma(programa);
+	eliminarDeListaDeProgramas(programa);
+	liberar(programa);
+	sem_wait(&mutexLista);
+	if(listaDeProgramasEstaVacia()) {
+		sem_post(&destruccionMensaje);
+	}
+	sem_post(&mutexLista);
+}
+
+void cerrarPrograma(Programa* programa) {
+	informacionPrograma(programa);
+	eliminarDeListaDeProgramas(programa);
+	liberar(programa);
+	sem_post(&destruccionMensaje);
+}
+
+//----------------------------------FUNCIONES HILO RECEPTOR-----------------------------------
 
 void escuchandoKernel() {
 	pthread_detach(pthread_self());
-	int estado = 1;
-	sem_init(&espera,0,0);
-	sem_init(&liberarPrograma, 0, 0);
-	sem_init(&final, 0, 0);
-	while(estado!=0) {
-		Mensaje* mensaje = lRecv(kernel);
-		respuesta = mensaje;
+	int estado = ACTIVADO;
+	while(estado != DESACTIVADO) {
+		sem_wait(&mutexControl);
+		Mensaje* buffer = lRecv(kernel);
+		sem_wait(&mutexMensaje);
+		mensaje = buffer;
+		sem_post(&mutexMensaje);
 		Programa* programa = NULL;
-		switch(respuesta->header.tipoOperacion) {
-		case 1: printf("%s\n", (char*)mensaje->data); break;
-		case 2: sem_post(&espera); break;
-		case 9:
-			programa = buscarProgramaPorPidNumerico(*(int*)respuesta->data);
+		sem_wait(&mutexMensaje);
+		switch(tipoOperacion()) {
+		case NUEVO_MENSAJE: imprimirMensaje((char*)mensaje->data); sem_post(&destruccionMensaje);break;
+		case NUEVO_PID: sem_post(&nuevoMensaje); break;
+		case CERRAR_PROCESO:
+			sem_wait(&mutexLista);
+			programa = buscarProgramaPorPidNumerico(*(int*)mensaje->data);
+			sem_post(&mutexLista);
 			sem_post(&programa->semaforo);
-			informacionPrograma(programa);
-			sem_post(&espera);
 			break;
-		case 3: estado = 0;sem_post(&liberarMensaje) ;break;
-		case -2: sem_post(&espera); break;
+		case ABORTAR_PROCESO: abortar(); break;
+		case SIN_ESPACIO: sem_post(&nuevoMensaje); break;
+		case FINALIZAR: estado = DESACTIVADO; sem_post(&destruccionMensaje) ;break;
+		case ERROR: finalizarPorDesconexion();
 		}
-		sem_wait(&liberarMensaje);
-		destruirMensaje(mensaje);
+		sem_post(&mutexMensaje);
+		sem_wait(&destruccionMensaje);
+		destruirMensaje(buffer);
+		sem_post(&mutexControl);
 	}
-	sem_post(&final);
-}
-
-void iniciarPrograma() {
-	memcpy(&(((Programa*)list_get(listaDeProgramas, list_size(listaDeProgramas)-1))->pid), respuesta->data, sizeof(int));
-	printf("PID RECIBIDO: %i\n", *(int*)respuesta->data);
-	puts("ESPERANDO IMPRESIONES POR PANTALLA...");
-	puts("------------------------------------------------------------");
-	sem_post(&liberarMensaje);
+	sem_post(&finalizacionHiloReceptor);
 }
 
 
-void imprimirMensajeKernel(char* data) {
-	printf("Mensaje: %s\n", data);
+//-----------------------------------FUNCIONES AUXILIARES---------------------------------
+
+
+void eliminarDeListaDeProgramas(Programa* programa) {
+	int i = 0;
+	sem_wait(&mutexLista);
+	for(i=0; programa != (Programa*)list_get(listaDeProgramas, i); i++);
+	list_remove(listaDeProgramas, i);
+	sem_post(&mutexLista);
 }
 
-void finalizarConsolaPorDesconexion(mensaje) {
-	mensajeConsola(ERROR_CONEXION);
-	exit(EXIT_FAILURE);
+FILE* abrirArchivo(char* path) {
+	FILE* archivo = fopen(path, "r");
+	return archivo;
 }
 
-void noHayEspacio() {
-	mensajeNoHayEspacio();
-	pthread_exit(NULL);
+int archivoValido(FILE* archivo) {
+	return archivo != NULL;
 }
 
-void cerrar(char* pidPrograma) {
-	Programa* programa = buscarProgramaPorPid(pidPrograma);
+void cerrarArchivo(FILE* archivo) {
+	fclose(archivo);
+}
 
-	if(programa == NULL)
-		mensajeConsola(ERROR_PID);
-	else {
-		lSend(kernel, &programa->pid, 9, sizeof(int));
-	}
+void iniciarSemaforo(sem_t* semaforo, unsigned int valor) {
+	sem_init(semaforo, 0, valor);
+}
+
+void agregarAListaDeProgramas(Programa* programa) {
+	sem_wait(&mutexLista);
+	list_add(listaDeProgramas, programa);
+	sem_post(&mutexLista);
+}
+
+int pidEnviadoPorKernel() {
+	return *(int*)mensaje->data;
+}
+
+int tipoOperacion() {
+	return mensaje->header.tipoOperacion;
+}
+
+
+void vaciarListaDeProgramas() {
+	list_clean_and_destroy_elements(listaDeProgramas, liberar);
+}
+
+bool listaDeProgramasEstaVacia() {
+	return list_is_empty(listaDeProgramas);
+}
+
+void enviarAlKernel(int* pid, int operacion) {
+	lSend(kernel, pid, operacion, sizeof(int));
+}
+
+bool existeElPrograma(Programa* programa) {
+	return programa != NULL;
+}
+
+int* obtenerPid(Programa* programa) {
+	return &programa->pid;
 }
 
 
@@ -355,22 +325,158 @@ Programa* buscarProgramaPorPidNumerico(int pid) {
 	}
 }
 
+void cancelarHilosPrograma() {
+	int j;
+	for(j=0; j<list_size(listaDeProgramas); j++) {
+		pthread_cancel(((Programa*)(list_get(listaDeProgramas, j)))->hiloPrograma);
+	}
+}
 
-void mostrarLista() {
-	if(list_is_empty(listaDeProgramas))
-		mensajeConsola(NO_HAY_PROCESOS);
+void liberar(void* algo) {
+	free(algo);
+}
+
+
+Instruccion obtenerInstruccion() {
+	Instruccion instruccion;
+	char* mensaje = leerCaracteresEntrantes();
+	char* comando = obtenerComandoDe(mensaje);
+	instruccion.comando = identificarComando(comando);
+	if(instruccion.comando != ERROR) {
+		if(elComandoLlevaParametros(comando)) {
+			char* argumento = obtenerArgumentoDe(mensaje);
+			strcpy(instruccion.argumento, argumento);
+			if(!sonIguales(argumento, ""))
+				free(argumento);
+		}
+	} else
+		mensajeErrorComando();
+	free(comando);
+	free(mensaje);
+	return instruccion;
+}
+
+int identificarComando(char* comando) {
+	if(sonIguales(comando, C_RUN))
+		return RUN;
+	else if(sonIguales(comando, C_CLOSE))
+		return CLOSE;
+	else if(sonIguales(comando, C_DISCONNECT))
+		return DISCONNECT;
+	else if(sonIguales(comando, C_EXIT))
+		return EXIT;
+	else if(sonIguales(comando, C_CLEAR))
+		return CLEAR;
+	else if(sonIguales(comando, C_LIST))
+			return LIST;
+	else if(sonIguales(comando, C_HELP))
+			return HELP;
 	else
-		recorrerLista();
-	mensajeConsola(INGRESAR);
+		return ERROR;
+}
+
+void iniciarSemaforosDeControl() {
+	iniciarSemaforo(&destruccionMensaje,0);
+	iniciarSemaforo(&finalizacionHiloReceptor,0);
+	iniciarSemaforo(&nuevoMensaje,0);
+	iniciarSemaforo(&mutexLista, 1);
+	iniciarSemaforo(&mutexMensaje, 1);
+	iniciarSemaforo(&mutexTiempo, 1);
+	iniciarSemaforo(&mutexControl, 1);
+	iniciarSemaforo(&mutexOutput, 1);
+}
+
+void finalizarPorDesconexion(mensaje) {
+	cancelarHilosPrograma();
+	mensajeErrorConexion();
+	exit(EXIT_FAILURE);
+}
+
+void conectarConKernel() {
+	kernel = getConnectedSocket2(config->ip_kernel, config->puerto_kernel, CONSOLA_ID);
+	mensajeConsolaConectada();
+}
+
+void crearListaDeProgramas() {
+	listaDeProgramas = list_create();
+}
+
+void crearHiloReceptor() {
+	pthread_t receptor;
+	pthread_create(&receptor, NULL, (void *) escuchandoKernel, NULL);
+}
+
+void destruirListaDeProgramas() {
+	sem_wait(&mutexLista);
+	list_destroy(listaDeProgramas);
+	sem_post(&mutexLista);
+}
+
+int sonIguales(char* s1, char* s2) {
+	if (strcmp(s1, s2) == 0)
+		return 1;
+	else
+		return 0;
+}
+
+void imprimirMensaje(char* data) {
+	sem_wait(&mutexOutput);
+	printf("Mensaje: %s\n", data);
+	sem_post(&mutexOutput);
+}
+
+void mensajeInicioPrograma(int pid) {
+	sem_wait(&mutexOutput);
+	printf("PID RECIBIDO: %i\n", pid);
+	puts("ESPERANDO IMPRESIONES POR PANTALLA...");
+	puts("------------------------------------------------------------");
+	sem_post(&destruccionMensaje);
+	sem_post(&mutexOutput);
+}
+
+void mensajeContenidoArchivo(char* texto) {
+	sem_wait(&mutexOutput);
+	puts("------------------------------------------------------------");
+	printf("CONTENIDO DEL ARCHIVO: %s\n", texto);
+	puts("------------------------------------------------------------");
+	sem_post(&mutexOutput);
+}
+
+bool operacionDelMensajeEs(int idOperacion) {
+	return mensaje->header.tipoOperacion == idOperacion;
+}
+
+char* leerArchivo(FILE* archivo) {
+	fseek(archivo, 0, SEEK_END);
+	long posicion = ftell(archivo);
+	fseek(archivo, 0, SEEK_SET);
+	char *texto = malloc(posicion + 1);
+	fread(texto, posicion, 1, archivo);
+	texto[posicion] = '\0';
+	return texto;
+}
+
+void enviarArchivoAlKernel(FILE* archivo) {
+	char* texto = leerArchivo(archivo);
+	cerrarArchivo(archivo);
+	mensajeContenidoArchivo(texto);
+	lSend(kernel, texto, 1, strlen(texto));
+	free(texto);
 }
 
 void recorrerLista() {
+	sem_wait(&mutexLista);
+	sem_wait(&mutexOutput);
 	int i;
-	puts("---------------------------------------------");
+	puts("------------------------------------------------------------");
 	for(i=0;i<list_size(listaDeProgramas); i++)
-		printf("EL PID DEL PROCESO N°%i ES: %i\n", i, ((Programa*)list_get(listaDeProgramas, i))->pid);
-	puts("----------------------------------------------");
+		printf("EL PROCESO %i ESTA EJECUTANDOSE\n", ((Programa*)list_get(listaDeProgramas, i))->pid);
+	puts("------------------------------------------------------------");
+	sem_post(&mutexOutput);
+	sem_post(&mutexLista);
 }
+
+//-----------------------------------FUNCIONES TIEMPO-----------------------------------
 
 time_t obtenerTiempo() {
 	time_t tiempo = time(0);
@@ -383,6 +489,8 @@ char* mostrarTiempo(time_t tiempo) {
 	strftime(fecha,MAX,"%d/%m/%y | %H:%M:%S", tlocal);
 	return fecha;
 }
+
+//-----------------------------------FUNCIONES COMANDOS-----------------------------------
 
 char* leerCaracteresEntrantes() {
 	int i, caracterLeido;
@@ -414,63 +522,10 @@ int elComandoLlevaParametros(char* comando) {
 	return sonIguales(comando, C_RUN) || sonIguales(comando, C_CLOSE);
 }
 
+//-----------------------------------FUNCIONES ARCHIVO CONFIGURACION-----------------------------------
+
 void leerArchivoDeConfiguracion() {
 	config = configurate(PATH_CONFIG_FILE, leerArchivoConfig, keys);
-}
-
-
-//--------------PARA QUE NO PUTEE VALGRIND------------------
-int enviarHandShake2(int socket, int idPropia)
-{
-	int* idProceso = malloc(sizeof(int));
-	*idProceso = idPropia;
-	lSend(socket, idProceso, HANDSHAKE,sizeof(int));
-	free(idProceso);
-	Mensaje* confirmacion = lRecv(socket);
-	int conf = confirmacion->header.tipoOperacion != -1 && *((int*)confirmacion->data) != 0;
-	destruirMensaje(confirmacion);
-	return  conf;
-
-}
-
-int getConnectedSocket2(char* ip, char* port, int idPropia){
-	int(*action)(int,const struct sockaddr*,socklen_t)=&connect;
-	int socket = internalSocket(ip,port,action);
-	if(!enviarHandShake2(socket, idPropia))
-		errorIfEqual(0,0,"El servidor no admite conexiones para este proceso");
-	return socket;
-}
-//--------------PARA QUE NO PUTEE VALGRIND------------------
-
-void conectarConKernel() {
-	kernel = getConnectedSocket2(config->ip_kernel, config->puerto_kernel, CONSOLA_ID);
-	mensajeConsola(CONSOLA_CONECTADA);
-}
-
-
-void atenderPedidos() {
-	listaDeProgramas = list_create();
-	pthread_create(&escucha, NULL, (void *) escuchandoKernel, NULL);
-	atenderInstrucciones();
-}
-
-char* leerArchivo(FILE* archivo) {
-	fseek(archivo, 0, SEEK_END);
-	long posicion = ftell(archivo);
-	fseek(archivo, 0, SEEK_SET);
-	char *texto = malloc(posicion + 1);
-	fread(texto, posicion, 1, archivo);
-	texto[posicion] = '\0';
-	return texto;
-}
-
-void imprimirConfig(configFile* config) {
-	puts("");
-	puts("-------------------------------");
-	puts("#PROCESO CONSOLA");
-	printf("IP KERNEL: %s\n", config->ip_kernel);
-	printf("PUERTO KERNEL: %s\n", config->puerto_kernel);
-	puts("-------------------------------");
 }
 
 configFile* leerArchivoConfig(t_config* configHandler) {
@@ -482,48 +537,169 @@ configFile* leerArchivoConfig(t_config* configHandler) {
 	return config;
 }
 
-void desconectar() {
-
-	void liberar(void* algo) {
-		free(algo);
-	}
-
-	int j;
-
-	for(j=0; j<list_size(listaDeProgramas); j++) {
-		pthread_cancel(((Programa*)(list_get(listaDeProgramas, j)))->hiloPrograma);
-	}
-	int* i = malloc(sizeof(int));
-	*i = 0;
-	lSend(kernel, i, 2, sizeof(int));
-	free(i);
-	mensajeConsola(CONSOLA_DESCONECTADA);
-	list_clean_and_destroy_elements(listaDeProgramas, liberar);
-		mensajeConsola(INGRESAR);
+void imprimirConfig(configFile* config) {
+	sem_wait(&mutexOutput);
+	puts("");
+	puts("------------------------------------------------------------");
+	puts("#PROCESO CONSOLA");
+	printf("IP KERNEL: %s\n", config->ip_kernel);
+	printf("PUERTO KERNEL: %s\n", config->puerto_kernel);
+	puts("------------------------------------------------------------");
+	sem_post(&mutexOutput);
 }
 
-void finalizarProceso() {
-	desconectar();
-	list_destroy(listaDeProgramas);
-	int a = 0;
-	lSend(kernel, &a, 3, sizeof(int));
-	sem_wait(&final);
-	free(config);
-	close(kernel);
-	sem_destroy(&espera);
-	sem_destroy(&liberarMensaje);
-	sem_destroy(&liberarPrograma);
-	sem_destroy(&final);
+//-----------------------------------MENSAJES CONSOLA-----------------------------------
+
+void mensajeIngresar() {
+	printf("Consola: ");
 }
 
-void limpiar() {
-	system("clear");
-	mensajeConsola(INGRESAR);
+void mensajeErrorComando() {
+	sem_wait(&mutexOutput);
+	puts("------------------------------------------------------------");
+	puts("ERROR: COMANDO INVALIDO");
+	puts("------------------------------------------------------------");
+	mensajeIngresar();
+	sem_post(&mutexOutput);
+
 }
 
-int sonIguales(char* s1, char* s2) {
-	if (strcmp(s1, s2) == 0)
-		return 1;
-	else
-		return 0;
+void mensajeConsolaConectada() {
+	sem_wait(&mutexOutput);
+	puts("CONSOLA CONECTADA");
+	puts("------------------------------------------------------------");
+	puts("PARA VER LOS COMANDOS INGRESE 'HELP'");
+	puts("------------------------------------------------------------");
+	mensajeIngresar();
+	sem_post(&mutexOutput);
 }
+
+void mensajeConsolaDesconectada() {
+	sem_wait(&mutexOutput);
+	puts("------------------------------------------------------------");
+	puts("CONSOLA DESCONECTADA");
+	puts("------------------------------------------------------------");
+	sem_post(&mutexOutput);
+}
+
+void mensajeErrorConexion() {
+	sem_wait(&mutexOutput);
+	puts("------------------------------------------------------------");
+	puts("ERROR: LA CONEXION FINALIZO");
+	puts("------------------------------------------------------------");
+	sem_post(&mutexOutput);
+}
+
+void mensajeErrorArchivo() {
+	sem_wait(&mutexOutput);
+	puts("------------------------------------------------------------");
+	puts("ERROR: ARCHIVO O RUTA INVALIDA");
+	puts("------------------------------------------------------------");
+	mensajeIngresar();
+	sem_post(&mutexOutput);
+}
+
+void mensajeErrorPid() {
+	sem_wait(&mutexOutput);
+	puts("------------------------------------------------------------");
+	puts("ERROR: IDENTIFICADOR DE PROCESO INEXISTENTE");
+	puts("------------------------------------------------------------");
+	mensajeIngresar();
+	sem_post(&mutexOutput);
+}
+
+void mensajeDesconectar() {
+	sem_wait(&mutexOutput);
+	puts("------------------------------------------------------------");
+	puts("TODOS LOS PROCESOS HAN SIDO DESCONECTADOS");
+	puts("------------------------------------------------------------");
+	mensajeIngresar();
+	sem_post(&mutexOutput);
+}
+
+void mensajeNoHayProcesos() {
+	sem_wait(&mutexOutput);
+	puts("------------------------------------------------------------");
+	puts("NO HAY PROCESOS EN EJECUCION");
+	puts("------------------------------------------------------------");
+	sem_post(&mutexOutput);
+}
+
+
+void informacionPrograma(Programa* programa) {
+	sem_wait(&mutexTiempo);
+	sem_wait(&mutexOutput);
+	char* tiempoInicio = mostrarTiempo(programa->tiempoInicio);
+	char* tiempoFinal = mostrarTiempo(obtenerTiempo());
+	puts("------------------------------------------------------------");
+	printf("ID PROCESO: %i\n", programa->pid);
+	printf("FECHA DE INICIO: %s\n", tiempoInicio);
+	printf("FECHA DE FINALIZACION: %s\n", tiempoFinal);
+	printf("CANTIDAD DE IMPRESIONES %i\n", programa->impresiones);
+	printf("TIEMPO DE EJECUCION: %f SEGUNDOS\n", difftime(obtenerTiempo(), programa->tiempoInicio));
+	puts("------------------------------------------------------------");
+	sem_post(&mutexOutput);
+	free(tiempoInicio);
+	free(tiempoFinal);
+	sem_post(&mutexTiempo);
+}
+
+void mensajeAyuda() {
+	sem_wait(&mutexOutput);
+	puts("------------------------------------------------------------");
+	puts("RUN <RUTA_ARCHIVO> ---> INICIA UN PROCESO");
+	puts("CLOSE <ID_PROCESO> ---> FINALIZA UN PROCESO");
+	puts("DISCONNECT -----------> DESCONECTA TODOS LOS PROCESOS");
+	puts("CLEAR ----------------> LIMPIA LA PANTALLA");
+	puts("LIST -----------------> MUESTRA LOS PROCESOS EN EJECUCION");
+	puts("EXIT -----------------> SALIR DEL PROGRAMA");
+	puts("------------------------------------------------------------");
+	mensajeIngresar();
+	sem_post(&mutexOutput);
+}
+
+void mensajeEspera() {
+	sem_wait(&mutexOutput);
+	puts("------------------------------------------------------------");
+	puts("ESPERANDO RESPUESTA DEL KERNEL...");
+	puts("------------------------------------------------------------");
+	mensajeIngresar();
+	sem_post(&mutexOutput);
+}
+
+void mensajeNoHayEspacio() {
+	sem_wait(&mutexOutput);
+	puts("ERROR: NO HAY ESPACIO DISPONIBLE EN MEMORIA");
+	puts("------------------------------------------------------------");
+	sem_post(&mutexOutput);
+}
+
+void mensajeCerrandoProcesos() {
+	sem_wait(&mutexOutput);
+	puts("------------------------------------------------------------");
+	puts("CERRANDO PROCESOS...");
+	puts("------------------------------------------------------------");
+	sem_post(&mutexOutput);
+}
+
+//--------------PARA QUE NO PUTEE VALGRIND------------------
+
+int enviarHandShake2(int socket, int idPropia) {
+	int* idProceso = malloc(sizeof(int));
+	*idProceso = idPropia;
+	lSend(socket, idProceso, HANDSHAKE,sizeof(int));
+	free(idProceso);
+	Mensaje* confirmacion = lRecv(socket);
+	int conf = confirmacion->header.tipoOperacion != -1 && *((int*)confirmacion->data) != 0;
+	destruirMensaje(confirmacion);
+	return  conf;
+}
+
+int getConnectedSocket2(char* ip, char* port, int idPropia){
+	int(*action)(int,const struct sockaddr*,socklen_t)=&connect;
+	int socket = internalSocket(ip,port,action);
+	if(!enviarHandShake2(socket, idPropia))
+		errorIfEqual(0,0,"El servidor no admite conexiones para este proceso");
+	return socket;
+}
+//--------------PARA QUE NO PUTEE VALGRIND------------------

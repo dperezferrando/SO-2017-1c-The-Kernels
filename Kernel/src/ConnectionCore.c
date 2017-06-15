@@ -71,12 +71,16 @@ void recibirDeConsola(int socket, connHandle* master)
 
 			break;
 		}
-		case 2: //Abortar procesos
+		//Abortar procesos
+		case 3:
+			lSend(socket, mensaje->data, 3, sizeof(int));
 			break;
-		 case 3:
-			 //Nada importante solo para que cierre un hilo
-		 	lSend(socket, mensaje->data, 3, sizeof(int));
-		 	break;
+
+		//Para cerrar el hilo receptor de la consola
+		case 4:
+			lSend(socket, mensaje->data, 4, sizeof(int));
+			break;
+
 		case 9:
 			lSend(socket, mensaje->data, 9, sizeof(int));
 			killProcess(mensaje->data);

@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <time.h>
 #include <pthread.h>
 #include <semaphore.h>
@@ -13,13 +14,6 @@
 #include <commons/collections/list.h>
 #include "../../ConfigLibrary/src/Configuration.c"
 #include "../../SocketLibrary/src/SocketLibrary.c"
-
-Mensaje* respuesta = NULL;
-sem_t espera;
-sem_t liberarPrograma;
-sem_t final;
-sem_t liberarMensaje;
-pthread_t escucha;
 
 //------------------------------CONSTANTES------------------------------
 
@@ -45,22 +39,20 @@ pthread_t escucha;
 #define HELP 6
 #define EXIT 7
 
-//Mensajes de la consola
-#define INGRESAR 11
-#define CONSOLA_CONECTADA 12
-#define SALIR 13
-#define ERROR_COMANDO 14
-#define ERROR_ARCHIVO 15
-#define ERROR_PID 16
-#define AYUDA 17
-#define CONSOLA_DESCONECTADA 18
-#define NO_HAY_PROCESOS 19
-#define ERROR_CONEXION 20
-#define ESPERA 21
+//Conexion consola-kernel
+#define SIN_ESPACIO -2
+#define NUEVO_MENSAJE 1
+#define NUEVO_PID 2
+#define ABORTAR_PROCESO 3
+#define FINALIZAR 4
+#define CERRAR_PROCESO 9
+
 
 //Otros
-#define MAX 100
+#define MAX 1000
 #define ERROR -1
+#define DESACTIVADO 0
+#define ACTIVADO 1
 
 //------------------------------ESTRUCTURAS------------------------------
 
@@ -77,6 +69,7 @@ typedef struct {
 
 typedef struct {
 	int pid;
+	int impresiones;
 	char path[MAX];
 	time_t tiempoInicio;
 	pthread_t hiloPrograma;
@@ -89,49 +82,61 @@ int kernel; //Socket del kernel
 configFile* config; //Para levantar el configFile
 t_list* listaDeProgramas; //Lista de los programas
 const char* keys[3] = { "IP_KERNEL", "PUERTO_KERNEL", "NULL" }; //Campos del archivo de configuracion
-int gg;
+int nada = 0; //Cuando no tengo nada que enviarle al kernel
+Mensaje* mensaje = NULL; //Para que pueden acceder al mensaje mis hermosos hilos
+
+//------------------------------SEMAFOROS------------------------------
+
+sem_t nuevoMensaje;
+sem_t finalizacionHiloReceptor;
+sem_t destruccionMensaje;
+sem_t mutexLista;
+sem_t mutexMensaje;
+sem_t mutexControl;
+sem_t mutexTiempo;
+sem_t mutexOutput;
 
 //------------------------------FUNCIONES------------------------------
 
-void leerArchivoDeConfiguracion(); //Levanta el archivo de configuracion y lo muestra en pantalla
-void conectarConKernel(); //Conecta el socket y muestra un lindo mensajito, mira como esta esa delegacion papa
-void atenderPedidos(); //Atiende todo lo que tiren
-void finalizarProceso(); //Libera recursos y desconecta el socket
-void atenderInstrucciones(); //Da inicio a la rutina del comando ingresado, el corazon del equipo
-Instruccion obtenerInstruccion(); //Obtiene la instruccion ingresada
-void iniciar(char*); //Inicia un programa creando su respectivo hilo
-void cerrar(char*); //Finaliza el programa
-void desconectar(); //Desconecta la consola matando a todos los programas
-void limpiar(); //Limpia la pantalla
-char* leerCaracteresEntrantes(); //Lee los caracteres de la consola con el mistico getchar, gracias solá
-char* obtenerComandoDe(char*); //Obtiene el comando de la instruccion
-char* obtenerArgumentoDe(char*); //Obtiene el parametro de la instruccion
-int identificarComando(char*); //Identifica el comando ingresado y devuelve su id
-int elComandoLlevaParametros(char*); //Verifica si el comando recibe argumentos
-void conexionKernel(Programa*); //Envia el archivo al kernel y espera sus respuestas
-char* leerArchivo(FILE*); //Lee el archivo magicamente y lo mete en una cadena
-void recibirRespuesta(); //Recibe mensajes del kernel
-configFile* leerArchivoConfig(t_config*); //Lee el archivo de configuracion
-void imprimirConfig(configFile*); //Imprime el archivo de configuracion
-int sonIguales(char*, char*); //Compara dos cadenas, no me gusta el strcmp no es expresivo
-Programa* buscarProgramaPorPid(char*); //Busca el programa con el pid pasado
-bool buscarPorPid(void*, char*); //Para el list_find
-void mensajeConsola(); //Guarda todos los mensajes de la consola
-void mostrarLista(); //Muestra los procesos en ejecucion
-void mensajeAyuda(); //Muestra los comandos
-void mensajeIngresar(); //Mensaje
-void mensajeConsolaConectada(); //Mensaje
-void mensajeComandoInvalido(); //Mensaje
-void mensajeConsolaDesconectada(); //Mensaje
-void mensajeErrorArchivo(); //Mensaje
-void mensajeErrorPid(); //Mensaje
-void mensajeNoHayProcesos(); //Mensaje
-void mensajeErrorConexion(); //Mensaje
-void mensajeEspera(); //Mensaje
-time_t obtenerTiempo(); //Obtiene el tiempo
-char* mostrarTiempo(time_t); //Muestra el tiempo
+void leerArchivoDeConfiguracion();
+void conectarConKernel();
+void atenderPedidos();
+void finalizarProceso();
+void atenderInstrucciones();
+Instruccion obtenerInstruccion();
+void iniciar(char*);
+void cerrar(char*);
+void desconectar();
+void limpiar();
+char* leerCaracteresEntrantes();
+char* obtenerComandoDe(char*);
+char* obtenerArgumentoDe(char*);
+int identificarComando(char*);
+int elComandoLlevaParametros(char*);
+void conexionKernel(Programa*);
+char* leerArchivo(FILE*);
+void recibirRespuesta();
+configFile* leerArchivoConfig(t_config*);
+void imprimirConfig(configFile*);
+int sonIguales(char*, char*);
+Programa* buscarProgramaPorPid(char*);
+bool buscarPorPid(void*, char*);
+void mensajeConsola();
+void mostrarLista();
+void mensajeAyuda();
+void mensajeIngresar();
+void mensajeConsolaConectada();
+void mensajeErrorComando();
+void mensajeConsolaDesconectada();
+void mensajeErrorArchivo();
+void mensajeErrorPid();
+void mensajeNoHayProcesos();
+void mensajeErrorConexion();
+void mensajeEspera();
+time_t obtenerTiempo();
+char* mostrarTiempo(time_t);
 void recorrerLista();
-void enviarArchivoAlKernel(char*);
+void enviarArchivoAlKernel(FILE*);
 void imprimirMensajeKernel(char*);
 void hiloPrograma(Programa*);
 void finalizarConsolaPorDesconexion();
@@ -140,3 +145,35 @@ void esperarMensajes(Programa*);
 void iniciarPrograma();
 void noHayEspacio();
 Programa* buscarProgramaPorPidNumerico(int pid);
+void informacionPrograma(Programa* programa);
+void crearHiloPrograma();
+void mensajeInicioPrograma(int pid);
+void iniciarSemaforo(sem_t* semaforo, unsigned int valor);
+void cerrarPrograma(Programa*);
+void imprimirMensaje(char*);
+int getConnectedSocket2(char* ip, char* port, int idPropia);
+void finalizarPorDesconexion();
+int archivoValido(FILE* archivo);
+FILE* abrirArchivo(char* path);
+void esperar(sem_t* semaforo);
+void activar(sem_t* semaforo);
+void cancelarHilosPrograma();
+int* obtenerPid(Programa* programa);
+bool existeElPrograma(Programa* programa);
+void vaciarListaDeProgramas();
+void enviarAlKernel(int* pid, int operacion);
+void liberar(void* algo);
+bool listaDeProgramasEstaVacia();
+bool operacionDelMensajeEs(int idOperacion);
+int pidEnviadoPorKernel();
+void agregarAListaDeProgramas(Programa* programa);
+void eliminarDeListaDeProgramas(Programa* programa);
+int tipoOperacion();
+void crearListaDeProgramas();
+void crearHiloReceptor();
+void destruirListaDeProgramas();
+void iniciarSemaforosDeControl();
+void desconectarPrograma(Programa* programa);
+void mensajeCerrandoProcesos();
+void realizarDesconexion();
+void informarDesconexion();
