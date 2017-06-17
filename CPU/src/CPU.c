@@ -232,13 +232,6 @@ posicionEnMemoria generarPosicionEnBaseAUltimaVariableDe(t_list* lista)
 		posicion.offset = posicionUltimaVariable.offset+4;
 		posicion.pagina = posicionUltimaVariable.pagina;
 	}
-/*	if(posicion.offset > tamanioPagina) // ESTO ESTA MAL, HAY QUE CAMBIARLO. UNA INSTRUCCION PUEDE QUEDAR PARTE EN UNA PAGINA Y PARTE EN OTRA
-	{
-		posicion.pagina = posicionUltimaVariable.pagina+1;
-		posicion.offset = 0;
-	}
-	else*/
-
 	return posicion;
 
 }
@@ -280,18 +273,25 @@ char* leerEnMemoria(posicionEnMemoria posicion)
 	}
 	else
 	{
+		instruccion = malloc(posicion.size+1);
+		char* puntero = instruccion;
 		segundoSize = total-tamanioPagina;
 		posicion.size -= segundoSize;
 		printf("[LEER EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
-		instruccion = enviarPedidoLecturaMemoria(posicion);
-		instruccion[posicion.size] = '\0';
+		char* primeraParte = enviarPedidoLecturaMemoria(posicion);
+		memcpy(puntero, primeraParte, posicion.size);
+		puntero+= posicion.size;
+		free(primeraParte);
+	//	instruccion[posicion.size] = '\0';
 		posicion.pagina++;
 		posicion.offset = 0;
 		posicion.size = segundoSize;
 		char* segundaParteInstruccion = enviarPedidoLecturaMemoria(posicion);
 		segundaParteInstruccion[posicion.size] = '\0';
+		memcpy(puntero, segundaParteInstruccion, posicion.size);
+		free(segundaParteInstruccion);
 		printf("[LEER EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
-		string_append(&instruccion, segundaParteInstruccion);
+		//string_append(&instruccion, segundaParteInstruccion);
 		// VER TEMA BARRA CERO
 	}
 
@@ -310,13 +310,19 @@ void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor)
 		int segundoSize;
 		segundoSize = total-tamanioPagina;
 		posicion.size -= segundoSize;
-		enviarPedidoEscrituraMemoria(posicion, valor);
+		int valorAEnviar;
+		int* a = &valor;
+		char* puntero = (char*)a;
+		memcpy(&valorAEnviar, puntero, posicion.size);
+		puntero += posicion.size;
+		enviarPedidoEscrituraMemoria(posicion, valorAEnviar);
 		printf("[ESCRIBIR EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
 		posicion.pagina++;
 		posicion.offset = 0;
 		posicion.size = segundoSize;
+		memcpy(&valorAEnviar, puntero, posicion.size);
 		printf("[ESCRIBIR EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
-		enviarPedidoEscrituraMemoria(posicion, valor);
+		enviarPedidoEscrituraMemoria(posicion, valorAEnviar);
 
 	}
 }
@@ -368,7 +374,8 @@ t_valor_variable dereferenciar(t_puntero posicion)
 	printf("[DEREFERENCIAR - STACK LEVEL: %i]\n", pcb->nivelDelStack);
 	posicionEnMemoria direccionLogica = convertirADireccionLogica(posicion);
 	char* info = leerEnMemoria(direccionLogica);
-	t_valor_variable valor = (int)(*info);
+	t_valor_variable valor;
+	memcpy(&valor, info, sizeof(int));
 	printf("[DEREFERENCIAR - STACK LEVEL: %i]: OBTENGO DE MEMORIA EL SIGUIENTE VALOR: %i\n", pcb->nivelDelStack, valor);
 	free(info);
 	return valor;

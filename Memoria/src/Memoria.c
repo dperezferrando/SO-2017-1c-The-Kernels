@@ -543,7 +543,7 @@ void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
 		}
 	}
 	int valor;
-	memcpy(&valor, linea, sizeof(int));
+	memcpy(&valor, linea, pedido->posicion.size);
 	printf("TESTO - LEYENDO VALOR EN LA POSICION GUARDADA, VALOR = %i\n", valor);
 	free(linea);
 }
