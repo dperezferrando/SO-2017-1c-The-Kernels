@@ -28,7 +28,7 @@ PCB* _fromQueueToQueue(t_queue*, t_queue*, int);
 PCB* _fromListToList(t_list*, t_list*, int, int);
 PCB* _fromListToQueue(t_list*, t_queue*, int PID, int);
 
-void killProcess(int*);
+void killProcess(int);
 void modifyProcessState(int, int);
 void _processChangeStateToList(t_list*, PCB*, int);
 void _processChangeStateToQueue(t_queue*, PCB*, int);

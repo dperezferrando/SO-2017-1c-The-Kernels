@@ -54,7 +54,6 @@ void recibirDeConsola(int socket, connHandle* master)
 			break;
 		case 1:
 		{
-			// TO DO: CHEQUEAR QUE HAY ESPACIO EN MEMORIA
 			int tamanioScript = mensaje->header.tamanio;
 			PCB* pcb = createProcess(mensaje->data, tamanioScript);
 			if(enviarScriptAMemoria(pcb, mensaje->data, tamanioScript))
@@ -252,6 +251,8 @@ void recibirDeCPU(int socket, connHandle* master)
 		case 1:
 			puts("SE TERMINO LA EJECUCION DE UN PROCESO. SE DEBERIA ENVIAR A COLA FINALIZADO EL PCB");
 			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
+			killProcess(pcb->pid);
+			queue_push(colaCPUS, socket);
 			break;
 		case 2:
 			puts("TERMINA EJECUCION DE PROCESO PERO ESTE NO ESTA FINALIZADO");
@@ -331,7 +332,10 @@ void closeHandle(int s, connHandle* master)
 
 
 int checkMultiprog(){
-	int currentMultiprog= queue_size(colaReady) + list_size(blockedList) + list_size(executeList);
+	int a = queue_size(colaReady);
+	int b = list_size(blockedList);
+	int c = list_size(executeList);
+	int currentMultiprog= a + b + c;
 	return config->GRADO_MULTIPROG > currentMultiprog;
 }
 

@@ -27,9 +27,9 @@ PCB* createProcess(char* script, int tamanioScript){
 }
 
 
-void killProcess(int* PID){
+void killProcess(int PID){
 	bool encontrarPorPID(PCB* PCB){
-		return (PCB->pid)==*PID;
+		return (PCB->pid)==PID;
 	}
 	ProcessControl* pc= PIDFind(PID);
 	t_queue* queue= NULL;
