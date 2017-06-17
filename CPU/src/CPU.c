@@ -20,8 +20,8 @@ int main(int argc, char** argsv) {
 			break;
 		}
 		informarAMemoriaDelPIDActual();
-		estado = 0;
-		while(estado == OK) // HARDCODEADO
+		estado = OK;
+		while(estado == OK)
 		{
 			char* linea = pedirInstruccionAMemoria(pcb, tamanioPagina);
 			printf("[PEDIR INSTRUCCION NRO %i]: %s", pcb->programCounter, linea);
@@ -31,7 +31,8 @@ int main(int argc, char** argsv) {
 		}
 		serializado pcbSerializado = serializarPCB(pcb);
 		lSend(kernel, pcbSerializado.data, estado, pcbSerializado.size);
-		free(pcb); // ESTE FREE ESTA COMO EL ORTO, HAY QUE HACER DESTRUIR PCB
+		free(pcbSerializado.data);
+		destruirPCB(pcb);
 	}
 	free(config);
 	close(kernel);
@@ -406,8 +407,8 @@ void finalizar(void)
 	else
 	{
 		pcb->programCounter = pcb->indiceStack[pcb->nivelDelStack].posicionDeRetorno;
-		list_clean_and_destroy_elements(pcb->indiceStack[pcb->nivelDelStack].argumentos, free);
-		list_clean_and_destroy_elements(pcb->indiceStack[pcb->nivelDelStack].variables, free);
+		list_destroy_and_destroy_elements(pcb->indiceStack[pcb->nivelDelStack].argumentos, free);
+		list_destroy_and_destroy_elements(pcb->indiceStack[pcb->nivelDelStack].variables, free);
 		pcb->nivelDelStack--;
 		printf("[FINALIZAR - STACK LEVEL: %i A %i]\n", pcb->nivelDelStack+1, pcb->nivelDelStack);
 		pcb->indiceStack = realloc(pcb->indiceStack, sizeof(indStk)*(pcb->nivelDelStack+1));

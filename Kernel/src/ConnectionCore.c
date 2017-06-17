@@ -251,6 +251,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			break;
 		case 1:
 			puts("SE TERMINO LA EJECUCION DE UN PROCESO. SE DEBERIA ENVIAR A COLA FINALIZADO EL PCB");
+			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
 			break;
 		case 2:
 			puts("TERMINA EJECUCION DE PROCESO PERO ESTE NO ESTA FINALIZADO");
@@ -262,6 +263,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			break;
 		case 4:
 			puts("PROGRAMA ABORTADO");
+			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
 			break;
 		case 5:
 			puts("PROCESO PIDE MEMORIA");

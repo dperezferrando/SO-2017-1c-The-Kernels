@@ -21,7 +21,7 @@ int enviarHandShake(int socket, int idPropia)
 	Mensaje* confirmacion = lRecv(socket);
 	//int conf = confirmacion != NULL && (*confirmacion) != 0;
 	int conf = confirmacion->header.tipoOperacion != -1 && *((int*)confirmacion->data) != 0;
-	free(confirmacion);
+	destruirMensaje(confirmacion);
 	return  conf;
 
 }

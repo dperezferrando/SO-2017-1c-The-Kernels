@@ -84,7 +84,7 @@ PCB* deserializarPCB(char* pcbSerializado) // A SER REEMPLAZADO POR LO DE NICO
 
 }
 
-serializado serializarPCB(PCB* pcb) // A SER REEMPLAZADO POR LO DE NICO
+serializado serializarPCB(PCB* pcb)
 {
 	serializado pcbSerializado;
 	serializado indiceStackSerializado = serializarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
@@ -117,6 +117,25 @@ serializado serializarPCB(PCB* pcb) // A SER REEMPLAZADO POR LO DE NICO
 
 }
 
+void mostrarIndiceDeStack(indStk* indiceStack, int ultimoNivel)
+{
+	int i;
+	for(i = 0;i<=ultimoNivel;i++)
+	{
+		printf("-------INDICE DE STACK NIVEL %i-------\n", i);
+		printf("POS RETORONO: %i | VAR RETORNO %c: PAG: %i - OFFSET: %i - SIZE: %i\n", indiceStack[i].posicionDeRetorno, indiceStack[i].variableDeRetorno.identificador, indiceStack[i].variableDeRetorno.posicion.pagina, indiceStack[i].variableDeRetorno.posicion.offset, indiceStack[i].variableDeRetorno.posicion.size);
+		puts("VARIABLES:");
+		list_iterate(indiceStack[i].variables, mostrarVariable);
+		puts("ARGUMENTOS");
+		list_iterate(indiceStack[i].argumentos, mostrarVariable);
+	}
+}
+
+void mostrarVariable(variable* var)
+{
+	printf("VARIABLE %c | PAG: %i | OFFSET %i | SIZE: %i\n", var->identificador, var->posicion.pagina, var->posicion.offset, var->posicion.size);
+}
+
 serializado serializarIndiceDeStack(indStk* indiceStack, int ultimoNivel)
 {
 	serializado indiceStackSerializado;
@@ -129,11 +148,11 @@ serializado serializarIndiceDeStack(indStk* indiceStack, int ultimoNivel)
 		indiceStackSerializado.size += (cantVars+cantArgs)*sizeof(variable)+sizeof(variable)+sizeof(int)*3;
 	}
 	indiceStackSerializado.data = malloc(indiceStackSerializado.size);
+	char* puntero = indiceStackSerializado.data;
 	for(i = 0;i<=ultimoNivel;i++)
 	{
 		int cantVars = list_size(indiceStack[i].variables);
 		int cantArgs = list_size(indiceStack[i].argumentos);
-		char* puntero = indiceStackSerializado.data;
 		memcpy(puntero, &indiceStack[i].posicionDeRetorno, sizeof(int));
 		puntero += sizeof(int);
 		memcpy(puntero, &indiceStack[i].variableDeRetorno, sizeof(variable));
@@ -174,8 +193,8 @@ indStk* deserializarIndiceDeStack(serializado indiceSerializado, int ultimoNivel
 		indiceDeStack[i].argumentos = list_create();
 		if(cantVars != 0)
 		{
-			int i;
-			for(i = 0;i<cantVars;i++)
+			int j;
+			for(j = 0;j<cantVars;j++)
 			{
 				variable* var = malloc(sizeof(variable));
 				memcpy(var, puntero, sizeof(variable));
@@ -188,8 +207,8 @@ indStk* deserializarIndiceDeStack(serializado indiceSerializado, int ultimoNivel
 		puntero += sizeof(int);
 		if(cantArgs != 0)
 		{
-			int i;
-			for(i = 0;i<cantArgs;i++)
+			int j;
+			for(j = 0;j<cantArgs;j++)
 			{
 				variable* var = malloc(sizeof(variable));
 				memcpy(var, puntero, sizeof(variable));
@@ -211,8 +230,28 @@ indStk* crearIndiceDeStack()
 	indice->variableDeRetorno.posicion.offset = -1;
 	indice->variableDeRetorno.posicion.pagina = -1;
 	indice->variableDeRetorno.posicion.size = -1;
-	indice->variableDeRetorno.identificador = string_new();
+	indice->variableDeRetorno.identificador = -1;
 	return indice;
+}
+
+void destruirIndiceDeStack(indStk* indiceStack, int ultimoNivel)
+{
+	int i;
+	for(i = 0;i<=ultimoNivel;i++)
+	{
+		list_destroy_and_destroy_elements(indiceStack[i].argumentos, free);
+		list_destroy_and_destroy_elements(indiceStack[i].variables, free);
+
+	}
+	free(indiceStack);
+}
+
+void destruirPCB(PCB* pcb)
+{
+	free(pcb->indiceCodigo);
+	free(pcb->indiceEtiqueta);
+	destruirIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
+	free(pcb);
 }
 
 

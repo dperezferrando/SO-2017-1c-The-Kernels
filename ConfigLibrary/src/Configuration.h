@@ -74,4 +74,8 @@ PCB* deserializarPCB (char*);
 serializado serializarIndiceDeStack(indStk* indiceStack, int);
 indStk* deserializarIndiceDeStack(serializado indiceSerializado, int);
 indStk* crearIndiceDeStack();
+void mostrarVariable(variable*);
+void mostrarIndiceDeStack(indStk*, int);
+void destruirIndiceDeStack(indStk*, int);
+void destruirPCB(PCB*);
 #endif
