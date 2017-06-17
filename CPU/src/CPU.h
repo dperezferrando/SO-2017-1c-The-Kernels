@@ -19,6 +19,13 @@
 #define LEER 2
 #define ESCRIBIR 3
 
+// ESTADOS DEL PROCESO
+#define OK 0
+#define TERMINO 1 // TERMINO EJECUCION NORMAL (TODAS LAS INSTRUCCIONES)
+#define EXPULSADO 2 // FIN DE Q
+#define BLOQUEADO 3 // SE BLOQUEO
+#define ABORTADO 4 // HIZO ALGO QUE NO DEBIA (EJ: STACK OVERFLOW)
+
 //DEFINES DE KERNEL
 
 #define OBTENERCOMPARTIDA 200
@@ -42,8 +49,9 @@ PCB* pcb;
 int kernel, memoria;
 int tamanioPagina;
 configFile* config;
-int finaliza = 0;
 int quantum; // si = 0 => ES FIFO
+int stackSize;
+int estado;
 
 // ANSISOP
 t_puntero definirVariable(t_nombre_variable);
@@ -103,5 +111,5 @@ posicionEnMemoria convertirADireccionLogica(t_puntero posicionReal);
 posicionEnMemoria generarPosicionEnBaseAUltimaVariableDe(t_list*);
 char* leerEnMemoria(posicionEnMemoria);
 void enviarPedidoEscrituraMemoria(posicionEnMemoria, t_valor_variable);
-
+void recibirInformacion();
 

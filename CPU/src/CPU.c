@@ -20,7 +20,8 @@ int main(int argc, char** argsv) {
 			break;
 		}
 		informarAMemoriaDelPIDActual();
-		while(finaliza == 0) // HARDCODEADO
+		estado = 0;
+		while(estado == OK) // HARDCODEADO
 		{
 			char* linea = pedirInstruccionAMemoria(pcb, tamanioPagina);
 			printf("[PEDIR INSTRUCCION NRO %i]: %s", pcb->programCounter, linea);
@@ -29,8 +30,8 @@ int main(int argc, char** argsv) {
 			pcb->programCounter++;
 		}
 		serializado pcbSerializado = serializarPCB(pcb);
-		lSend(kernel, pcbSerializado.data, 1, pcbSerializado.size);
-		free(pcb);
+		lSend(kernel, pcbSerializado.data, estado, pcbSerializado.size);
+		free(pcb); // ESTE FREE ESTA COMO EL ORTO, HAY QUE HACER DESTRUIR PCB
 	}
 	free(config);
 	close(kernel);
@@ -43,12 +44,16 @@ void iniciarConexiones()
 {
 	kernel = getConnectedSocket(config->ip_Kernel, config->puerto_Kernel, CPU_ID);
 	memoria = getConnectedSocket(config->ip_Memoria, config->puerto_Memoria, CPU_ID);
-	puts("Esperando Tamaño Paginas");
-	Mensaje* tamanioPaginas = lRecv(kernel);
-	memcpy(&tamanioPagina, tamanioPaginas->data, sizeof(int));
-	Mensaje* algoritmo = lRecv(kernel);
-	memcpy(&quantum,algoritmo->data, sizeof(int));
-	free(tamanioPaginas);
+	puts("Esperando Informacion");
+	recibirInformacion();
+}
+void recibirInformacion()
+{
+	Mensaje* informacion = lRecv(kernel);
+	memcpy(&stackSize, informacion->data, sizeof(int));
+	memcpy(&tamanioPagina, informacion->data+sizeof(int), sizeof(int));
+	memcpy(&quantum, informacion->data+sizeof(int)*2, sizeof(int));
+	destruirMensaje(informacion);
 }
 
 int esperarPCB()
@@ -59,7 +64,6 @@ int esperarPCB()
 		return mensaje->header.tipoOperacion;
 	puts("PCB RECIBIDO");
 	pcb = deserializarPCB(mensaje->data);
-	//pcb->indiceStack = crearIndiceDeStack();// AGUJEROS
 	int op = mensaje->header.tipoOperacion;
 	destruirMensaje(mensaje);
 	return op;
@@ -282,7 +286,6 @@ char* leerEnMemoria(posicionEnMemoria posicion)
 		memcpy(puntero, primeraParte, posicion.size);
 		puntero+= posicion.size;
 		free(primeraParte);
-	//	instruccion[posicion.size] = '\0';
 		posicion.pagina++;
 		posicion.offset = 0;
 		posicion.size = segundoSize;
@@ -291,8 +294,6 @@ char* leerEnMemoria(posicionEnMemoria posicion)
 		memcpy(puntero, segundaParteInstruccion, posicion.size);
 		free(segundaParteInstruccion);
 		printf("[LEER EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
-		//string_append(&instruccion, segundaParteInstruccion);
-		// VER TEMA BARRA CERO
 	}
 
 	return instruccion;
@@ -302,7 +303,15 @@ char* leerEnMemoria(posicionEnMemoria posicion)
 void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor)
 {
 	printf("[ESCRIBIR EN MEMORIA]: PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %i\n", posicion.pagina, posicion.offset, posicion.size, valor);
+	int limiteStack = pcb->cantPaginasCodigo+stackSize;
 	int total = posicion.offset + posicion.size;
+	if(posicion.pagina >= limiteStack)
+	{
+		puts("[ESCRIBIR EN MEMORIA]: STACK OVER FLOW PAPU - PROGRAMA ABORTADO");
+		estado = ABORTADO;
+		return;
+	}
+
 	if(total <= tamanioPagina)
 		enviarPedidoEscrituraMemoria(posicion, valor);
 	else
@@ -315,13 +324,20 @@ void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor)
 		char* puntero = (char*)a;
 		memcpy(&valorAEnviar, puntero, posicion.size);
 		puntero += posicion.size;
-		enviarPedidoEscrituraMemoria(posicion, valorAEnviar);
 		printf("[ESCRIBIR EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
+		enviarPedidoEscrituraMemoria(posicion, valorAEnviar);
 		posicion.pagina++;
 		posicion.offset = 0;
 		posicion.size = segundoSize;
 		memcpy(&valorAEnviar, puntero, posicion.size);
 		printf("[ESCRIBIR EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
+		if(posicion.pagina >= limiteStack)
+		{
+			puts("[ESCRIBIR EN MEMORIA]: STACK OVER FLOW PAPU - PROGRAMA ABORTADO");
+			estado = ABORTADO;
+			return;
+		}
+
 		enviarPedidoEscrituraMemoria(posicion, valorAEnviar);
 
 	}
@@ -386,7 +402,7 @@ void finalizar(void)
 {
 	printf("[FINALIZAR - STACK LEVEL: %i]\n", pcb->nivelDelStack);
 	if(pcb->nivelDelStack == 0)
-		finaliza = 1;
+		estado = TERMINO;
 	else
 	{
 		pcb->programCounter = pcb->indiceStack[pcb->nivelDelStack].posicionDeRetorno;

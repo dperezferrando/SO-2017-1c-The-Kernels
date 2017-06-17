@@ -243,6 +243,7 @@ void recibirDeCPU(int socket, connHandle* master)
 	puts("CPU");
 	PCB* pcb= malloc(sizeof(PCB));
 	Mensaje* mensaje = lRecv(socket);
+	pcb = recibirPCB(mensaje);
 	switch(mensaje->header.tipoOperacion)
 	{
 		case -1:
@@ -250,22 +251,22 @@ void recibirDeCPU(int socket, connHandle* master)
 			break;
 		case 1:
 			puts("SE TERMINO LA EJECUCION DE UN PROCESO. SE DEBERIA ENVIAR A COLA FINALIZADO EL PCB");
-			pcb = recibirPCB(mensaje);
 			break;
 		case 2:
 			puts("TERMINA EJECUCION DE PROCESO PERO ESTE NO ESTA FINALIZADO");
-			pcb = recibirPCB(mensaje);
 			cpuReturnsProcessTo(pcb,1);
 			break;
 		case 3:
+			puts("TERMINA EJECUCION DE PROCESO Y ESTE VA A BLOCKED");
+			cpuReturnsProcessTo(pcb,3);
+			break;
+		case 4:
+			puts("PROGRAMA ABORTADO");
+			break;
+		case 5:
 			puts("PROCESO PIDE MEMORIA");
 			MemoryRequest mr= deserializeMemReq(mensaje->data);
 			memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr));
-			break;
-		case 4:
-			puts("TERMINA EJECUCION DE PROCESO Y ESTE VA A BLOCKED");
-			pcb= recibirPCB(mensaje);
-			cpuReturnsProcessTo(pcb,3);
 			break;
 	}
 	destruirMensaje(mensaje);
@@ -277,16 +278,19 @@ void aceptarNuevoCPU(int unCPU)
 {
 	puts("NUEVO CPU");
 	queue_push(colaCPUS, (int*)unCPU);
-	lSend(unCPU, &config->PAG_SIZE, 0, sizeof(int));
-	enviarAlgoritmo(unCPU);
+	enviarInformacion(unCPU);
 	puts("AGREGADO CPU A COLA");
 }
 
 
-void enviarAlgoritmo(int CPU){
+void enviarInformacion(int CPU){
 	int algoritmo=0;
 	if(strcmp(config->ALGORITMO, "RR")){algoritmo= config->QUANTUM;}
-	lSend(CPU, &algoritmo, 10, sizeof(int));
+	char* data = malloc(sizeof(int)*3);
+	memcpy(data, &config->STACK_SIZE, sizeof(int));
+	memcpy(data + sizeof(int), &config->PAG_SIZE, sizeof(int));
+	memcpy(data + sizeof(int)*2, &algoritmo, sizeof(int));
+	lSend(CPU, data, 10, sizeof(int)*3);
 }
 
 

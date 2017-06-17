@@ -542,8 +542,11 @@ void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
 			linea = solicitarBytesACache(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
 		}
 	}
+	// HUMO DEBUG
 	int valor;
-	memcpy(&valor, linea, pedido->posicion.size);
+	char* puntero = &valor;
+	puntero += (sizeof(int) - pedido->posicion.size);
+	memcpy(puntero, linea, pedido->posicion.size);
 	printf("TESTO - LEYENDO VALOR EN LA POSICION GUARDADA, VALOR = %i\n", valor);
 	free(linea);
 }

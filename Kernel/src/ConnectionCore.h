@@ -27,7 +27,6 @@ int enviarScriptAMemoria(PCB*,char*, int);
 int grabarPedido(PageOwnership*, MemoryRequest, HeapMetadata*);
 int sendMemoryRequest(MemoryRequest, int, void*, PageOwnership*);
 
-
 bool viableRequest(int);
 bool fsSock(int, connHandle*);
 bool memSock(int, connHandle*);
@@ -37,7 +36,7 @@ bool isListener(int, connHandle);
 
 
 void newProcess(PCB*);
-void enviarAlgoritmo(int);
+void enviarInformacion(int);
 void aceptarNuevoCPU(int);
 void closeHandle(int, connHandle*);
 void recibirDeCPU(int, connHandle*);
