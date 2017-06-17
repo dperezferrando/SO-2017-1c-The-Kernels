@@ -79,26 +79,8 @@ char* pedirInstruccionAMemoria(PCB* pcb, int tamanioPagina)
 	int pagina = pcb->indiceCodigo[pcb->programCounter].offset/tamanioPagina;
 	int offset = pcb->indiceCodigo[pcb->programCounter].offset%tamanioPagina;
 	int size = pcb->indiceCodigo[pcb->programCounter].longitud;
-	int total = offset + size;
-	int segundoSize = -1;
-	// EMPROLIJAR; VER SI SE DELEGA A SOLICITAR BYTES. FALTA HACER LO MISMO PARA STACK
-	if(total > tamanioPagina)
-	{
-		segundoSize = total-tamanioPagina;
-		size -= segundoSize;
-	}
-	printf("[PEDIR INSTRUCCION]: PAG: %i | OFFSET: %i | SIZE: %i\n", pagina, offset, size);
 	posicionEnMemoria posicion = obtenerPosicionMemoria(pagina, offset, size);
 	char* instruccion = leerEnMemoria(posicion);
-	instruccion[size] = '\0';
-	if(segundoSize != -1)
-	{
-		posicionEnMemoria posicion = obtenerPosicionMemoria(pagina+1, 0, segundoSize);
-		char* segundaParteInstruccion = leerEnMemoria(posicion);
-		segundaParteInstruccion[segundoSize] = '\0';
-		printf("PRIM PARTE: %s SEG PARTE: %s\n", instruccion, segundaParteInstruccion);
-		string_append(&instruccion, segundaParteInstruccion);
-	}
 	return instruccion;
 }
 
@@ -239,14 +221,24 @@ posicionEnMemoria generarPosicionEnBaseAUltimaVariableDe(t_list* lista)
 	posicion.size = 4;
 	variable* ultimaVariable = obtenerUltimaVariable(lista);
 	posicionEnMemoria posicionUltimaVariable = ultimaVariable->posicion;
-	posicion.offset = posicionUltimaVariable.offset+4;
-	if(posicion.offset > tamanioPagina) // ESTO ESTA MAL, HAY QUE CAMBIARLO. UNA INSTRUCCION PUEDE QUEDAR PARTE EN UNA PAGINA Y PARTE EN OTRA
+	int total = posicionUltimaVariable.offset + posicionUltimaVariable.size;
+	if(total >= tamanioPagina)
+	{
+		posicion.offset = total-tamanioPagina;
+		posicion.pagina = posicionUltimaVariable.pagina+1;
+	}
+	else
+	{
+		posicion.offset = posicionUltimaVariable.offset+4;
+		posicion.pagina = posicionUltimaVariable.pagina;
+	}
+/*	if(posicion.offset > tamanioPagina) // ESTO ESTA MAL, HAY QUE CAMBIARLO. UNA INSTRUCCION PUEDE QUEDAR PARTE EN UNA PAGINA Y PARTE EN OTRA
 	{
 		posicion.pagina = posicionUltimaVariable.pagina+1;
 		posicion.offset = 0;
 	}
-	else
-		posicion.pagina = posicionUltimaVariable.pagina;
+	else*/
+
 	return posicion;
 
 }
@@ -273,7 +265,63 @@ variable* obtenerUltimaVariable(t_list* listaVariables)
 }
 
 
+
+
+char* leerEnMemoria(posicionEnMemoria posicion)
+{
+	int total = posicion.offset + posicion.size;
+	int segundoSize;
+	char* instruccion;
+	printf("[LEER EN MEMORIA]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
+	if(total <= tamanioPagina)
+	{
+		instruccion = enviarPedidoLecturaMemoria(posicion);
+		instruccion[posicion.size] = '\0';
+	}
+	else
+	{
+		segundoSize = total-tamanioPagina;
+		posicion.size -= segundoSize;
+		printf("[LEER EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
+		instruccion = enviarPedidoLecturaMemoria(posicion);
+		instruccion[posicion.size] = '\0';
+		posicion.pagina++;
+		posicion.offset = 0;
+		posicion.size = segundoSize;
+		char* segundaParteInstruccion = enviarPedidoLecturaMemoria(posicion);
+		segundaParteInstruccion[posicion.size] = '\0';
+		printf("[LEER EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
+		string_append(&instruccion, segundaParteInstruccion);
+		// VER TEMA BARRA CERO
+	}
+
+	return instruccion;
+}
+
+
 void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor)
+{
+	printf("[ESCRIBIR EN MEMORIA]: PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %i\n", posicion.pagina, posicion.offset, posicion.size, valor);
+	int total = posicion.offset + posicion.size;
+	if(total <= tamanioPagina)
+		enviarPedidoEscrituraMemoria(posicion, valor);
+	else
+	{
+		int segundoSize;
+		segundoSize = total-tamanioPagina;
+		posicion.size -= segundoSize;
+		enviarPedidoEscrituraMemoria(posicion, valor);
+		printf("[ESCRIBIR EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
+		posicion.pagina++;
+		posicion.offset = 0;
+		posicion.size = segundoSize;
+		printf("[ESCRIBIR EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
+		enviarPedidoEscrituraMemoria(posicion, valor);
+
+	}
+}
+
+void enviarPedidoEscrituraMemoria(posicionEnMemoria posicion, t_valor_variable valor)
 {
 	pedidoEscrituraMemoria* pedido = malloc(sizeof(pedidoEscrituraMemoria));
 	pedido->posicion = posicion;
@@ -282,11 +330,11 @@ void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor)
 	free(pedido);
 }
 
-char* leerEnMemoria(posicionEnMemoria posicion)
+char* enviarPedidoLecturaMemoria(posicionEnMemoria posicion)
 {
 	lSend(memoria, &posicion, LEER, sizeof(posicionEnMemoria));
 	Mensaje* respuesta = lRecv(memoria);
-	char* data = malloc(respuesta->header.tamanio);
+	char* data = malloc(respuesta->header.tamanio+1);
 	memcpy(data, respuesta->data, respuesta->header.tamanio);
 	destruirMensaje(respuesta);
 	return data;
@@ -299,7 +347,6 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero dondeRetornar)
 	pcb->nivelDelStack++;
 	pcb->indiceStack = realloc(pcb->indiceStack, sizeof(indStk)*(pcb->nivelDelStack+1));
 	int returnpos = pcb->programCounter;
-	//pcb->programCounter = metadata_buscar_etiqueta(etiqueta, pcb->indiceEtiqueta, pcb->sizeIndiceEtiquetas);
 	variable var;
 	var.identificador = '\0';
 	var.posicion= convertirADireccionLogica(dondeRetornar);

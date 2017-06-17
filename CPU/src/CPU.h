@@ -98,8 +98,10 @@ indStk* crearIndiceDeStack();
 variable* obtenerUltimaVariable(t_list* listaVariables);
 t_puntero convertirADireccionReal(posicionEnMemoria unaPosicion);
 void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor);
-char* leerEnMemoria(posicionEnMemoria posicion);
+char* enviarPedidoLecturaMemoria(posicionEnMemoria posicion);
 posicionEnMemoria convertirADireccionLogica(t_puntero posicionReal);
 posicionEnMemoria generarPosicionEnBaseAUltimaVariableDe(t_list*);
+char* leerEnMemoria(posicionEnMemoria);
+void enviarPedidoEscrituraMemoria(posicionEnMemoria, t_valor_variable);
 
 

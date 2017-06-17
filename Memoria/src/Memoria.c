@@ -30,6 +30,7 @@ int main(int argc, char** argsv) {
 	levantarSockets();
 	puts("ESPERANDO AL KERNEL");
 	int conexion = lAccept(kernel, KERNEL_ID);
+	lSend(conexion, &config->marco_size, 104, sizeof(int));
 	pthread_create(&conexionKernel, NULL, (void *) conexion_kernel, conexion);
 	pthread_create(&esperarCPUS, NULL, (void *) esperar_cpus, NULL);
 	pthread_create(&consolaMemoria, NULL, (void*) recibir_comandos, NULL);

@@ -52,6 +52,9 @@ void initialize(configFile* config,connHandle* handleMaster){
 	int conexionConsola= getBindedSocket(LOCALHOST,config->PUERTO_PROG);
 	int conexionCPU = getBindedSocket(LOCALHOST, config->PUERTO_CPU);
 	conexionMemoria = getConnectedSocket(config->IP_MEMORIA, config->PUERTO_MEMORIA, KERNEL_ID);
+	Mensaje* pagSize = lRecv(conexionMemoria);
+	memcpy(&config->PAG_SIZE,pagSize->data, pagSize->header.tamanio);
+	destruirMensaje(pagSize);
 	conexionFS = getConnectedSocket(config->IP_FS, config->PUERTO_FS, KERNEL_ID);
 	maxPID=0;
 	lListen(conexionConsola,BACKLOG);
