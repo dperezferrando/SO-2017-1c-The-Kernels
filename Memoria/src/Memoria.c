@@ -207,11 +207,14 @@ void finalizarPrograma(int pid)
 	{
 		return entrada->pid != pid;
 	}
-	pthread_mutex_lock(&cacheSem);
-	t_list* aux= list_filter(cache, pidDistintoA);
-	list_destroy(cache);
-	cache = aux;
-	pthread_mutex_unlock(&cacheSem);
+	if(config->entradas_cache != 0)
+	{
+		pthread_mutex_lock(&cacheSem);
+		t_list* aux= list_filter(cache, pidDistintoA);
+		list_destroy(cache);
+		cache = aux;
+		pthread_mutex_unlock(&cacheSem);
+	}
 
 }
 
@@ -339,10 +342,15 @@ void recibir_comandos()
 				mostrarTablaPaginas();
 			else if(!strcmp(comando[1], "cache"))
 			{
-				puts("----------------DUMP CACHE----------------");
-				printf("ENTRADAS MAXIMA CACHE: %i | ENTRADAS MAXIMAS POR PROCESO: %i\n", config->entradas_cache, config->cache_x_proc);
-				list_iterate(cache, mostrarEntradaCache);
-				puts("----------------DUMP CACHE----------------");
+				if(config->entradas_cache == 0)
+					puts("[CACHE]: LA CACHE ESTA DESACTIVADA");
+				else
+				{
+					puts("----------------DUMP CACHE----------------");
+					printf("ENTRADAS MAXIMA CACHE: %i | ENTRADAS MAXIMAS POR PROCESO: %i\n", config->entradas_cache, config->cache_x_proc);
+					list_iterate(cache, mostrarEntradaCache);
+					puts("----------------DUMP CACHE----------------");
+				}
 			}
 			else if(!strcmp(comando[1], "contenido"))
 				mostrarDatosProcesos();
@@ -519,10 +527,11 @@ char* leerDondeCorresponda(int pid, posicionEnMemoria* posicion)
 	else
 	{
 		puts("[CACHE]: NO EXISTE EN CACHE - RETARDO");
-		sleep(config->retardo_memoria);
+		usleep(1000*config->retardo_memoria);
 		puts("[CACHE]: SLEEP LISTO, SOLICITO Y AGREGO A CACHE");
 		linea = solicitarBytes(pid, posicion->pagina, posicion->offset, posicion->size);
-		agregarACache(pid, posicion->pagina);
+		if(config->entradas_cache != 0)
+			agregarACache(pid, posicion->pagina);
 	}
 	return linea;
 }
@@ -540,24 +549,27 @@ void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
 	else
 	{
 		puts("[CACHE]: NO EXISTE EN CACHE - RETARDO");
-		sleep(config->retardo_memoria);
+		usleep(1000*config->retardo_memoria);
 		puts("[CACHE]: SLEEP LISTO, SOLICITO Y AGREGO A CACHE");
 		if(!escribirBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, valorPuntero))
 			puts("[CACHE]: ERROR (ESTO DEBERIA SER UNREACHABLE, SI LO VES SE ROMPIO TODO)");
 		else
 		{
 			puts("[CACHE]: SE ESCRIBIO EN MEMORIA - AGREGANDO A CACHE LA PAGINA");
-			agregarACache(pid, pedido->posicion.pagina);
-			linea = solicitarBytesACache(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
+			if(config->entradas_cache != 0)
+			{
+				agregarACache(pid, pedido->posicion.pagina);
+				linea = solicitarBytesACache(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
+			}
 		}
 	}
-	// HUMO DEBUG
+/*	// HUMO DEBUG
 	int valor;
 	char* puntero = &valor;
 	puntero += (sizeof(int) - pedido->posicion.size);
 	memcpy(puntero, linea, pedido->posicion.size);
 	printf("[TEST]: LEYENDO VALOR EN LA POSICION GUARDADA, VALOR = %i\n", valor);
-	free(linea);
+	free(linea);*/
 }
 
 

@@ -272,7 +272,9 @@ void recibirDeCPU(int socket, connHandle* master)
 		case 4:
 			puts("PROGRAMA ABORTADO");
 			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
+			killProcess(pcb->pid);
 			executeProcess();
+			queue_push(colaCPUS, socket);
 			break;
 		case 5:
 			puts("PROCESO PIDE MEMORIA");
