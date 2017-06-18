@@ -23,6 +23,7 @@ int main(int argc, char** argsv) {
 		estado = OK;
 		while(estado == OK)
 		{
+
 			char* linea = pedirInstruccionAMemoria(pcb, tamanioPagina);
 			printf("[PEDIR INSTRUCCION NRO %i]: %s", pcb->programCounter, linea);
 			analizadorLinea(linea, &primitivas, &primitivas_kernel);

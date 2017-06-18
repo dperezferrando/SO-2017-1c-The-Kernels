@@ -60,7 +60,9 @@ void recibirDeConsola(int socket, connHandle* master)
 			{
 				lSend(socket, &pcb->pid, 2, sizeof(int));
 				newProcess(pcb, socket);
-				readyProcess(pcb);
+				if(readyProcess(pcb) == -1)
+					puts("SE ALCANZO EL LIMITE DE MULTIPROGRAMACION - QUEDA EN NEW");
+
 			}
 			else
 			{
@@ -251,20 +253,26 @@ void recibirDeCPU(int socket, connHandle* master)
 		case 1:
 			puts("SE TERMINO LA EJECUCION DE UN PROCESO. SE DEBERIA ENVIAR A COLA FINALIZADO EL PCB");
 			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
+			pcb->exitCode = 0;
+			// HAY QUE ENVIAR EL PCB RECIBIDO A LA COLA FINISHED, EN ESTE MOMENTO NO SE HACE, SE PASA EL PCB VIEJO QUE ESTA EN LA COLA EXECUTED.
 			killProcess(pcb->pid);
 			queue_push(colaCPUS, socket);
+			executeProcess();
 			break;
 		case 2:
 			puts("TERMINA EJECUCION DE PROCESO PERO ESTE NO ESTA FINALIZADO");
 			cpuReturnsProcessTo(pcb,1);
+			executeProcess();
 			break;
 		case 3:
 			puts("TERMINA EJECUCION DE PROCESO Y ESTE VA A BLOCKED");
 			cpuReturnsProcessTo(pcb,3);
+			executeProcess();
 			break;
 		case 4:
 			puts("PROGRAMA ABORTADO");
 			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
+			executeProcess();
 			break;
 		case 5:
 			puts("PROCESO PIDE MEMORIA");
@@ -283,6 +291,8 @@ void aceptarNuevoCPU(int unCPU)
 	queue_push(colaCPUS, (int*)unCPU);
 	enviarInformacion(unCPU);
 	puts("AGREGADO CPU A COLA");
+	executeProcess();
+
 }
 
 

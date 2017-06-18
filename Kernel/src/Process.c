@@ -50,6 +50,8 @@ void killProcess(int PID){
 	}
 	lSend(conexionMemoria, &PID, 9, sizeof(int));
 	lSend(pc->consola, &PID, 9, sizeof(int));
+	if(checkMultiprog() && queue_size(colaNew) >0)
+		fromNewToReady();
 }
 
 
@@ -84,7 +86,7 @@ int readyProcess(){//-1 ==> no se pudo poner en ready
 
 
 int executeProcess(){
-	if(queue_size(colaCPUS)<=0){
+	if(queue_size(colaCPUS)<=0 || queue_size(colaReady) <=0){
 		return -1;
 	} else{
 		PCB* pcb= fromReadyToExecute();
