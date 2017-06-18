@@ -1,64 +1,52 @@
-==7515== Memcheck, a memory error detector
-==7515== Copyright (C) 2002-2013, and GNU GPL'd, by Julian Seward et al.
-==7515== Using Valgrind-3.10.0.SVN and LibVEX; rerun with -h for copyright info
-==7515== Command: ./Memoria
-==7515== Parent PID: 2154
-==7515== 
-==7515== 
-==7515== HEAP SUMMARY:
-==7515==     in use at exit: 586 bytes in 6 blocks
-==7515==   total heap usage: 178 allocs, 172 frees, 132,963 bytes allocated
-==7515== 
-==7515== 12 bytes in 1 blocks are still reachable in loss record 1 of 6
-==7515==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==7515==    by 0x8049CD2: lRecv (SocketLibrary.c:78)
-==7515==    by 0x804AAB2: conexion_kernel (Memoria.c:108)
-==7515==    by 0x40A1F6F: start_thread (pthread_create.c:312)
-==7515==    by 0x41A350D: clone (clone.S:129)
-==7515== 
-==7515== 30 bytes in 1 blocks are still reachable in loss record 2 of 6
-==7515==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==7515==    by 0x804B311: leerCaracteresEntrantes (Memoria.c:314)
-==7515==    by 0x804B359: recibir_comandos (Memoria.c:325)
-==7515==    by 0x40A1F6F: start_thread (pthread_create.c:312)
-==7515==    by 0x41A350D: clone (clone.S:129)
-==7515== 
-==7515== 136 bytes in 1 blocks are possibly lost in loss record 3 of 6
-==7515==    at 0x402C109: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==7515==    by 0x401117E: allocate_dtv (dl-tls.c:296)
-==7515==    by 0x40118EB: _dl_allocate_tls (dl-tls.c:460)
-==7515==    by 0x40A27A2: pthread_create@@GLIBC_2.1 (allocatestack.c:589)
-==7515==    by 0x804A7D9: main (Memoria.c:33)
-==7515== 
-==7515== 136 bytes in 1 blocks are possibly lost in loss record 4 of 6
-==7515==    at 0x402C109: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==7515==    by 0x401117E: allocate_dtv (dl-tls.c:296)
-==7515==    by 0x40118EB: _dl_allocate_tls (dl-tls.c:460)
-==7515==    by 0x40A27A2: pthread_create@@GLIBC_2.1 (allocatestack.c:589)
-==7515==    by 0x804A7FD: main (Memoria.c:34)
-==7515== 
-==7515== 136 bytes in 1 blocks are possibly lost in loss record 5 of 6
-==7515==    at 0x402C109: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==7515==    by 0x401117E: allocate_dtv (dl-tls.c:296)
-==7515==    by 0x40118EB: _dl_allocate_tls (dl-tls.c:460)
-==7515==    by 0x40A27A2: pthread_create@@GLIBC_2.1 (allocatestack.c:589)
-==7515==    by 0x804A821: main (Memoria.c:35)
-==7515== 
-==7515== 136 bytes in 1 blocks are possibly lost in loss record 6 of 6
-==7515==    at 0x402C109: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==7515==    by 0x401117E: allocate_dtv (dl-tls.c:296)
-==7515==    by 0x40118EB: _dl_allocate_tls (dl-tls.c:460)
-==7515==    by 0x40A27A2: pthread_create@@GLIBC_2.1 (allocatestack.c:589)
-==7515==    by 0x804B843: esperar_cpus (Memoria.c:437)
-==7515==    by 0x40A1F6F: start_thread (pthread_create.c:312)
-==7515==    by 0x41A350D: clone (clone.S:129)
-==7515== 
-==7515== LEAK SUMMARY:
-==7515==    definitely lost: 0 bytes in 0 blocks
-==7515==    indirectly lost: 0 bytes in 0 blocks
-==7515==      possibly lost: 544 bytes in 4 blocks
-==7515==    still reachable: 42 bytes in 2 blocks
-==7515==         suppressed: 0 bytes in 0 blocks
-==7515== 
-==7515== For counts of detected and suppressed errors, rerun with: -v
-==7515== ERROR SUMMARY: 4 errors from 4 contexts (suppressed: 0 from 0)
+==3554== Memcheck, a memory error detector
+==3554== Copyright (C) 2002-2013, and GNU GPL'd, by Julian Seward et al.
+==3554== Using Valgrind-3.10.0.SVN and LibVEX; rerun with -h for copyright info
+==3554== Command: ./Memoria
+==3554== Parent PID: 2226
+==3554== 
+==3554== 
+==3554== HEAP SUMMARY:
+==3554==     in use at exit: 598 bytes in 7 blocks
+==3554==   total heap usage: 433 allocs, 426 frees, 135,252 bytes allocated
+==3554== 
+==3554== 136 bytes in 1 blocks are possibly lost in loss record 4 of 7
+==3554==    at 0x402C109: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==3554==    by 0x401117E: allocate_dtv (dl-tls.c:296)
+==3554==    by 0x40118EB: _dl_allocate_tls (dl-tls.c:460)
+==3554==    by 0x40A27A2: pthread_create@@GLIBC_2.1 (allocatestack.c:589)
+==3554==    by 0x804ACC0: main (Memoria.c:34)
+==3554== 
+==3554== 136 bytes in 1 blocks are possibly lost in loss record 5 of 7
+==3554==    at 0x402C109: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==3554==    by 0x401117E: allocate_dtv (dl-tls.c:296)
+==3554==    by 0x40118EB: _dl_allocate_tls (dl-tls.c:460)
+==3554==    by 0x40A27A2: pthread_create@@GLIBC_2.1 (allocatestack.c:589)
+==3554==    by 0x804ACE4: main (Memoria.c:35)
+==3554== 
+==3554== 136 bytes in 1 blocks are possibly lost in loss record 6 of 7
+==3554==    at 0x402C109: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==3554==    by 0x401117E: allocate_dtv (dl-tls.c:296)
+==3554==    by 0x40118EB: _dl_allocate_tls (dl-tls.c:460)
+==3554==    by 0x40A27A2: pthread_create@@GLIBC_2.1 (allocatestack.c:589)
+==3554==    by 0x804AD08: main (Memoria.c:36)
+==3554== 
+==3554== 136 bytes in 1 blocks are possibly lost in loss record 7 of 7
+==3554==    at 0x402C109: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==3554==    by 0x401117E: allocate_dtv (dl-tls.c:296)
+==3554==    by 0x40118EB: _dl_allocate_tls (dl-tls.c:460)
+==3554==    by 0x40A27A2: pthread_create@@GLIBC_2.1 (allocatestack.c:589)
+==3554==    by 0x804BDDA: esperar_cpus (Memoria.c:445)
+==3554==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==3554==    by 0x41A350D: clone (clone.S:129)
+==3554== 
+==3554== LEAK SUMMARY:
+==3554==    definitely lost: 0 bytes in 0 blocks
+==3554==    indirectly lost: 0 bytes in 0 blocks
+==3554==      possibly lost: 544 bytes in 4 blocks
+==3554==    still reachable: 54 bytes in 3 blocks
+==3554==         suppressed: 0 bytes in 0 blocks
+==3554== Reachable blocks (those to which a pointer was found) are not shown.
+==3554== To see them, rerun with: --leak-check=full --show-leak-kinds=all
+==3554== 
+==3554== For counts of detected and suppressed errors, rerun with: -v
+==3554== ERROR SUMMARY: 4 errors from 4 contexts (suppressed: 0 from 0)

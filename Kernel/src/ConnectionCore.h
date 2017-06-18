@@ -35,7 +35,7 @@ bool consSock(int, connHandle*);
 bool isListener(int, connHandle);
 
 
-void newProcess(PCB*);
+void newProcess(PCB*, int);
 void enviarInformacion(int);
 void aceptarNuevoCPU(int);
 void closeHandle(int, connHandle*);

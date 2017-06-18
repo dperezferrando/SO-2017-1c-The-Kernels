@@ -48,6 +48,8 @@ void killProcess(int PID){
 		fromBlockedToFinished(PID);
 		break;
 	}
+	lSend(conexionMemoria, &PID, 9, sizeof(int));
+	lSend(pc->consola, &PID, 9, sizeof(int));
 }
 
 
@@ -58,12 +60,13 @@ void killProcess(int PID){
 
 
 
-void newProcess(PCB* pcb)
+void newProcess(PCB* pcb, int consola)
 {
 	queue_push(colaNew, pcb);
 	ProcessControl* pc= malloc(sizeof(ProcessControl));
 	pc->pid= pcb->pid;
 	pc->state= 0;
+	pc->consola = consola;
 	list_add(process,pc);
 }
 

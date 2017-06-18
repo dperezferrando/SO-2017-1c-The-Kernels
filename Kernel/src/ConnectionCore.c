@@ -59,7 +59,7 @@ void recibirDeConsola(int socket, connHandle* master)
 			if(enviarScriptAMemoria(pcb, mensaje->data, tamanioScript))
 			{
 				lSend(socket, &pcb->pid, 2, sizeof(int));
-				newProcess(pcb);
+				newProcess(pcb, socket);
 				readyProcess(pcb);
 			}
 			else
@@ -332,10 +332,7 @@ void closeHandle(int s, connHandle* master)
 
 
 int checkMultiprog(){
-	int a = queue_size(colaReady);
-	int b = list_size(blockedList);
-	int c = list_size(executeList);
-	int currentMultiprog= a + b + c;
+	int currentMultiprog= queue_size(colaReady) + list_size(blockedList) + list_size(executeList);
 	return config->GRADO_MULTIPROG > currentMultiprog;
 }
 

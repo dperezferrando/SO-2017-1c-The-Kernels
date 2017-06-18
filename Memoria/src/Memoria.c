@@ -203,7 +203,15 @@ void finalizarPrograma(int pid)
 		pointer++;
 	}
 	while(pointer->pid == pid);
-	free(pointer);
+	bool pidDistintoA(entradaCache* entrada)
+	{
+		return entrada->pid != pid;
+	}
+	pthread_mutex_lock(&cacheSem);
+	t_list* aux= list_filter(cache, pidDistintoA);
+	list_destroy_and_destroy_elements(cache, destruirEntradaCache);
+	cache = aux;
+	pthread_mutex_unlock(&cacheSem);
 
 }
 
