@@ -27,7 +27,6 @@ int main(int argc, char** argsv) {
 		kernelTest(1);
 		return EXIT_SUCCESS;
 	}
-
 	test=0;
 
 	process= list_create();
@@ -39,6 +38,7 @@ int main(int argc, char** argsv) {
 	blockedList = list_create();
 	executeList = list_create();
 	colaFinished=queue_create();
+	crearListaDeColasSemaforos();
 
 	handler();
 	destruirConfig(config);

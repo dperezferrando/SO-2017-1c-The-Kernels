@@ -104,6 +104,7 @@ AnSISOP_funciones primitivas = {
 AnSISOP_kernel primitivas_kernel = {
 		.AnSISOP_wait = wait,
 		.AnSISOP_signal = signal
+		/*
 		.AnSISOP_reservar = reservar,
 		.AnSISOP_liberar = liberar,
 		.AnSISOP_abrir = abrir,
@@ -112,6 +113,7 @@ AnSISOP_kernel primitivas_kernel = {
 		.AnSISOP_moverCursor = moverCursor,
 		.AnSISOP_escribir = escribir,
 		.AnSISOP_leer = leer
+		*/
 };
 
 

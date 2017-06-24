@@ -10,7 +10,7 @@
 
 PCB* createProcess(char* script, int tamanioScript){
 	PCB* pcb = malloc(sizeof(PCB));
-	pcb->pid= (maxPID++);
+	pcb->pid = (maxPID++);
 	t_metadata_program* metadata = metadata_desde_literal(script);
 	pcb->cantPaginasCodigo = ceil((double)tamanioScript/(double)config->PAG_SIZE);
 	pcb->sizeIndiceCodigo = metadata->instrucciones_size*sizeof(indCod);
@@ -50,8 +50,11 @@ void killProcess(int PID){
 	}
 	lSend(conexionMemoria, &PID, 9, sizeof(int));
 	lSend(pc->consola, &PID, 9, sizeof(int));
+
 	if(checkMultiprog() && queue_size(colaNew) >0)
 		fromNewToReady();
+	//Verifica si esta en alguna de cola de algun semaoforo
+	quitarDeColaDelSemaforoPorKill(PID);
 }
 
 
@@ -244,3 +247,4 @@ void _processChangeStateToList(t_list* toList, PCB* pcb, int newState){
 	list_add(toList, pcb);
 	modifyProcessState(pcb->pid,newState);
 }
+

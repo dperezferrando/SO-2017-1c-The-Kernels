@@ -21,6 +21,7 @@ PCB* fromExecuteToFinished();
 PCB* fromExecuteToBlocked(int);
 PCB* createProcess(char*, int);
 PCB* fromBlockedToFinished(int);
+PCB* fromBlockedToReady(int);
 PCB* removePcbFromList(int,t_list*);
 PCB* _fromTo(t_queue*, t_queue*, int);
 PCB* _fromQueueToList(t_queue*, t_list*, int);
@@ -35,3 +36,4 @@ void _processChangeStateToQueue(t_queue*, PCB*, int);
 
 int replacePCBinQueue(PCB*,t_queue*);
 #endif
+

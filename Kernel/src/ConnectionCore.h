@@ -8,6 +8,7 @@
 #include "globales.h"
 #include "Process.h"
 #include "SocketLibrary.h"
+#include <stdlib.h>
 
 typedef struct connectionHandler{
 	socketHandler cpu;
@@ -55,9 +56,18 @@ t_list* findProcessPages(int);
 MemoryRequest deserializeMemReq(void*);
 HeapMetadata* initializeHeapMetadata(int);
 
+//Para semaforos
+int sonIguales(char* s1, char* s2);
+int obtenerPosicionSemaforo(char* c);
+int obtenerValorSemaforo(char* c);
+void enviarAColaDelSemaforo(char* c, int* pid);
+int* quitarDeColaDelSemaforo(char* c);
+void operarSemaforo(char* c, int num);
+void waitSemaforo(char* c);
+void signalSemaforo(char* c);
+void crearListaDeColasSemaforos();
+int laColaDelSemaforoEstaVacia(int posicionSemaforo);
+void quitarDeColaDelSemaforoPorKill(int);
+
 
 #endif
-
-
-
-

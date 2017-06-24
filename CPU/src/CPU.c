@@ -23,7 +23,6 @@ int main(int argc, char** argsv) {
 		estado = OK;
 		while(estado == OK)
 		{
-
 			char* linea = pedirInstruccionAMemoria(pcb, tamanioPagina);
 			printf("[PEDIR INSTRUCCION NRO %i]: %s", pcb->programCounter, linea);
 			analizadorLinea(linea, &primitivas, &primitivas_kernel);
@@ -434,27 +433,26 @@ void retornar(t_valor_variable valorDeRetorno){
 	//PRIMITIVAS ANSISOP KERNEL
 
 void wait(t_nombre_semaforo nombre){
-	int tamanio = strlen(nombre)+1;
-	char * nombreSemaforo = malloc(tamanio);
-	char* bCero= "/0";
-	memcpy(nombreSemaforo, nombre, strlen(nombre));
-	memcpy(nombreSemaforo+(strlen(nombre)), bCero,strlen(bCero));
-	lSend(kernel, (char*) nombreSemaforo, WAIT, strlen(nombreSemaforo));
-	Mensaje *m =lRecv(kernel);
-	int bloqueado = (int) m->data;//No se si va esto
-	if(bloqueado){
-		puts("Se bloqueo maestro");
+	int tamanio = strlen(nombre);
+	//Envio el nombre del semaforo, uso string_substring_until porque el parser agarra el nombre con el /n
+	lSend(kernel, string_substring_until(nombre, tamanio-1), WAIT, tamanio);
+	//El kernel me responde si tengo que bloquear
+	Mensaje *m = lRecv(kernel);
+	//Bloqueado = 3, No bloqueado = 0
+	int bloqueado = m->header.tipoOperacion;
+	if(bloqueado == BLOQUEADO){
+		puts("[WAIT - PROCESO BLOQUEADO POR SEMAFORO]");
+		//Envio el pid al kernel para que lo guarde en la cola del semaforo
+		lSend(kernel, &pcb->pid, WAIT, sizeof(int));
+		//Para salir del while
+		estado = BLOQUEADO;
 	}
-	free(nombreSemaforo);
+	destruirMensaje(m);
 }
 
 void signal(t_nombre_semaforo nombre){
-	int tamanio = strlen(nombre)+1;
-	char * nombreSemaforo = malloc(tamanio);
-	char* bCero= "/0";
-	memcpy(nombreSemaforo, nombre, strlen(nombre));
-	memcpy(nombreSemaforo+(strlen(nombre)), bCero,strlen(bCero));
-	lSend(kernel, (char*) nombreSemaforo, SIGNAL, strlen(nombreSemaforo));
+	int tamanio = strlen(nombre);
+	lSend(kernel, string_substring_until(nombre, tamanio-1), SIGNAL, tamanio);
 }
 
 t_puntero reservar(t_valor_variable nroBytes){
@@ -473,57 +471,59 @@ t_puntero reservar(t_valor_variable nroBytes){
 
 
 void liberar(t_puntero puntero ){
-
 	lSend(kernel, &puntero, LIBERAR_PUNTERO, sizeof(t_puntero));
 	return;
 }
 
-/*t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas banderas){
-		pedidoAperturaArchivo pedido;
-		pedido.dir=direccion;
-		pedido.flags = banderas;
-		int sizePedido= strlen(direccion)+sizeof(banderas);
-		pedidoAperturaArchivo* enviarPedido =  serializarPedidoApertura(pedido);
+/*	t_descriptor_archivo abrir(t_direccion_archivo, t_banderas){
+		return;
+	}
 
-		lSend(kernel, enviarPedido, ABRIR_ARCHIVO, sizePedido);
+	void borrar(t_descriptor_archivo){
+		lSend(kernel,&fileDescriptor, BORRAR_ARCHIVO,sizeof(t_descriptor_archivo));
+		return;
+	}
 
-		Mensaje *m = lRecv(kernel);
-		t_descriptor_archivo fd= (t_descriptor_archivo) m->data;
+	void cerrar(t_descriptor_archivo){
+		lSend(kernel,&fileDescriptor, CERRAR_ARCHIVO, sizeof(t_descriptor_archivo));
+		return;
+	}
 
-		return fd;
-}
+	void moverCursor(t_descriptor_archivo, t_valor_variable){
+		return;
+	}
 
-pedidoAperturaArchivo* serializarPedidoApertura(pedidoAperturaArchivo request){
-	pedidoAperturaArchivo* ret = malloc(sizeof(pedidoAperturaArchivo));
-	memcpy(&ret,&request.dir, strlen(request.dir));//no se si agregar el barra cero
-	memcpy(&ret+strlen(request.dir),&request.flags, sizeof(t_banderas));
-	return ret;
-	free(ret);
-}
+	void escribir(t_descriptor_archivo fileDescriptor, void* info, t_valor_variable tamanio){
+ 	 	 return;
+	}
+
+	void leer(t_descriptor_archivo fileDescriptor, t_puntero info, t_valor_variable tamanio){
+		return;
+	}
+
 */
 
 
-
-
-void borrar(t_descriptor_archivo fileDescriptor){
-		lSend(kernel,&fileDescriptor, BORRAR_ARCHIVO,sizeof(t_descriptor_archivo));
-		return;
-}
-
-void cerrar(t_descriptor_archivo fileDescriptor){
-		lSend(kernel,&fileDescriptor, CERRAR_ARCHIVO, sizeof(t_descriptor_archivo));
-		return;
-}
-
-void moverCursor(t_descriptor_archivo fileDescriptor, t_valor_variable posicion){
-		return;
-}
-
-void escribir(t_descriptor_archivo fileDescriptor, void* info, t_valor_variable tamanio){
-		return;
-}
-
-void leer(t_descriptor_archivo fileDescriptor, t_puntero info, t_valor_variable tamanio){
-		return;
-}
-
+/*t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas banderas){
++	pedidoAperturaArchivo pedido;
++	pedido.dir=direccion;
++	pedido.flags = banderas;
++	int sizePedido= strlen(direccion)+sizeof(banderas);
++	pedidoAperturaArchivo* enviarPedido = serializarPedidoApertura(pedido);
++
++	lSend(kernel, enviarPedido, ABRIR_ARCHIVO, sizePedido);
++
++	Mensaje *m = lRecv(kernel);
++	t_descriptor_archivo fd= (t_descriptor_archivo) m->data;
++
++	return fd;
++}
++
++pedidoAperturaArchivo* serializarPedidoApertura(pedidoAperturaArchivo request){
++	pedidoAperturaArchivo* ret = malloc(sizeof(pedidoAperturaArchivo));
++	memcpy(&ret,&request.dir, strlen(request.dir));//no se si agregar el barra cero
++	memcpy(&ret+strlen(request.dir),&request.flags, sizeof(t_banderas));
++	return ret;
++	free(ret);
++}
++*/

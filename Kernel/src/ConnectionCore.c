@@ -62,7 +62,6 @@ void recibirDeConsola(int socket, connHandle* master)
 				newProcess(pcb, socket);
 				if(readyProcess(pcb) == -1)
 					puts("SE ALCANZO EL LIMITE DE MULTIPROGRAMACION - QUEDA EN NEW");
-
 			}
 			else
 			{
@@ -83,10 +82,7 @@ void recibirDeConsola(int socket, connHandle* master)
 			break;
 
 		case 9:
-			lSend(socket, mensaje->data, 9, sizeof(int));
-			killProcess(mensaje->data);
-			int tamanioScriptSerializado = 0;
-			lSend(conexionMemoria, NULL, 9, tamanioScriptSerializado);
+			killProcess(*(int*)mensaje->data);
 			break;
 	}
 
@@ -244,13 +240,13 @@ void recibirDeCPU(int socket, connHandle* master)
 	puts("CPU");
 	PCB* pcb= malloc(sizeof(PCB));
 	Mensaje* mensaje = lRecv(socket);
-	pcb = recibirPCB(mensaje);
 	switch(mensaje->header.tipoOperacion)
 	{
 		case -1:
 			closeHandle(socket, master);
 			break;
 		case 1:
+			pcb = recibirPCB(mensaje);
 			puts("SE TERMINO LA EJECUCION DE UN PROCESO. SE DEBERIA ENVIAR A COLA FINALIZADO EL PCB");
 			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
 			pcb->exitCode = 0;
@@ -258,32 +254,66 @@ void recibirDeCPU(int socket, connHandle* master)
 			killProcess(pcb->pid);
 			queue_push(colaCPUS, socket);
 			executeProcess();
+			free(pcb);
 			break;
 		case 2:
+			pcb = recibirPCB(mensaje);
 			puts("TERMINA EJECUCION DE PROCESO PERO ESTE NO ESTA FINALIZADO");
 			cpuReturnsProcessTo(pcb,1);
 			executeProcess();
 			break;
 		case 3:
+			pcb = recibirPCB(mensaje);
 			puts("TERMINA EJECUCION DE PROCESO Y ESTE VA A BLOCKED");
 			cpuReturnsProcessTo(pcb,3);
+			queue_push(colaCPUS, socket);
 			executeProcess();
 			break;
 		case 4:
+			pcb = recibirPCB(mensaje);
 			puts("PROGRAMA ABORTADO");
 			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
 			killProcess(pcb->pid);
 			executeProcess();
 			queue_push(colaCPUS, socket);
+			free(pcb);
 			break;
-		case 5:
+		case 204:
+			pcb = recibirPCB(mensaje);
 			puts("PROCESO PIDE MEMORIA");
 			MemoryRequest mr= deserializeMemReq(mensaje->data);
 			memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr));
 			break;
+		case 202:
+			puts("PROCESO UTILIZA WAIT");
+			if(obtenerValorSemaforo((char*)mensaje->data) <= 0) {
+				//Aviso a CPU que hay bloqueo
+				lSend(socket, mensaje->data, 3, sizeof(int));
+				//CPU me envia el pid a bloquearse
+				Mensaje* m = lRecv(socket);
+				int* pidblock = malloc(sizeof(int));
+				*pidblock = *(int*)m->data;
+				//Envio el pid a la cola del semaforo
+				enviarAColaDelSemaforo((char*)mensaje->data, pidblock);
+				destruirMensaje(m);
+			} else {
+				//Aviso a CPU que no hay bloqueo
+				lSend(socket, mensaje->data, 0, sizeof(int));
+				waitSemaforo((char*)mensaje->data);
+			}
+			break;
+
+		case 203:
+			puts("PROCESO UTILIZA SIGNAL");
+			int pos = obtenerPosicionSemaforo((char*)mensaje->data);
+			if(laColaDelSemaforoEstaVacia(pos))
+				signalSemaforo((char*)mensaje->data);
+			else {
+				int pid = *quitarDeColaDelSemaforo((char*)mensaje->data);
+				fromBlockedToReady(pid);
+			}
 	}
 	destruirMensaje(mensaje);
-	free(pcb);
 }
 
 
@@ -364,4 +394,116 @@ int PIDFindPO(int PID){
 	return *((int*)list_find(ownedPages,&(_PIDFind)));
 }
 
+//---------------------------------------------------Para semaforos----------------------------------------------------//
+
+//Obtiene la posicion en SEM_IDS a partir del nombre del semaforo
+int obtenerPosicionSemaforo(char* c) {
+	int i;
+	for(i=0; !sonIguales(c, config->SEM_IDS[i]); i++);
+	return i;
+}
+
+int obtenerValorSemaforo(char* c) {
+	int pos = obtenerPosicionSemaforo(c);
+	char* valor = config->SEM_INIT[pos];
+	//Convierto el string a int
+	return atoi(valor);
+}
+
+void enviarAColaDelSemaforo(char* c, int* pid) {
+	int pos = obtenerPosicionSemaforo(c);
+	queue_push((t_queue*)list_get(listaDeColasSemaforos, pos), pid);
+	printf("EL SEMAFORO %s BLOQUEO EL PROCESO %i\n",config->SEM_IDS[pos], *pid);
+}
+
+int* quitarDeColaDelSemaforo(char* c) {
+	int pos = obtenerPosicionSemaforo(c);
+	int* pid = queue_peek(list_get(listaDeColasSemaforos, pos));
+	queue_pop(list_get(listaDeColasSemaforos, pos));
+	printf("EL SEMAFORO %s DESBLOQUEO EL PROCESO %i\n",config->SEM_IDS[pos], *pid);
+	return pid;
+}
+
+//Para aumentar o disminuir el valor del semaforo
+void operarSemaforo(char* c, int num) {
+	int pos = obtenerPosicionSemaforo(c);
+	char* valor = config->SEM_INIT[pos];
+	char* semaforo = config->SEM_IDS[pos];
+	//Como en SEM_INIT los valores son string lo convierto int y le sumo o resto 1
+	int nuevoValor = atoi(valor)+num ;
+	//Lo guardo en su posicion pero antes lo vuelvo a convertir a string que trucazo no
+	config->SEM_INIT[pos] = string_itoa(nuevoValor);
+	printf("SEMAFORO %s CAMBIO SU VALOR A: %s\n",semaforo, string_itoa(nuevoValor));
+}
+
+void waitSemaforo(char* c) {
+	operarSemaforo(c, -1);
+}
+
+void signalSemaforo(char* c) {
+	operarSemaforo(c, 1);
+}
+
+//Me dice cuantos elementos hay en SEM_INIT
+int cantidadSemaforos() {
+	return strlen((char*)config->SEM_INIT)/ sizeof(char*);
+}
+
+//Inicio la lista y las colas
+void crearListaDeColasSemaforos() {
+	listaDeColasSemaforos = list_create();
+	int i;
+	for (i = 0; i < cantidadSemaforos(); i++) {
+		//Cada semaforo tiene su cola de bloqueados
+		t_queue* cola = queue_create();
+		list_add(listaDeColasSemaforos, cola);
+	}
+}
+
+int laColaDelSemaforoEstaVacia(int posicionSemaforo) {
+	return queue_is_empty(list_get(listaDeColasSemaforos, posicionSemaforo));
+}
+
+//Funciones locas basicamente son para buscar un pid en listaDeColasSemaforos y removerlo, en caso que se mate un proceso bloqueado
+
+//Busca en la cola del semaforo el pid
+int* buscarEnCola(int pos, int pid) {
+	bool buscarPorPID(void* pidProceso){
+		return (*(int*)pidProceso)==pid;
+	}
+	int* p = list_find(   ((t_queue*)list_get(listaDeColasSemaforos, pos))->elements  , buscarPorPID);
+	return p;
+}
+
+//Busca en la lista de semaforos la cola del semaforo donde se encuentra el pid
+t_queue* buscarColaContenedora(int pid) {
+	int i;
+	for(i=0; i<list_size(listaDeColasSemaforos) && buscarEnCola(i, pid) == NULL; i++);
+	if(i==list_size(listaDeColasSemaforos)) {
+		return NULL; //No encontro la cola
+	}
+	else {
+		//Encontro la cola
+		return list_get(listaDeColasSemaforos,i);
+	}
+}
+
+void quitarDeColaDelSemaforoPorKill(int pid) {
+	bool buscarPorPID(void* pidProceso){
+		return (*(int*)pidProceso)==pid;
+	}
+	t_queue* cola  = buscarColaContenedora(pid);
+	if(cola != NULL) {
+		printf("QUITANDO EL PROCESO% i DE LA COLA DEL SEMAFORO POR KILL\n", *(int*)(list_remove_by_condition(cola->elements, buscarPorPID)));
+	}
+}
+
+//La expresividad no se mancha
+
+int sonIguales(char* s1, char* s2) {
+	if (strcmp(s1, s2) == 0)
+		return 1;
+	else
+		return 0;
+}
 

@@ -57,6 +57,7 @@ t_list* process;
 t_list* ownedPages;
 t_list* executeList;
 t_list* blockedList;
+t_list* listaDeColasSemaforos;
 
 configFile* config;
 
