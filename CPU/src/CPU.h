@@ -34,6 +34,12 @@
 #define SIGNAL 203
 #define RESERVAR_MEMORIA_HEAP 204
 #define LIBERAR_PUNTERO 205
+#define ABRIR_ARCHIVO 206
+#define BORRAR_ARCHIVO 207
+#define CERRAR_ARCHIVO 208
+#define MOVER_CURSOR_ARCHIVO 209
+#define ESCRIBIR_ARCHIVO 210
+#define LEER_ARCHIVO 211
 
 typedef struct configFile{
 	char ip_Kernel[16];
@@ -41,6 +47,13 @@ typedef struct configFile{
 	char ip_Memoria[16];
 	char puerto_Memoria[5];
 } configFile;
+
+typedef struct __attribute__ ((packed)) pedidoAperturaArchivo{
+
+	t_direccion_archivo dir;
+	t_banderas flags;
+
+}pedidoAperturaArchivo;
 
 
 // GLOBALES
@@ -66,6 +79,14 @@ void irAlLabel(t_nombre_etiqueta nombre);
 void retornar(t_valor_variable valorDeRetorno);
 void signal(char*);
 void wait(char*);
+t_puntero reservar(t_valor_variable);
+void liberar (t_puntero);
+t_descriptor_archivo abrir(t_direccion_archivo, t_banderas);
+void borrar(t_descriptor_archivo);
+void cerrar(t_descriptor_archivo);
+void moverCursor(t_descriptor_archivo, t_valor_variable);
+void escribir(t_descriptor_archivo, void*, t_valor_variable);
+void leer(t_descriptor_archivo, t_puntero, t_valor_variable);
 
 AnSISOP_funciones primitivas = {
 		.AnSISOP_definirVariable = definirVariable,
@@ -83,7 +104,14 @@ AnSISOP_funciones primitivas = {
 AnSISOP_kernel primitivas_kernel = {
 		.AnSISOP_wait = wait,
 		.AnSISOP_signal = signal
-
+		.AnSISOP_reservar = reservar,
+		.AnSISOP_liberar = liberar,
+		.AnSISOP_abrir = abrir,
+		.AnSISOP_borrar = borrar,
+		.AnSISOP_cerrar = cerrar,
+		.AnSISOP_moverCursor = moverCursor,
+		.AnSISOP_escribir = escribir,
+		.AnSISOP_leer = leer
 };
 
 

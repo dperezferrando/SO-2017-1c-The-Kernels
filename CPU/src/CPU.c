@@ -157,7 +157,7 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador){
 
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor){//falta ersolver
 	t_valor_variable valorAsignado=valor;
-	lSend(kernel, (t_valor_variable) valorAsignado,ASIGNARCOMPARTIDA,sizeof(t_valor_variable));
+	lSend(kernel, (t_valor_variable) &valorAsignado,ASIGNARCOMPARTIDA,sizeof(t_valor_variable));
 	return valorAsignado;
 
 }
@@ -474,34 +474,56 @@ t_puntero reservar(t_valor_variable nroBytes){
 
 void liberar(t_puntero puntero ){
 
-	lSend(kernel, (t_puntero) &puntero, LIBERAR_PUNTERO, sizeof(t_puntero));
+	lSend(kernel, &puntero, LIBERAR_PUNTERO, sizeof(t_puntero));
 	return;
 }
 
-/*	t_descriptor_archivo abrir(t_direccion_archivo, t_banderas){
-		return;
-	}
+/*t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas banderas){
+		pedidoAperturaArchivo pedido;
+		pedido.dir=direccion;
+		pedido.flags = banderas;
+		int sizePedido= strlen(direccion)+sizeof(banderas);
+		pedidoAperturaArchivo* enviarPedido =  serializarPedidoApertura(pedido);
 
-	void borrar(t_descriptor_archivo){
-		return;
-	}
+		lSend(kernel, enviarPedido, ABRIR_ARCHIVO, sizePedido);
 
-	void cerrar(t_descriptor_archivo){
-		return;
-	}
+		Mensaje *m = lRecv(kernel);
+		t_descriptor_archivo fd= (t_descriptor_archivo) m->data;
 
-	void moverCursor(t_descriptor_archivo, t_valor_variable){
-		return;
-	}
+		return fd;
+}
 
-	void escribir(t_descriptor_archivo, void*, t_valor_variable){
-		return;
-	}
-
-	void leer(t_descriptor_archivo, t_puntero, t_valor_variable){
-		return;
-	}
-
-
-
+pedidoAperturaArchivo* serializarPedidoApertura(pedidoAperturaArchivo request){
+	pedidoAperturaArchivo* ret = malloc(sizeof(pedidoAperturaArchivo));
+	memcpy(&ret,&request.dir, strlen(request.dir));//no se si agregar el barra cero
+	memcpy(&ret+strlen(request.dir),&request.flags, sizeof(t_banderas));
+	return ret;
+	free(ret);
+}
 */
+
+
+
+
+void borrar(t_descriptor_archivo fileDescriptor){
+		lSend(kernel,&fileDescriptor, BORRAR_ARCHIVO,sizeof(t_descriptor_archivo));
+		return;
+}
+
+void cerrar(t_descriptor_archivo fileDescriptor){
+		lSend(kernel,&fileDescriptor, CERRAR_ARCHIVO, sizeof(t_descriptor_archivo));
+		return;
+}
+
+void moverCursor(t_descriptor_archivo fileDescriptor, t_valor_variable posicion){
+		return;
+}
+
+void escribir(t_descriptor_archivo fileDescriptor, void* info, t_valor_variable tamanio){
+		return;
+}
+
+void leer(t_descriptor_archivo fileDescriptor, t_puntero info, t_valor_variable tamanio){
+		return;
+}
+
