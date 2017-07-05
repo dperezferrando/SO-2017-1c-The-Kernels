@@ -137,7 +137,7 @@ int memoryRequest(MemoryRequest mr, int size, void* contenido){
 	if(!test) res= lRecv(conexionMemoria);
 	if(res->header.tipoOperacion==-1) return -1;
 	int operation= grabarPedido(po,mr,hm,offset);
-	if(sendMemoryRequest(mr,size,contenido,po)==-1) return -1;
+	//if(sendMemoryRequest(mr,size,contenido,po)==-1) return -1;
 	free(res);
 	return operation;
 }
@@ -341,11 +341,24 @@ void recibirDeCPU(int socket, connHandle* master)
 			break;
 		}
 
-		case 207: // BORRAR ARCHIVO (VER ERRATA)
+		case 207: // BORRAR ARCHIVO
+		{
+			int fd;
+			int pid;
+			memcpy(&pid, mensaje->data, sizeof(int));
+			memcpy(&fd, mensaje->data+sizeof(int), sizeof(int));
+			if(!borrarArchivo(pid,fd))
+				puts("NO SE PUEDE BORRAR, HAY OTROS PROCESOS USANDOLO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+		}
 
 		case 208: // CERRAR ARCHIVO
 		{
-
+			int fd;
+			int pid;
+			memcpy(&pid, mensaje->data, sizeof(int));
+			memcpy(&fd, mensaje->data+sizeof(int), sizeof(int));
+			if(!cerrarArchivo(pid, fd))
+				puts("CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
 			break;
 		}
 
@@ -365,6 +378,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			deserializarPedidoEscritura(mensaje->data, data,&info);
 			if(!escribirArchivo(info, data))
 				puts("CPU NO PUEDE ESCRIBIR DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+			free(data);
 			break;
 		}
 

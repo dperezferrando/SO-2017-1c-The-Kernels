@@ -35,11 +35,10 @@ int abrirArchivo(int pid, char* ruta, char* permisos)
 	entradaTablaGlobalFS* entradaBuscada = buscarEnTablaGlobal(ruta);
 	if(entradaBuscada == NULL)
 	{
-		existe = agregarEntradaGlobal(ruta);
-		if(existe == 0) // NO EXISTE EN EL FILESYSTEM EL ARCHIVO QUE SE QUIERE ABRIR
+		entradaBuscada = agregarEntradaGlobal(ruta, permisos);
+		if(entradaBuscada == NULL) // NO EXISTE EN EL FILESYSTEM EL ARCHIVO QUE SE QUIERE ABRIR
 			return -1;
 	}
-	entradaBuscada = buscarEnTablaGlobal(ruta);
 	int fd = agregarEntradaTablaProceso(entradaBuscada, pid, permisos);
 	return fd;
 
@@ -54,17 +53,19 @@ entradaTablaGlobalFS* buscarEnTablaGlobal(char* ruta)
 	return list_find(tablaGlobalFS, tieneLaMismaRuta);
 }
 
-bool agregarEntradaGlobal(char* ruta)
+entradaTablaGlobalFS* agregarEntradaGlobal(char* ruta, char* permisos)
 {
-	if(!archivoValido(ruta))
-		return 0;
+	if(!archivoValido(ruta) && !strstr(permisos, "c"))
+		return NULL;
 	else
 	{
+		if(strstr(permisos, "c"))
+			lSend(conexionFS, ruta, 4, strlen(ruta));
 		entradaTablaGlobalFS* entrada = malloc(sizeof(entradaTablaGlobalFS));
 		entrada->instancias = 0;
 		strcpy(entrada->ruta, ruta);
 		list_add(tablaGlobalFS, entrada);
-		return 1;
+		return entrada;
 	}
 }
 
@@ -113,7 +114,7 @@ bool moverCursorArchivo(fileInfo info)
 entradaTablaFSProceso* buscarEnTablaDelProceso(int pid, int fd)
 {
 	tablaDeProceso* tabla = encontrarTablaDelProceso(pid);
-	entradaTablaFSProceso* entrada = list_get(tabla->entradasTablaProceo, fd-2);
+	entradaTablaFSProceso* entrada = list_get(tabla->entradasTablaProceo, fd-3);
 	return entrada;
 }
 
@@ -134,12 +135,73 @@ char* leerArchivo(fileInfo info)
 
 bool escribirArchivo(fileInfo info, char* data)
 {
-	entradaTablaFSProceso* entrada = buscarEnTablaDelProceso(info.pid, info.fd);
-	if(!strstr(entrada->flags, "w"))
+	if(info.fd == 1)
+		imprimirPorPantalla(info, data);
+	else
+	{
+		entradaTablaFSProceso* entrada = buscarEnTablaDelProceso(info.pid, info.fd);
+		if(!strstr(entrada->flags, "w"))
+			return 0;
+		serializado pedidoEscritura = serializarPedidoEscritura(entrada->entradaGlobal->ruta, entrada->cursor, info.tamanio, data);
+		lSend(conexionFS, pedidoEscritura.data, 3, pedidoEscritura.size);
+		free(pedidoEscritura.data);
+	}
+	return 1;
+}
+
+bool cerrarArchivo(int pid, int fd)
+{
+	tablaDeProceso* tabla = encontrarTablaDelProceso(pid);
+	entradaTablaFSProceso* entrada = buscarEnTablaDelProceso(pid, fd);
+	if(entrada == NULL)
 		return 0;
-	serializado pedidoEscritura = serializarPedidoEscritura(entrada->entradaGlobal->ruta, entrada->cursor, info.tamanio, data);
-	lSend(conexionFS, pedidoEscritura.data, 3, pedidoEscritura.size);
-	free(pedidoEscritura.data);
+	cerrarArchivoEnTablaGlobal(entrada->entradaGlobal);
+	list_remove_and_destroy_element(tabla->entradasTablaProceo, fd-3, destruirEntradaTablaProceso);
+	return 1;
+
+}
+
+void cerrarArchivoEnTablaGlobal(entradaTablaGlobalFS* entrada)
+{
+	entrada->instancias--;
+	bool mismaRuta(entradaTablaGlobalFS* unaEntrada)
+	{
+		return !strcmp(entrada->ruta, unaEntrada->ruta);
+	}
+	if(entrada->instancias == 0)
+	{
+		list_remove_and_destroy_by_condition(tablaGlobalFS, mismaRuta, destruirEntradaGlobal);
+	}
+}
+
+void destruirEntradaGlobal(entradaTablaGlobalFS* entrada)
+{
+	free(entrada->ruta);
+}
+
+void destruirEntradaTablaProceso(entradaTablaFSProceso* entrada)
+{
+	free(entrada->entradaGlobal);
+}
+
+void imprimirPorPantalla(fileInfo info, char* data)
+{
+	char* impresion = malloc(info.tamanio+1);
+	strcpy(impresion, data);
+	impresion[info.tamanio] = '\0';
+	ProcessControl* pc= PIDFind(info.pid);
+	lSend(pc->consola, impresion, 2, info.tamanio+1);
+	free(impresion);
+
+}
+
+bool borrarArchivo(int pid, int fd)
+{
+	entradaTablaFSProceso* entrada = buscarEnTablaDelProceso(pid, fd);
+	if(entrada->entradaGlobal->instancias > 1)
+		return 0;
+	lSend(conexionFS, entrada->entradaGlobal->ruta, 5, strlen(entrada->entradaGlobal->ruta));
+	cerrarArchivo(pid, fd);
 	return 1;
 }
 
