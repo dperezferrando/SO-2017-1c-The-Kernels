@@ -142,6 +142,8 @@ int memoryRequest(MemoryRequest mr, int size, void* contenido){
 	return operation;
 }
 
+
+
 HeapMetadata* initializeHeapMetadata(int size){
 	HeapMetadata* hm= malloc(sizeof(HeapMetadata));
 	hm->isFree=0;
@@ -291,12 +293,17 @@ void recibirDeCPU(int socket, connHandle* master)
 			free(pcb);
 			break;
 		case 204:
-			pcb = recibirPCB(mensaje);
-			puts("PROCESO PIDE MEMORIA");
-			MemoryRequest mr= deserializeMemReq(mensaje->data);
-			memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr));
-			break;
+				{
+					MemoryRequest mr = deserializeMemReq(mensaje->data);
+					memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr));
+					break;
+				}
 		case 205:
+				{
+					MemoryRequest mr = deserializeMemReq(mensaje->data);
+					//memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr)); funcion para eliminar
+					break;
+				}
 
 			break;
 		case 202:
@@ -344,11 +351,25 @@ void recibirDeCPU(int socket, connHandle* master)
 			break;
 		}
 
-		case 207: // BORRAR ARCHIVO (VER ERRATA)
+		case 207: // BORRAR ARCHIVO
+		{
+			int fd;
+			int pid;
+			memcpy(&pid, mensaje->data, sizeof(int));
+			memcpy(&fd, mensaje->data+sizeof(int), sizeof(int));
+			if(!borrarArchivo(pid,fd))
+				puts("NO SE PUEDE BORRAR, HAY OTROS PROCESOS USANDOLO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+			break;
+		}
 
 		case 208: // CERRAR ARCHIVO
 		{
-
+			int fd;
+			int pid;
+			memcpy(&pid, mensaje->data, sizeof(int));
+			memcpy(&fd, mensaje->data+sizeof(int), sizeof(int));
+			if(!cerrarArchivo(pid, fd))
+				puts("CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
 			break;
 		}
 
@@ -368,6 +389,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			deserializarPedidoEscritura(mensaje->data, data,&info);
 			if(!escribirArchivo(info, data))
 				puts("CPU NO PUEDE ESCRIBIR DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+			free(data);
 			break;
 		}
 

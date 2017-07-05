@@ -171,7 +171,7 @@ void grabarPedidoTest(int newPage){
 	int a= 10;
 	memcpy(res->data,&a,sizeof(int));
 	HeapMetadata* hm= initializeHeapMetadata(mr->size);
-	//sendMemoryRequest(*mr,4,"hola",po);
+	//sendMemoryRequest(*mr,4,"hola",po); no compila, to be fixed
 	int* offset= malloc(sizeof(int));
 	int resp= grabarPedido(po,*mr,hm,offset);
 	if(!newPage) resp= grabarPedido(po,*mr,hm,offset);
