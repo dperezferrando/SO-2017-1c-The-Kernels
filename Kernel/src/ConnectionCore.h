@@ -24,9 +24,10 @@ int PIDFindPO(int);
 int readyProcess();
 int executeProcess();
 int checkMultiprog();
+int offset(t_list*, int);
 int enviarScriptAMemoria(PCB*,char*, int);
-int grabarPedido(PageOwnership*, MemoryRequest, HeapMetadata*);
-int sendMemoryRequest(MemoryRequest, int, void*, PageOwnership*);
+int grabarPedido(PageOwnership*, MemoryRequest, HeapMetadata*,int*);
+int sendMemoryRequest(MemoryRequest, int, void*, PageOwnership*, int);
 
 bool viableRequest(int);
 bool fsSock(int, connHandle*);

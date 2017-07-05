@@ -19,7 +19,6 @@ struct ProcessControl{
 struct MemoryRequest{
 	int pid;
 	int size;
-	char* variable;
 } typedef MemoryRequest;
 
 struct HeapMetadata{

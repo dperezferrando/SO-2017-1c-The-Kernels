@@ -152,13 +152,16 @@ void grabarPedidoTest(int newPage){
 		pp->pid=1;
 		pp->idpage=1;
 		initializePageOwnership(pp);
+		HeapMetadata aux;
+		aux.isFree=0;
+		aux.size= 4;
+		occupyPageSize(pp,&aux);
 		list_add(ownedPages,pp);
 	}
 	PageOwnership* po= malloc(sizeof(PageOwnership));
 	MemoryRequest* mr= malloc(sizeof(MemoryRequest));
 	mr->pid= newPage ? -1 : 1;
 	mr->size= 56;
-	mr->variable= "a";
 	po->idpage= newPage ? -1 : 1;
 	res=malloc(sizeof(Mensaje));
 	res->header.tipoOperacion=1;
@@ -167,7 +170,8 @@ void grabarPedidoTest(int newPage){
 	memcpy(res->data,&a,sizeof(int));
 	HeapMetadata* hm= initializeHeapMetadata(mr->size);
 	sendMemoryRequest(*mr,4,"hola",po);
-	int resp= grabarPedido(po,*mr,hm);
+	int* offset= malloc(sizeof(int));
+	int resp= grabarPedido(po,*mr,hm,offset);
 
 	list_destroy(ownedPages);
 	free(po);
@@ -177,7 +181,11 @@ void grabarPedidoTest(int newPage){
 	free(hm);
 
 
-	if(newPage){CU_ASSERT_EQUAL(resp,1);}
-	else {CU_ASSERT_EQUAL(resp,0);}
+	if(newPage){
+		CU_ASSERT_EQUAL(resp,1);
+	}
+	else {
+		CU_ASSERT_EQUAL(resp,0);
+	}
 
 }
