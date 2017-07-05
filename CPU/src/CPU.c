@@ -24,7 +24,7 @@ int main(int argc, char** argsv) {
 		while(estado == OK)
 		{
 			char* linea = pedirInstruccionAMemoria(pcb, tamanioPagina);
-			printf("[PEDIR INSTRUCCION NRO %i]: %s", pcb->programCounter, linea);
+			printf("[PEDIR INSTRUCCION NRO %i]: %s\n", pcb->programCounter, linea);
 			analizadorLinea(linea, &primitivas, &primitivas_kernel);
 			free(linea);
 			pcb->programCounter++;
@@ -274,7 +274,7 @@ char* leerEnMemoria(posicionEnMemoria posicion)
 	if(total <= tamanioPagina)
 	{
 		instruccion = enviarPedidoLecturaMemoria(posicion);
-		instruccion[posicion.size] = '\0';
+		instruccion[posicion.size-1] = '\0';
 	}
 	else
 	{
@@ -291,7 +291,7 @@ char* leerEnMemoria(posicionEnMemoria posicion)
 		posicion.offset = 0;
 		posicion.size = segundoSize;
 		char* segundaParteInstruccion = enviarPedidoLecturaMemoria(posicion);
-		segundaParteInstruccion[posicion.size] = '\0';
+		segundaParteInstruccion[posicion.size-1] = '\0';
 		memcpy(puntero, segundaParteInstruccion, posicion.size);
 		free(segundaParteInstruccion);
 		printf("[LEER EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
@@ -383,7 +383,16 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero dondeRetornar)
 
 void llamarSinRetorno(t_nombre_etiqueta etiqueta)
 {
+	// FALTA CREAR UN NUEVO NIVEL DE STACK COMO ARRIBA E IR A LABEL
 	printf("[LLAMAR SIN RETORNO - STACK LEVEL: %i]\n", pcb->nivelDelStack);
+	pcb->nivelDelStack++;
+	pcb->indiceStack = realloc(pcb->indiceStack, sizeof(indStk)*(pcb->nivelDelStack+1));
+	int returnpos = pcb->programCounter;
+	pcb->indiceStack[pcb->nivelDelStack].posicionDeRetorno = returnpos;
+	pcb->indiceStack[pcb->nivelDelStack].variables = list_create();
+	pcb->indiceStack[pcb->nivelDelStack].argumentos = list_create();
+	printf("[LLAMAR SIN RETORNO - STACK LEVEL: %i a %i]: LLAMA A '%s' - RETURN POS: %i\n",pcb->nivelDelStack-1, pcb->nivelDelStack, etiqueta, returnpos);
+	irAlLabel(etiqueta);
 }
 
 t_valor_variable dereferenciar(t_puntero posicion)
@@ -435,7 +444,7 @@ void retornar(t_valor_variable valorDeRetorno){
 void wait(t_nombre_semaforo nombre){
 	int tamanio = strlen(nombre);
 	//Envio el nombre del semaforo, uso string_substring_until porque el parser agarra el nombre con el /n
-	lSend(kernel, string_substring_until(nombre, tamanio-1), WAIT, tamanio);
+	lSend(kernel, nombre, WAIT, tamanio);
 	//El kernel me responde si tengo que bloquear
 	Mensaje *m = lRecv(kernel);
 	//Bloqueado = 3, No bloqueado = 0
@@ -452,7 +461,7 @@ void wait(t_nombre_semaforo nombre){
 
 void signal(t_nombre_semaforo nombre){
 	int tamanio = strlen(nombre);
-	lSend(kernel, string_substring_until(nombre, tamanio-1), SIGNAL, tamanio);
+	lSend(kernel, nombre, SIGNAL, tamanio);
 }
 
 t_puntero reservar(t_valor_variable nroBytes){
