@@ -38,6 +38,8 @@ int main(int argc, char** argsv) {
 	blockedList = list_create();
 	executeList = list_create();
 	colaFinished=queue_create();
+	tablaGlobalFS = list_create();
+	tablasDeProcesosFS = list_create();
 	crearListaDeColasSemaforos();
 
 	handler();

@@ -475,7 +475,41 @@ void liberar(t_puntero puntero ){
 	return;
 }
 
+serializado serializarRutaYPermisos(char* ruta, char* permisos)
+{
+	// POSIBLES PROBLEMAS CON \0
+	int tamanioRuta = strlen(ruta);
+	int tamanioPermisos = strlen(permisos);
+	serializado infoSerializada;
+	infoSerializada.size = tamanioRuta + tamanioPermisos + (sizeof(int)*3);
+	infoSerializada.data = malloc(infoSerializada.size);
+	memcpy(infoSerializada.data, &pcb->pid, sizeof(int));
+	memcpy(infoSerializada.data + sizeof(int), &tamanioRuta, sizeof(int));
+	memcpy(infoSerializada.data + sizeof(int) + sizeof(int), ruta, tamanioRuta);
+	memcpy(infoSerializada.data + sizeof(int) + sizeof(int) + tamanioRuta, &tamanioPermisos, sizeof(int));
+	memcpy(infoSerializada.data + sizeof(int) + sizeof(int) + tamanioRuta + sizeof(int), permisos, tamanioPermisos);
+	return infoSerializada;
+}
+
+serializado serializarPedidoEscrituraFS(char* data, fileInfo info)
+{
+	serializado pedido;
+	pedido.size = sizeof(fileInfo) + info.tamanio;
+	pedido.data = malloc(pedido.size);
+	memcpy(pedido.data, &info, sizeof(fileInfo));
+	memcpy(pedido.data+sizeof(fileInfo), data, info.tamanio);
+	return pedido;
+}
+
+/* ACLARACIONES PARA POMITA:
+ - CUANDO SE MANDA A ABRIR UN ARCHIVO QUE NO EXISTE EL KERNEL DEVUELVE TIPO DE OPERACION
+ -3 - EL PROCESO DEBE FINALIZAR, POR LO QUE CPU DEBERIA DEVOLVER EL PCB. SI ESTA TODO OK
+ - ALGUNAS DE LAS PRIMITIVAS DE ABAJO CREO QUE TIENEN LOS PARAMETROS DESACTUALIZADOS,
+ ANTES DE BORRAR CHEQUEAR LOS COMENTARIOS QUE DEJE PARA COMUNICACION CON EL KERNEL
+ DEVUELVE EL FD CON TIPO DE OPERACION 104 PERO EN ESTE CASO EL TIPO DE OP TE LA CHUPA
+*/
 /*	t_descriptor_archivo abrir(t_direccion_archivo, t_banderas){
+ * 		// POMITA: USAR FUNCION serializarRutaYPermisos
 		return;
 	}
 
@@ -490,10 +524,12 @@ void liberar(t_puntero puntero ){
 	}
 
 	void moverCursor(t_descriptor_archivo, t_valor_variable){
+		// ENVIAR ESTRUCTURA FILEINFO A KERNEL
 		return;
 	}
 
 	void escribir(t_descriptor_archivo fileDescriptor, void* info, t_valor_variable tamanio){
+ 	 	 // USAR SERIALIZARPEDIDOESCRITURAFS
  	 	 return;
 	}
 
