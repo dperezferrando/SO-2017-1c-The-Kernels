@@ -230,7 +230,7 @@ indStk* crearIndiceDeStack()
 	indice->variableDeRetorno.posicion.offset = -1;
 	indice->variableDeRetorno.posicion.pagina = -1;
 	indice->variableDeRetorno.posicion.size = -1;
-	indice->variableDeRetorno.identificador = -1;
+	indice->variableDeRetorno.identificador = '?';
 	return indice;
 }
 

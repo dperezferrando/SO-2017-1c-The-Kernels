@@ -50,6 +50,7 @@ void recibirDeConsola(int socket, connHandle* master)
 	switch(mensaje->header.tipoOperacion)
 	{
 		case -1:
+			puts("SE DECONECTA UNA CONSOLA");
 			closeHandle(socket, master);
 			break;
 		case 1:
@@ -73,8 +74,16 @@ void recibirDeConsola(int socket, connHandle* master)
 		}
 		//Abortar procesos
 		case 3:
-			lSend(socket, mensaje->data, 3, sizeof(int));
+		//lSend(socket, mensaje->data, 3, sizeof(int));
+		{
+			bool mismaConsola(ProcessControl* pc)
+			{
+				return pc->consola == socket && pc->state != 9;
+			}
+			t_list* procesosDeLaConsola = list_filter(process, mismaConsola);
+			list_iterate(procesosDeLaConsola, matarCuandoCorresponda);
 			break;
+		}
 
 		//Para cerrar el hilo receptor de la consola
 		case 4:
@@ -82,15 +91,24 @@ void recibirDeConsola(int socket, connHandle* master)
 			break;
 
 		case 9:
-		/*	int pid = *(int*)mensaje->data;
+		{
+			int pid = *(int*)mensaje->data;
 			ProcessControl* pc = PIDFind(pid);
-			pc->
-			killProcess(pid);*/
+			matarCuandoCorresponda(pc);
 			break;
+		}
 	}
 
 	destruirMensaje(mensaje);
 
+}
+
+void matarCuandoCorresponda(ProcessControl* pc)
+{
+	if(pc->state == 2)
+		pc->toBeKilled = 1;
+	else
+		killProcess(pc->pid);
 }
 
 bool consSock(int p, connHandle* master){
@@ -275,14 +293,17 @@ void recibirDeCPU(int socket, connHandle* master)
 			break;
 		case 2:
 			pcb = recibirPCB(mensaje);
-			puts("TERMINA EJECUCION DE PROCESO PERO ESTE NO ESTA FINALIZADO");
+			puts("VUELVE PCB POR FIN DE Q");
 			cpuReturnsProcessTo(pcb,1);
+			matarSiCorresponde(pcb->pid);
 			executeProcess();
+			queue_push(colaCPUS, socket);
 			break;
 		case 3:
 			pcb = recibirPCB(mensaje);
-			puts("TERMINA EJECUCION DE PROCESO Y ESTE VA A BLOCKED");
+			puts("VUELVE PCB POR BLOQUEO");
 			cpuReturnsProcessTo(pcb,3);
+			matarSiCorresponde(pcb->pid);
 			queue_push(colaCPUS, socket);
 			executeProcess();
 			break;
@@ -290,25 +311,24 @@ void recibirDeCPU(int socket, connHandle* master)
 			pcb = recibirPCB(mensaje);
 			puts("PROGRAMA ABORTADO");
 			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
+			pcb->exitCode = -5;
 			killProcess(pcb->pid);
 			executeProcess();
 			queue_push(colaCPUS, socket);
 			free(pcb);
 			break;
 		case 204:
-				{
-					MemoryRequest mr = deserializeMemReq(mensaje->data);
-					memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr));
-					break;
-				}
-		case 205:
-				{
-					MemoryRequest mr = deserializeMemReq(mensaje->data);
-					//memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr)); funcion para eliminar
-					break;
-				}
-
+		{
+			MemoryRequest mr = deserializeMemReq(mensaje->data);
+			memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr));
 			break;
+		}
+		case 205:
+		{
+			MemoryRequest mr = deserializeMemReq(mensaje->data);
+			//memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr)); funcion para eliminar
+			break;
+		}
 		case 202:
 		{
 			puts("PROCESO UTILIZA WAIT");
@@ -420,7 +440,12 @@ void recibirDeCPU(int socket, connHandle* master)
 	}
 	destruirMensaje(mensaje);
 }
-
+void matarSiCorresponde(int pid)
+{
+	ProcessControl* pc = PIDFind(pid);
+	if(pc->toBeKilled == 1)
+		killProcess(pid);
+}
 void deserializarPedidoEscritura(char* serializado, char** data, fileInfo* info)
 {
 	memcpy(info, serializado, sizeof(fileInfo));

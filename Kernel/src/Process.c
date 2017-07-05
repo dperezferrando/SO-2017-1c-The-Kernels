@@ -53,7 +53,7 @@ void killProcess(int PID){
 	lSend(pc->consola, &PID, 9, sizeof(int));
 	//Verifica si esta en alguna de cola de algun semaoforo
 	quitarDeColaDelSemaforoPorKill(PID);
-	eliminarEntradasTablaFS(PID);
+	eliminarEntradasTabla(PID);
 	if(checkMultiprog() && queue_size(colaNew) >0)
 		fromNewToReady();
 
@@ -74,6 +74,7 @@ void newProcess(PCB* pcb, int consola)
 	pc->pid= pcb->pid;
 	pc->state= 0;
 	pc->consola = consola;
+	pc->toBeKilled = 0;
 	list_add(process,pc);
 }
 

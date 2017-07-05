@@ -14,6 +14,7 @@ struct ProcessControl{
 	int pid;
 	int state; //0-> new, 1->ready, 2->execute, 3-> blocked, 4-> suspended, 9-> killed, //NULL-> no fue aceptado todavia//
 	int consola;
+	bool toBeKilled;
 } typedef ProcessControl;
 
 struct MemoryRequest{

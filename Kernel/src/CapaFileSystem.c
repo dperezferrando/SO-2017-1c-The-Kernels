@@ -205,7 +205,7 @@ bool borrarArchivo(int pid, int fd)
 	return 1;
 }
 
-void eliminarEntradasTablas(int pid)
+void eliminarEntradasTabla(int pid)
 {
 	bool mismoPID(tablaDeProceso* tabla)
 	{
@@ -219,7 +219,7 @@ void destruirTablaProceso(tablaDeProceso* tabla)
 	int cantArchivosAbiertos = list_size(tabla->entradasTablaProceo);
 	int i;
 	for(i = 3;i<cantArchivosAbiertos;i++)
-		cerrarArchivo(i);
+		cerrarArchivo(tabla->pid, i);
 	list_destroy(tabla->entradasTablaProceo);
 	free(tabla);
 }

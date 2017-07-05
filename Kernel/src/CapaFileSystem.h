@@ -24,4 +24,5 @@ void destruirEntradaGlobal(entradaTablaGlobalFS* entrada);
 void destruirEntradaTablaProceso(entradaTablaFSProceso* entrada);
 void imprimirPorPantalla(fileInfo info, char* data);
 bool borrarArchivo(int pid, int fd);
+void destruirTablaProceso(tablaDeProceso* tabla);
 #endif
