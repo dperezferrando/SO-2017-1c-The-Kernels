@@ -51,11 +51,12 @@ void killProcess(int PID){
 	}
 	lSend(conexionMemoria, &PID, 9, sizeof(int));
 	lSend(pc->consola, &PID, 9, sizeof(int));
-
-	if(checkMultiprog() && queue_size(colaNew) >0)
-		fromNewToReady();
 	//Verifica si esta en alguna de cola de algun semaoforo
 	quitarDeColaDelSemaforoPorKill(PID);
+	eliminarEntradasTablaFS(PID);
+	if(checkMultiprog() && queue_size(colaNew) >0)
+		fromNewToReady();
+
 }
 
 

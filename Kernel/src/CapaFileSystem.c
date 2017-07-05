@@ -205,6 +205,25 @@ bool borrarArchivo(int pid, int fd)
 	return 1;
 }
 
+void eliminarEntradasTablas(int pid)
+{
+	bool mismoPID(tablaDeProceso* tabla)
+	{
+		return tabla->pid == pid;
+	}
+	list_remove_and_destroy_by_condition(tablasDeProcesosFS, mismoPID, destruirTablaProceso);
+}
+
+void destruirTablaProceso(tablaDeProceso* tabla)
+{
+	int cantArchivosAbiertos = list_size(tabla->entradasTablaProceo);
+	int i;
+	for(i = 3;i<cantArchivosAbiertos;i++)
+		cerrarArchivo(i);
+	list_destroy(tabla->entradasTablaProceo);
+	free(tabla);
+}
+
 serializado serializarPedidoEscritura(char* ruta, int offset, int size, char* data)
 {
 	serializado pedido;

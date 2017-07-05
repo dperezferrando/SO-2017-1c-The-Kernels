@@ -383,7 +383,7 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero dondeRetornar)
 
 void llamarSinRetorno(t_nombre_etiqueta etiqueta)
 {
-	// FALTA CREAR UN NUEVO NIVEL DE STACK COMO ARRIBA E IR A LABEL
+
 	printf("[LLAMAR SIN RETORNO - STACK LEVEL: %i]\n", pcb->nivelDelStack);
 	pcb->nivelDelStack++;
 	pcb->indiceStack = realloc(pcb->indiceStack, sizeof(indStk)*(pcb->nivelDelStack+1));

@@ -82,7 +82,10 @@ void recibirDeConsola(int socket, connHandle* master)
 			break;
 
 		case 9:
-			killProcess(*(int*)mensaje->data);
+		/*	int pid = *(int*)mensaje->data;
+			ProcessControl* pc = PIDFind(pid);
+			pc->
+			killProcess(pid);*/
 			break;
 	}
 
