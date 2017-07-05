@@ -137,7 +137,7 @@ int memoryRequest(MemoryRequest mr, int size, void* contenido){
 	if(!test) res= lRecv(conexionMemoria);
 	if(res->header.tipoOperacion==-1) return -1;
 	int operation= grabarPedido(po,mr,hm,offset);
-	if(sendMemoryRequest(mr,size,contenido,po)==-1) return -1;
+	if(sendMemoryRequest(mr,size,contenido,po,offset)==-1) return -1;
 	free(res);
 	return operation;
 }
@@ -295,6 +295,9 @@ void recibirDeCPU(int socket, connHandle* master)
 			puts("PROCESO PIDE MEMORIA");
 			MemoryRequest mr= deserializeMemReq(mensaje->data);
 			memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr));
+			break;
+		case 205:
+
 			break;
 		case 202:
 			puts("PROCESO UTILIZA WAIT");

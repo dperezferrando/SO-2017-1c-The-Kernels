@@ -5,7 +5,9 @@ void testSerializationMemoryRequest(){
 	MemoryRequest mr;
 	mr.pid=1;
 	mr.size=10;
-	void* serial= serializeMemReq(mr);
+	void* msg = malloc(sizeof(char)*10);
+	memcpy(msg,"Holangas",sizeof(char)*8);
+	void* serial= serializeMemReq(mr,1,2,10,msg);
 	MemoryRequest mr2;
 	mr2= deserializeMemReq(serial);
 	CU_ASSERT_EQUAL(mr.pid,mr2.pid);
@@ -134,7 +136,7 @@ void sendMemoryRequestTest(int newPage){
 	if(!newPage) list_add(ownedPages,po);
 	PageOwnership* pp= malloc(sizeof(PageOwnership));
 	pp->pid=1;
-	sendMemoryRequest(mr,4,"hola",pp);
+	sendMemoryRequest(mr,4,"hola",pp,10);
 	if(newPage) {CU_ASSERT_EQUAL(pp->idpage,-1);}
 	else {CU_ASSERT_NOT_EQUAL(pp->idpage,-1);}
 	list_destroy(ownedPages);
@@ -169,9 +171,10 @@ void grabarPedidoTest(int newPage){
 	int a= 10;
 	memcpy(res->data,&a,sizeof(int));
 	HeapMetadata* hm= initializeHeapMetadata(mr->size);
-	sendMemoryRequest(*mr,4,"hola",po);
+	//sendMemoryRequest(*mr,4,"hola",po);
 	int* offset= malloc(sizeof(int));
 	int resp= grabarPedido(po,*mr,hm,offset);
+	if(!newPage) resp= grabarPedido(po,*mr,hm,offset);
 
 	list_destroy(ownedPages);
 	free(po);
@@ -180,12 +183,17 @@ void grabarPedidoTest(int newPage){
 	free(res);
 	free(hm);
 
+	int offs= *offset;
+
+	free(offset);
 
 	if(newPage){
 		CU_ASSERT_EQUAL(resp,1);
+		CU_ASSERT_EQUAL(offs,0);
 	}
 	else {
 		CU_ASSERT_EQUAL(resp,0);
+		CU_ASSERT_NOT_EQUAL(offs,0);
 	}
 
 }
