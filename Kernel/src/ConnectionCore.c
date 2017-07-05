@@ -297,8 +297,12 @@ void recibirDeCPU(int socket, connHandle* master)
 			memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr));
 			break;
 		case 202:
+		{
 			puts("PROCESO UTILIZA WAIT");
-			if(obtenerValorSemaforo((char*)mensaje->data) <= 0) {
+			char* sem = malloc(mensaje->header.tamanio+1);
+			memcpy(sem, mensaje->data, mensaje->header.tamanio);
+			sem[mensaje->header.tamanio] = '\0';
+			if(obtenerValorSemaforo(sem) <= 0) {
 				//Aviso a CPU que hay bloqueo
 				lSend(socket, mensaje->data, 3, sizeof(int));
 				//CPU me envia el pid a bloquearse
@@ -306,25 +310,31 @@ void recibirDeCPU(int socket, connHandle* master)
 				int* pidblock = malloc(sizeof(int));
 				*pidblock = *(int*)m->data;
 				//Envio el pid a la cola del semaforo
-				enviarAColaDelSemaforo((char*)mensaje->data, pidblock);
+				enviarAColaDelSemaforo(sem, pidblock);
 				destruirMensaje(m);
 			} else {
 				//Aviso a CPU que no hay bloqueo
 				lSend(socket, mensaje->data, 0, sizeof(int));
-				waitSemaforo((char*)mensaje->data);
+				waitSemaforo(sem);
 			}
 			break;
+		}
 
 		case 203:
+		{
 			puts("PROCESO UTILIZA SIGNAL");
-			int pos = obtenerPosicionSemaforo((char*)mensaje->data);
+			char* sem = malloc(mensaje->header.tamanio+1);
+			memcpy(sem, mensaje->data, mensaje->header.tamanio);
+			sem[mensaje->header.tamanio] = '\0';
+			int pos = obtenerPosicionSemaforo(sem);
 			if(laColaDelSemaforoEstaVacia(pos))
-				signalSemaforo((char*)mensaje->data);
+				signalSemaforo(sem);
 			else {
-				int pid = *quitarDeColaDelSemaforo((char*)mensaje->data);
+				int pid = *quitarDeColaDelSemaforo(sem);
 				fromBlockedToReady(pid);
 			}
 			break;
+		}
 
 		case 206: // ABRIR ARCHIVO
 		{
@@ -349,6 +359,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			memcpy(&fd, mensaje->data+sizeof(int), sizeof(int));
 			if(!borrarArchivo(pid,fd))
 				puts("NO SE PUEDE BORRAR, HAY OTROS PROCESOS USANDOLO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+			break;
 		}
 
 		case 208: // CERRAR ARCHIVO
