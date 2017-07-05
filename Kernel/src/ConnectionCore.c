@@ -140,10 +140,12 @@ int memoryRequest(MemoryRequest mr, int size, void* contenido){
 	if(!test) res= lRecv(conexionMemoria);
 	if(res->header.tipoOperacion==-1) return -1;
 	int operation= grabarPedido(po,mr,hm,offset);
-	//if(sendMemoryRequest(mr,size,contenido,po)==-1) return -1;
+	if(sendMemoryRequest(mr,size,contenido,po,offset)==-1) return -1;
 	free(res);
 	return operation;
 }
+
+
 
 HeapMetadata* initializeHeapMetadata(int size){
 	HeapMetadata* hm= malloc(sizeof(HeapMetadata));
@@ -294,10 +296,18 @@ void recibirDeCPU(int socket, connHandle* master)
 			free(pcb);
 			break;
 		case 204:
-			pcb = recibirPCB(mensaje);
-			puts("PROCESO PIDE MEMORIA");
-			MemoryRequest mr= deserializeMemReq(mensaje->data);
-			memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr));
+				{
+					MemoryRequest mr = deserializeMemReq(mensaje->data);
+					memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr));
+					break;
+				}
+		case 205:
+				{
+					MemoryRequest mr = deserializeMemReq(mensaje->data);
+					//memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr)); funcion para eliminar
+					break;
+				}
+
 			break;
 		case 202:
 		{
