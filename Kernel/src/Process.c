@@ -23,6 +23,7 @@ PCB* createProcess(char* script, int tamanioScript){
 	pcb->indiceStack = crearIndiceDeStack();
 	pcb->exitCode = 0;
 	pcb->programCounter = 0;
+	crearEstructurasFSProceso(pcb->pid);
 	return pcb;
 }
 

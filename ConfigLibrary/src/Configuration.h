@@ -62,7 +62,12 @@ typedef struct __attribute__ ((packed)) pedidoEscrituraMemoria {
 	int valor;
 } pedidoEscrituraMemoria;
 
-
+typedef struct __attribute__ ((packed)) fileInfo {
+	int pid;
+	int fd;
+	int cursor;
+	int tamanio;
+} fileInfo;
 
 bool rutaCorrecta(t_config* configHandler);
 bool archivoConfigValido(t_config* configHandler,char* []);

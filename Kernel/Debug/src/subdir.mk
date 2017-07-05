@@ -4,6 +4,7 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
+../src/CapaFileSystem.c \
 ../src/Configuration.c \
 ../src/ConnectionCore.c \
 ../src/Kernel.c \
@@ -13,6 +14,7 @@ C_SRCS += \
 ../src/SocketLibrary.c 
 
 OBJS += \
+./src/CapaFileSystem.o \
 ./src/Configuration.o \
 ./src/ConnectionCore.o \
 ./src/Kernel.o \
@@ -22,6 +24,7 @@ OBJS += \
 ./src/SocketLibrary.o 
 
 C_DEPS += \
+./src/CapaFileSystem.d \
 ./src/Configuration.d \
 ./src/ConnectionCore.d \
 ./src/Kernel.d \

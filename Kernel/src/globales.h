@@ -39,6 +39,27 @@ struct PageOwnership{
 	t_list* control;
 } typedef PageOwnership;
 
+struct entradaTablaGlobalFS
+{
+	char* ruta;
+	int instancias;
+} typedef entradaTablaGlobalFS;
+
+struct entradaTablaFSProceso
+{
+	char* flags;
+	entradaTablaGlobalFS* entradaGlobal;
+	int cursor; // offset
+
+} typedef entradaTablaFSProceso;
+
+struct tablaDeProceso // Lista de tablas de proceso (que a su vez son una lista)
+{
+	int pid;
+	t_list* entradasTablaProceo;
+
+} typedef tablaDeProceso;
+
 bool test;
 
 int maxPID;
@@ -58,6 +79,8 @@ t_list* ownedPages;
 t_list* executeList;
 t_list* blockedList;
 t_list* listaDeColasSemaforos;
+t_list* tablaGlobalFS;
+t_list* tablasDeProcesosFS;
 
 configFile* config;
 

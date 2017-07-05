@@ -312,10 +312,71 @@ void recibirDeCPU(int socket, connHandle* master)
 				int pid = *quitarDeColaDelSemaforo((char*)mensaje->data);
 				fromBlockedToReady(pid);
 			}
+			break;
+
+		case 206: // ABRIR ARCHIVO
+		{
+			// FALTA CREAR ARCHIVO SI NO EXISTE
+			int pid;
+			char* ruta;
+			char* permisos;
+			deserializarInfoArchivo(mensaje->data, &pid, ruta, permisos);
+			int fd = abrirArchivo(pid,ruta, permisos);
+			if(fd != -1)
+				lSend(socket, &fd, 104, sizeof(int));
+			else
+				lSend(socket, NULL, -3,0);
+			break;
+		}
+
+		case 207: // BORRAR ARCHIVO (VER ERRATA)
+
+		case 208: // CERRAR ARCHIVO
+		{
+
+			break;
+		}
+
+		case 209: // MOVER CURSOR
+		{
+			fileInfo info;
+			memcpy(&info, mensaje->data, sizeof(fileInfo));
+			if(!moverCursorArchivo(info))
+				puts("CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+			break;
+		}
+
+		case 210: // ESCRIBIR ARCHIVO
+		{
+			char* data;
+			fileInfo info;
+			deserializarPedidoEscritura(mensaje->data, data,&info);
+			if(!escribirArchivo(info, data))
+				puts("CPU NO PUEDE ESCRIBIR DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+			break;
+		}
+
+		case 211: // LEER ARCHIVO
+		{
+			fileInfo info;
+			memcpy(&info, mensaje->data, sizeof(fileInfo));
+			char* data = leerArchivo(info);
+			if(data == NULL)
+				puts("CPU NO PUEDE LEER, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+			else
+				lSend(socket, data, 104, info.tamanio);
+			break;
+		}
 	}
 	destruirMensaje(mensaje);
 }
 
+void deserializarPedidoEscritura(char* serializado, char** data, fileInfo* info)
+{
+	memcpy(info, serializado, sizeof(fileInfo));
+	*data = malloc(info->tamanio);
+	memcpy(*data, serializado+sizeof(fileInfo), info->tamanio);
+}
 
 void aceptarNuevoCPU(int unCPU)
 {

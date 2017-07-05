@@ -8,6 +8,7 @@
 #include <parser/parser.h>
 #include <parser/metadata_program.h>
 #include <math.h>
+#include "CapaFileSystem.h"
 
 
 ProcessControl* PIDFind(int);
