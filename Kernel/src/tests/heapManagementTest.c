@@ -249,3 +249,130 @@ void freeMemoryTest(){
 	CU_ASSERT_EQUAL(cantOcupados,1);
 
 }
+
+
+void defraggingTest(){
+	config->PAG_SIZE= 512;
+
+	t_list* page= list_create();
+
+	void* memPage= malloc(512);
+	void* aux= malloc (512);
+
+	HeapMetadata* hm1= malloc(sizeof(HeapMetadata));
+	HeapMetadata* hm2= malloc(sizeof(HeapMetadata));
+	HeapMetadata* hm3= malloc(sizeof(HeapMetadata));
+	HeapMetadata* hm4= malloc(sizeof(HeapMetadata));
+	HeapMetadata* hm5= malloc(sizeof(HeapMetadata));
+	HeapMetadata* hm6= malloc(sizeof(HeapMetadata));
+	HeapMetadata* hm7= malloc(sizeof(HeapMetadata));
+	HeapMetadata* hm8= malloc(sizeof(HeapMetadata));
+	HeapMetadata* hm9= malloc(sizeof(HeapMetadata));
+
+	hm1->isFree=0;
+	hm1->size=50;
+	hm2->isFree=1;
+	hm2->size=50;
+	hm3->isFree=0;
+	hm3->size=80;
+	hm4->isFree=0;
+	hm4->size=30;
+	hm5->isFree=0;
+	hm5->size=50;
+	hm6->isFree=1;
+	hm6->size=50;
+	hm7->isFree=0;
+	hm7->size=30;
+	hm8->isFree=0;
+	hm8->size=80;
+	hm9->isFree=1;
+	hm9->size=20;
+
+	list_add(page,hm1);
+	list_add(page,hm2);
+	list_add(page,hm3);
+	list_add(page,hm4);
+	list_add(page,hm5);
+	list_add(page,hm6);
+	list_add(page,hm7);
+	list_add(page,hm8);
+	list_add(page,hm9);
+
+	memcpy(aux,hm1,sizeof(HeapMetadata));
+	memcpy(aux+sizeof(HeapMetadata),"A ver",50);
+	memcpy(memPage,aux,sizeof(HeapMetadata)+50);
+
+
+	memcpy(aux,hm2,sizeof(HeapMetadata));
+	memcpy(aux+sizeof(HeapMetadata),"",50);
+	memcpy(memPage+50+sizeof(HeapMetadata),aux,50);
+
+
+	memcpy(aux,hm3,sizeof(HeapMetadata));
+	memcpy(aux+sizeof(HeapMetadata),"si esto",80);
+	memcpy(memPage+100+sizeof(HeapMetadata)*2,aux,80);
+
+
+	memcpy(aux,hm4,sizeof(HeapMetadata));
+	memcpy(aux+sizeof(HeapMetadata),"queda",30);
+	memcpy(memPage+180+sizeof(HeapMetadata)*3,aux,30);
+
+
+	memcpy(aux,hm5,sizeof(HeapMetadata));
+	memcpy(aux+sizeof(HeapMetadata),"en orden",50);
+	memcpy(memPage+210+sizeof(HeapMetadata)*4,aux,50);
+
+
+	memcpy(aux,hm6,sizeof(HeapMetadata));
+	memcpy(aux+sizeof(HeapMetadata),"",50);
+	memcpy(memPage+260+sizeof(HeapMetadata)*5,aux,50);
+
+
+	memcpy(aux,hm7,sizeof(HeapMetadata));
+	memcpy(aux+sizeof(HeapMetadata),"o no",30);
+	memcpy(memPage+310+sizeof(HeapMetadata)*6,aux,30);
+
+
+	memcpy(aux,hm8,sizeof(HeapMetadata));
+	memcpy(aux+sizeof(HeapMetadata),"queda",80);
+	memcpy(memPage+340+sizeof(HeapMetadata)*7,aux,80);
+
+
+	memcpy(aux,hm9,sizeof(HeapMetadata));
+	memcpy(aux+sizeof(HeapMetadata),"",20);
+	memcpy(memPage+420+sizeof(HeapMetadata)*8,aux,120);
+
+	res->data= memPage;
+
+	void* newmemPage= defragging(1,1,page);
+
+	HeapMetadata* res = list_get(page,0);
+	CU_ASSERT_EQUAL(res->isFree,0);
+	CU_ASSERT_EQUAL(res->size,50);
+
+	res = list_get(page,0);
+	CU_ASSERT_EQUAL(res->isFree,0);
+	CU_ASSERT_EQUAL(res->size,80);
+
+	res = list_get(page,0);
+	CU_ASSERT_EQUAL(res->isFree,0);
+	CU_ASSERT_EQUAL(res->size,30);
+
+	res = list_get(page,0);
+	CU_ASSERT_EQUAL(res->isFree,0);
+	CU_ASSERT_EQUAL(res->size,50);
+
+	res = list_get(page,0);
+	CU_ASSERT_EQUAL(res->isFree,0);
+	CU_ASSERT_EQUAL(res->size,30);
+
+	res = list_get(page,0);
+	CU_ASSERT_EQUAL(res->isFree,0);
+	CU_ASSERT_EQUAL(res->size,80);
+
+	res = list_get(page,0);
+	CU_ASSERT_EQUAL(res->isFree,1);
+	CU_ASSERT_EQUAL(res->size,136);
+
+
+}

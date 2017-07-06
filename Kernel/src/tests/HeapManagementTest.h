@@ -5,6 +5,7 @@
 #include "CUnit/Basic.h"
 
 void freeMemoryTest();
+void defraggingTest();
 void occupyPageSizeTest();
 void grabarPedidoTestNewPage();
 void grabarPedidoTestNotNewPage();

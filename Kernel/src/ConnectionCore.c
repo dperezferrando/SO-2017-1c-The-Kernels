@@ -330,21 +330,41 @@ int offset(t_list* heap, int pos){
 //------------------------------------------------Defragmentación-----------------------------------------------------------//
 
 bool fragmented (t_list* page){
-
+	int i,acc=0,cant=0;
+	for(i=0; i<list_size(page);i++){
+		HeapMetadata* hm= list_get(page,i);
+		if(hm->isFree){acc+=hm->size;cant++;}
+	}
+	return acc>= (config->PAG_SIZE/5) && cant >= 3;
 }
 
-void _tirarMagiaConMemoria(int pid,int idPage,int base,int top,int offset){
-
+void _modifyMemoryPage(int base,int top,int offset,void* memoryPage){
+	memcpy(memoryPage+offset,memoryPage+base,top-base);
 }
 
-int defragging(int pid, int idPage, t_list* page){
+void* getMemoryPage(int pid, int idPage){
+	//enviar che dame tal pagina
+	if(!test){//esto esta asi por el test
+		Mensaje* msg= lRecv(conexionMemoria);
+		return msg->data;
+	}
+	else 1;
+	return res->data;
+}
+
+void* defragging(int pid, int idPage, t_list* page){
+
 	if(!fragmented(page)) return 0;
+
+	void* memPage= getMemoryPage(pid,idPage);
+
 	int offset= 0,offsetList=0;
 	int cantOcupados= _usedFragments(page);
 	int cantMovidos= 0;
+
 	while(cantMovidos < cantOcupados){
-		int base,top,baseList,blockSize=0,i,stop=0,inBlock=0;
-		for(i=0; i<list_size(page) && stop==0 ;i++){
+		int base=0,top=0,baseList,blockSize=0,i,stop=0,inBlock=0;
+		for(i=offsetList; i<list_size(page) && stop==0 ;i++){
 			HeapMetadata* hm= list_get(page,i);
 			if(!inBlock)base+= (hm->size + sizeof(HeapMetadata));//si no estoy en un bloque significa que no llegue a donde voy a empezar a mover, tengo que aumentar el puntero base
 			if(!hm->isFree){//si esta ocupada la pagina, entro a un bloque
@@ -357,16 +377,21 @@ int defragging(int pid, int idPage, t_list* page){
 				if(inBlock){//si no esta libre y yo estaba en un bloque, se termino el bloque y tengo que parar
 				stop=1;
 				}
+				else{
+					offsetList++;//aca si no esta libre y no estoy en bloque muevo el offset para que al principio si los primeros bloques estan ocupados no los pise
+					offset+= (hm->size + sizeof(HeapMetadata));
+				}
 			}
 			if(!stop)top+= (hm->size + sizeof(HeapMetadata));//si no setie el stop es porque todavia no termine de iterar y tengo que seguir aumentando el puntero tope
 		}
 
-		_tirarMagiaConMemoria(pid,idPage,base,top,offset);//que me lo mueva al offset, en 0 al principio
+		_modifyMemoryPage(base,top,offset,memPage);//que me lo mueva al offset, en 0 al principio
 		defragPage(page,baseList,blockSize,offsetList);
 		offsetList+= blockSize;
 		offset+= (top-base);//cambio el offset, lo muevo como tanto espacio grabe para no pisar nada
 	}
-	calculateFreeSpace(page,cantMovidos);
+	calculateFreeSpace(page,cantMovidos,memPage);
+	return memPage;
 }
 
 void defragPage(t_list* page, int baseList, int blockSize, int offsetList){
@@ -374,20 +399,22 @@ void defragPage(t_list* page, int baseList, int blockSize, int offsetList){
 	for(i= baseList; i < (baseList + blockSize) ; i++){//desde donde esta el primer bloque, hasta el ultimo
 		HeapMetadata* hm= list_get(page,i);//agarro el bloque
 		list_remove(page,i);//lo saco de donde esta ahora
-		list_add(page,offsetList + (i-baseList));//lo pongo en el offset mas la cantidad que ya haya asignado para no pisar nada
+		list_add_in_index(page,offsetList + (i-baseList),hm);//lo pongo en el offset mas la cantidad que ya haya asignado para no pisar nada
 	}
 }
 
-void calculateFreeSpace(t_list* page, int cantMovidos){
+void calculateFreeSpace(t_list* page, int cantMovidos,void* memPage){
 	int i,acc=0;
 	for(i=0;i<cantMovidos;i++){
 		HeapMetadata* hm= list_get(page,i);
 		if(!hm->isFree) acc+=(hm->size + sizeof(HeapMetadata));//el if esta por las dudas pero no deberia haber ningun bloque que este for acceda que este libre
+		else list_remove_and_destroy_element(page,i,&(free));//si el hm dice que esta libre lo elimino porque voy a agregar uno al final
 	}
 	HeapMetadata* hm = malloc(sizeof(HeapMetadata));
 	hm->isFree=1;
 	hm->size= config->PAG_SIZE - acc;
 	list_add(page,hm);
+	memcpy(memPage+acc,hm,sizeof(HeapMetadata));
 }
 
 bool _usedFragment(HeapMetadata* hm){
