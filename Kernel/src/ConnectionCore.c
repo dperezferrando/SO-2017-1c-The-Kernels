@@ -82,6 +82,7 @@ void recibirDeConsola(int socket, connHandle* master)
 			}
 			t_list* procesosDeLaConsola = list_filter(process, mismaConsola);
 			list_iterate(procesosDeLaConsola, matarCuandoCorresponda);
+			lSend(socket, mensaje->data, 3, sizeof(int));
 			break;
 		}
 
