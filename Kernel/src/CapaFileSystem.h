@@ -4,25 +4,41 @@
 #include "globales.h"
 #include "commons/string.h"
 
-tablaDeProceso* crearTablaDeProceso(int pid);
-void crearEstructurasFSProceso(int pid);
-void deserializarInfoArchivo(char* data, int* pid, char** ruta, char** permisos);
-int abrirArchivo(int pid, char* ruta, char* permisos);
-entradaTablaGlobalFS* buscarEnTablaGlobal(char* ruta);
-entradaTablaGlobalFS* agregarEntradaGlobal(char* ruta, char* permisos);
+
 bool archivoValido(char* ruta);
-int agregarEntradaTablaProceso(entradaTablaGlobalFS* entradaGlobal, int pid, char* permisos);
+bool cerrarArchivo(int pid, int fd);
+bool borrarArchivo(int pid, int fd);
 bool moverCursorArchivo(fileInfo info);
-entradaTablaFSProceso* buscarEnTablaDelProceso(int pid, int fd);
-char* leerArchivo(fileInfo info);
 bool escribirArchivo(fileInfo info, char* data);
+
+
+char* leerArchivo(fileInfo info);
+
+
+int abrirArchivo(int pid, char* ruta, char* permisos);
+int agregarEntradaTablaProceso(entradaTablaGlobalFS* entradaGlobal, int pid, char* permisos);
+
+
+void crearEstructurasFSProceso(int pid);
+void destruirTablaProceso(tablaDeProceso* tabla);
+void imprimirPorPantalla(fileInfo info, char* data);
+void destruirEntradaGlobal(entradaTablaGlobalFS* entrada);
+void cerrarArchivoEnTablaGlobal(entradaTablaGlobalFS* entrada);
+void destruirEntradaTablaProceso(entradaTablaFSProceso* entrada);
+void deserializarInfoArchivo(char* data, int* pid, char** ruta, char** permisos);
+
+
+entradaTablaGlobalFS* buscarEnTablaGlobal(char* ruta);
+entradaTablaFSProceso* buscarEnTablaDelProceso(int pid, int fd);
+entradaTablaGlobalFS* agregarEntradaGlobal(char* ruta, char* permisos);
+
+
 serializado serializarPedidoLectura(char* ruta, int offset, int size);
 serializado serializarPedidoEscritura(char* ruta, int offset, int size, char* data);
-bool cerrarArchivo(int pid, int fd);
-void cerrarArchivoEnTablaGlobal(entradaTablaGlobalFS* entrada);
-void destruirEntradaGlobal(entradaTablaGlobalFS* entrada);
-void destruirEntradaTablaProceso(entradaTablaFSProceso* entrada);
-void imprimirPorPantalla(fileInfo info, char* data);
-bool borrarArchivo(int pid, int fd);
-void destruirTablaProceso(tablaDeProceso* tabla);
+
+
+tablaDeProceso* crearTablaDeProceso(int pid);
+
+
+
 #endif

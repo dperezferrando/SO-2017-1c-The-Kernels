@@ -47,13 +47,12 @@ void initializePageOwnership(PageOwnership*);
 void storeVariable(PageOwnership*, char*, int);
 void handleSockets(connHandle*, socketHandler);
 void matarCuandoCorresponda(ProcessControl* pc);
-
 void* serializarScript(int, int, int, int*, void*);
 
 
 t_list* findProcessPages(int);
 
-
+PageOwnership* findPage(int, int);
 MemoryRequest deserializeMemReq(void*);
 HeapMetadata* initializeHeapMetadata(int);
 

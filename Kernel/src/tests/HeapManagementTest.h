@@ -4,6 +4,7 @@
 #include "../ConnectionCore.h"
 #include "CUnit/Basic.h"
 
+void freeMemoryTest();
 void occupyPageSizeTest();
 void grabarPedidoTestNewPage();
 void grabarPedidoTestNotNewPage();
