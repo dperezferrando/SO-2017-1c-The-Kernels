@@ -24,6 +24,7 @@ PCB* createProcess(char* script, int tamanioScript){
 	pcb->exitCode = 0;
 	pcb->programCounter = 0;
 	crearEstructurasFSProceso(pcb->pid);
+	metadata_destruir(metadata);
 	return pcb;
 }
 

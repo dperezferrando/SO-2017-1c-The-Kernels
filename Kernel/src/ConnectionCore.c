@@ -483,6 +483,7 @@ void recibirDeCPU(int socket, connHandle* master)
 				*pidblock = *(int*)m->data;
 				//Envio el pid a la cola del semaforo
 				enviarAColaDelSemaforo(sem, pidblock);
+				free(sem);
 				destruirMensaje(m);
 			} else {
 				//Aviso a CPU que no hay bloqueo
@@ -505,6 +506,7 @@ void recibirDeCPU(int socket, connHandle* master)
 				int pid = *quitarDeColaDelSemaforo(sem);
 				fromBlockedToReady(pid);
 			}
+			free(sem);
 			break;
 		}
 
@@ -611,6 +613,7 @@ void enviarInformacion(int CPU){
 	memcpy(data + sizeof(int), &config->PAG_SIZE, sizeof(int));
 	memcpy(data + sizeof(int)*2, &algoritmo, sizeof(int));
 	lSend(CPU, data, 10, sizeof(int)*3);
+	free(data);
 }
 
 
@@ -687,7 +690,8 @@ int obtenerValorSemaforo(char* c) {
 
 void enviarAColaDelSemaforo(char* c, int* pid) {
 	int pos = obtenerPosicionSemaforo(c);
-	queue_push((t_queue*)list_get(listaDeColasSemaforos, pos), pid);
+	t_queue* colaDelSemaforo = (t_queue*)list_get(listaDeColasSemaforos, pos);
+	queue_push(colaDelSemaforo, pid);
 	printf("EL SEMAFORO %s BLOQUEO EL PROCESO %i\n",config->SEM_IDS[pos], *pid);
 }
 
