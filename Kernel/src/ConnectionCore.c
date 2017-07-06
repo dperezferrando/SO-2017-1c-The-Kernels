@@ -344,11 +344,15 @@ void _modifyMemoryPage(int base,int top,int offset,void* memoryPage){
 
 void* getMemoryPage(int pid, int idPage){
 	//enviar che dame tal pagina
-	Mensaje* msg= lRecv(conexionMemoria);
-	return msg->data;
+	if(!test){//esto esta asi por el test
+		Mensaje* msg= lRecv(conexionMemoria);
+		return msg->data;
+	}
+	else 1;
+	return res->data;
 }
 
-int defragging(int pid, int idPage, t_list* page){
+void* defragging(int pid, int idPage, t_list* page){
 
 	if(!fragmented(page)) return 0;
 
@@ -359,8 +363,8 @@ int defragging(int pid, int idPage, t_list* page){
 	int cantMovidos= 0;
 
 	while(cantMovidos < cantOcupados){
-		int base,top,baseList,blockSize=0,i,stop=0,inBlock=0;
-		for(i=0; i<list_size(page) && stop==0 ;i++){
+		int base=0,top=0,baseList,blockSize=0,i,stop=0,inBlock=0;
+		for(i=offsetList; i<list_size(page) && stop==0 ;i++){
 			HeapMetadata* hm= list_get(page,i);
 			if(!inBlock)base+= (hm->size + sizeof(HeapMetadata));//si no estoy en un bloque significa que no llegue a donde voy a empezar a mover, tengo que aumentar el puntero base
 			if(!hm->isFree){//si esta ocupada la pagina, entro a un bloque
@@ -373,6 +377,10 @@ int defragging(int pid, int idPage, t_list* page){
 				if(inBlock){//si no esta libre y yo estaba en un bloque, se termino el bloque y tengo que parar
 				stop=1;
 				}
+				else{
+					offsetList++;//aca si no esta libre y no estoy en bloque muevo el offset para que al principio si los primeros bloques estan ocupados no los pise
+					offset+= (hm->size + sizeof(HeapMetadata));
+				}
 			}
 			if(!stop)top+= (hm->size + sizeof(HeapMetadata));//si no setie el stop es porque todavia no termine de iterar y tengo que seguir aumentando el puntero tope
 		}
@@ -383,6 +391,7 @@ int defragging(int pid, int idPage, t_list* page){
 		offset+= (top-base);//cambio el offset, lo muevo como tanto espacio grabe para no pisar nada
 	}
 	calculateFreeSpace(page,cantMovidos,memPage);
+	return memPage;
 }
 
 void defragPage(t_list* page, int baseList, int blockSize, int offsetList){

@@ -56,6 +56,7 @@ void matarCuandoCorresponda(ProcessControl* pc);
 
 
 void* getMemoryPage(int, int);
+void* defragging(int, int , t_list*);
 void* serializarScript(int, int, int, int*, void*);
 
 
