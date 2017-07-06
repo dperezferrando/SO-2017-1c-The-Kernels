@@ -164,7 +164,35 @@ int memoryRequest(MemoryRequest mr, int size, void* contenido){
 	return operation;
 }
 
+int freeMemory(int pid, int page, int offset){
+	PageOwnership* po= findPage(pid,page);
+	if(po==NULL)return -1;
+	int acc=0,i=0;
+	HeapMetadata* hm;
+	while(acc<offset){
+		hm= list_get(po->occSpaces,i);
+		acc+=sizeof(HeapMetadata);
+		acc+= hm->size;
+		i++;
+	}
+	hm= list_get(po->occSpaces,i);
+	hm->isFree=1;
+	sendKillRequest(pid,page,offset,hm);
+	return 1;
+}
 
+void sendKillRequest(int pid, int page, int offset, HeapMetadata* hm){
+	int size= sizeof(int)*3+sizeof(HeapMetadata);
+	void* request= malloc(size);
+	memcpy(request,&pid,sizeof(int));
+	memcpy(request+sizeof(int),&page,sizeof(int));
+	memcpy(request+sizeof(int)*2,&offset,sizeof(int));
+	memcpy(request+sizeof(int)*3,&hm->size,sizeof(uint32_t));
+	memcpy(request+sizeof(int)*3+sizeof(uint32_t),&hm->isFree,sizeof(bool));
+
+	if(!test)lSend(conexionMemoria,request, 205, size);
+
+}
 
 HeapMetadata* initializeHeapMetadata(int size){
 	HeapMetadata* hm= malloc(sizeof(HeapMetadata));
@@ -180,7 +208,6 @@ int grabarPedido(PageOwnership* po, MemoryRequest mr, HeapMetadata* hm, int* off
 		initializePageOwnership(po);//aca queda el PageOwnership con la estructura que marca el espacio libre
 	}
 	*offset= occupyPageSize(po,hm);//guarda el heapMetadata correspondiente en el PageOwnership
-	//storeVariable(po,mr.variable,pos);//guarda la estructura de control de variables
 
 	if (po->idpage!=-1){
 		list_replace(ownedPages, &PIDFindPO, po);
@@ -225,6 +252,31 @@ t_list* findProcessPages(int pid){
 	return list_filter(ownedPages,&(_PIDFind));
 }
 
+void* pageOwnershipDestroyer(PageOwnership* po){
+	free(po->control);
+	free(po->occSpaces);
+	free(po);
+}
+
+PageOwnership* findPage(int pid, int page){
+	t_list* processPages = findProcessPages(pid);
+	bool _pageIdFind(PageOwnership* po){
+		return po->idpage== page;
+	}
+	return list_find(processPages,&(_pageIdFind));
+}
+
+int replacePage(int pid, PageOwnership* po){
+	t_list* processPages = findProcessPages(pid);
+	if(processPages==NULL)return -1;
+	bool _pageIdFind(PageOwnership* po){
+		return po->idpage== po->idpage;
+	}
+	list_remove_and_destroy_by_condition(ownedPages,&(_pageIdFind),&(pageOwnershipDestroyer));
+	list_add(processPages, po);
+	return 1;
+}
+
 void initializePageOwnership(PageOwnership* po){
 	po->occSpaces= list_create();
 	po->control= list_create();
@@ -240,9 +292,12 @@ int occupyPageSize(PageOwnership* po,HeapMetadata* hm){
 		HeapMetadata* hw= list_get(po->occSpaces,i);
 		if(hw->isFree==1){
 			if(hw->size >= (hm->size+sizeof(HeapMetadata))){
-				hw->size-=(hm->size+sizeof(HeapMetadata));
-				list_replace(po->occSpaces,i,hm);//reemplazo el elemento libre por uno ocupado
-				list_add_in_index(po->occSpaces,i+1,hw);//agrego la estructura libre al lado
+				int aux= hm->size;
+				hm->isFree=1;//con el elemento que me pasaron, lo modifico para obtener el que voy a agregar como libre (1)
+				hm->size= hw->size-aux-sizeof(HeapMetadata);
+				hw->isFree=0;//modifico el elemento de la lista que ya estaba como libre, para que este ocupado con el tamaño requerido
+				hw->size= aux;
+				list_add_in_index(po->occSpaces,i+1,hm);//agrego la estructura libre (1) al lado
 				offs= offset(po->occSpaces,i);
 				break;
 			}
@@ -267,6 +322,85 @@ int offset(t_list* heap, int pos){
 	hc->listPosition= pos;
 	list_add(po->control,hc);
 }*/
+
+
+
+
+
+//------------------------------------------------Defragmentación-----------------------------------------------------------//
+
+bool fragmented (t_list* page){
+
+}
+
+void _tirarMagiaConMemoria(int pid,int idPage,int base,int top,int offset){
+
+}
+
+int defragging(int pid, int idPage, t_list* page){
+	if(!fragmented(page)) return 0;
+	int offset= 0,offsetList=0;
+	int cantOcupados= _usedFragments(page);
+	int cantMovidos= 0;
+	while(cantMovidos < cantOcupados){
+		int base,top,baseList,blockSize=0,i,stop=0,inBlock=0;
+		for(i=0; i<list_size(page) && stop==0 ;i++){
+			HeapMetadata* hm= list_get(page,i);
+			if(!inBlock)base+= (hm->size + sizeof(HeapMetadata));//si no estoy en un bloque significa que no llegue a donde voy a empezar a mover, tengo que aumentar el puntero base
+			if(!hm->isFree){//si esta ocupada la pagina, entro a un bloque
+				if(!inBlock)baseList=i;//si no estaba en un bloque, este es el i desde donde voy a mover en la lista
+				inBlock=1;
+				cantMovidos++;//cada vez que sigo adentro de un bloque es porque voy a mover otro elemento
+				blockSize++;
+			}
+			else{
+				if(inBlock){//si no esta libre y yo estaba en un bloque, se termino el bloque y tengo que parar
+				stop=1;
+				}
+			}
+			if(!stop)top+= (hm->size + sizeof(HeapMetadata));//si no setie el stop es porque todavia no termine de iterar y tengo que seguir aumentando el puntero tope
+		}
+
+		_tirarMagiaConMemoria(pid,idPage,base,top,offset);//que me lo mueva al offset, en 0 al principio
+		defragPage(page,baseList,blockSize,offsetList);
+		offsetList+= blockSize;
+		offset+= (top-base);//cambio el offset, lo muevo como tanto espacio grabe para no pisar nada
+	}
+	calculateFreeSpace(page,cantMovidos);
+}
+
+void defragPage(t_list* page, int baseList, int blockSize, int offsetList){
+	int i;
+	for(i= baseList; i < (baseList + blockSize) ; i++){//desde donde esta el primer bloque, hasta el ultimo
+		HeapMetadata* hm= list_get(page,i);//agarro el bloque
+		list_remove(page,i);//lo saco de donde esta ahora
+		list_add(page,offsetList + (i-baseList));//lo pongo en el offset mas la cantidad que ya haya asignado para no pisar nada
+	}
+}
+
+void calculateFreeSpace(t_list* page, int cantMovidos){
+	int i,acc=0;
+	for(i=0;i<cantMovidos;i++){
+		HeapMetadata* hm= list_get(page,i);
+		if(!hm->isFree) acc+=(hm->size + sizeof(HeapMetadata));//el if esta por las dudas pero no deberia haber ningun bloque que este for acceda que este libre
+	}
+	HeapMetadata* hm = malloc(sizeof(HeapMetadata));
+	hm->isFree=1;
+	hm->size= config->PAG_SIZE - acc;
+	list_add(page,hm);
+}
+
+bool _usedFragment(HeapMetadata* hm){
+	return hm->isFree==1;
+}
+
+int _usedFragments(t_list* page){
+	t_list* aux= list_filter(page,&(_usedFragment));
+	return list_size(aux);
+}
+
+
+
 
 //------------------------------------------------Funciones de CPU----------------------------------------------------------//
 
@@ -326,7 +460,11 @@ void recibirDeCPU(int socket, connHandle* master)
 		}
 		case 205:
 		{
-			MemoryRequest mr = deserializeMemReq(mensaje->data);
+			int pid, page, offset;
+			memcpy(&pid,mensaje->data,sizeof(int));
+			memcpy(&page,mensaje->data+sizeof(int),sizeof(int));
+			memcpy(&offset,mensaje->data+sizeof(int)*2,sizeof(int));
+			freeMemory(pid,page,offset);
 			//memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr)); funcion para eliminar
 			break;
 		}

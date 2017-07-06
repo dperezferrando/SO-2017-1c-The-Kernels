@@ -197,3 +197,55 @@ void grabarPedidoTest(int newPage){
 	}
 
 }
+
+
+
+void freeMemoryTest(){
+	config->PAG_SIZE= 256;
+	ownedPages= list_create();
+	PageOwnership* pp= malloc(sizeof(PageOwnership));
+	pp->pid=1;
+	pp->idpage=1;
+	initializePageOwnership(pp);
+	HeapMetadata aux;
+	aux.isFree=0;
+	aux.size= 4;
+	occupyPageSize(pp,&aux);
+	list_add(ownedPages,pp);
+	list_size(pp->occSpaces);
+	MemoryRequest* mr= malloc(sizeof(MemoryRequest));
+	mr->pid= 1;
+	mr->size= 56;
+	res=malloc(sizeof(Mensaje));
+	res->header.tipoOperacion=1;
+	res->data= malloc(sizeof(int));
+	int a= 10;
+	list_size(pp->occSpaces);
+	memcpy(res->data,&a,sizeof(int));
+	HeapMetadata* hm= initializeHeapMetadata(mr->size);
+	int* offset= malloc(sizeof(int));
+	grabarPedido(pp,*mr,hm,offset);
+	list_size(pp->occSpaces);
+	freeMemory(pp->pid,pp->idpage,*offset);
+
+	int cantLibres=0,cantOcupados=0,i;
+
+	for(i=0;i<list_size(pp->occSpaces);i++)
+	{
+		HeapMetadata* aux = list_get(pp->occSpaces,i);
+		if(aux->isFree==true)cantLibres++;else cantOcupados++;
+	}
+
+
+
+	list_destroy(ownedPages);
+	free(pp);
+	free(mr);
+	free(res);
+	free(hm);
+	free(offset);
+
+	CU_ASSERT_EQUAL(cantLibres,2);
+	CU_ASSERT_EQUAL(cantOcupados,1);
+
+}

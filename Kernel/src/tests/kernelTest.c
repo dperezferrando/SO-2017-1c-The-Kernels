@@ -26,6 +26,7 @@ int kernelTest(int flag){
 	CU_add_test(heapTest, "sendMemoryRequestNotNewPageTest", sendMemoryRequestNotNewPageTest);
 	CU_add_test(heapTest, "grabarPedidoTestNewPage", grabarPedidoTestNewPage);
 	CU_add_test(heapTest, "grabarPedidoTestNotNewPage", grabarPedidoTestNotNewPage);
+	CU_add_test(heapTest, "freeMemoryTest", freeMemoryTest);
 
 
 	CU_basic_run_tests();
