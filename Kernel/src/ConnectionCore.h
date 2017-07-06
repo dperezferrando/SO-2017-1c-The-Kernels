@@ -25,16 +25,19 @@ int readyProcess();
 int executeProcess();
 int checkMultiprog();
 int offset(t_list*, int);
+int _usedFragments(t_list*);
 int enviarScriptAMemoria(PCB*,char*, int);
 int grabarPedido(PageOwnership*, MemoryRequest, HeapMetadata*,int*);
 int sendMemoryRequest(MemoryRequest, int, void*, PageOwnership*, int);
 
 bool viableRequest(int);
+bool fragmented (t_list*);
 bool fsSock(int, connHandle*);
 bool memSock(int, connHandle*);
 bool cpuSock(int, connHandle*);
 bool consSock(int, connHandle*);
 bool isListener(int, connHandle);
+bool _usedFragment(HeapMetadata*);
 
 
 void newProcess(PCB*, int);
@@ -43,10 +46,16 @@ void aceptarNuevoCPU(int);
 void closeHandle(int, connHandle*);
 void recibirDeCPU(int, connHandle*);
 void recibirDeConsola(int, connHandle*);
+void defragPage(t_list*, int, int, int);
+void _modifyMemoryPage(int,int,int,void*);
+void calculateFreeSpace(t_list*, int,void*);
 void initializePageOwnership(PageOwnership*);
 void storeVariable(PageOwnership*, char*, int);
 void handleSockets(connHandle*, socketHandler);
 void matarCuandoCorresponda(ProcessControl* pc);
+
+
+void* getMemoryPage(int, int);
 void* serializarScript(int, int, int, int*, void*);
 
 

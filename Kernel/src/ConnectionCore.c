@@ -329,18 +329,34 @@ int offset(t_list* heap, int pos){
 //------------------------------------------------Defragmentación-----------------------------------------------------------//
 
 bool fragmented (t_list* page){
-
+	int i,acc=0,cant=0;
+	for(i=0; i<list_size(page);i++){
+		HeapMetadata* hm= list_get(page,i);
+		if(hm->isFree){acc+=hm->size;cant++;}
+	}
+	return acc>= (config->PAG_SIZE/5) && cant >= 3;
 }
 
-void _tirarMagiaConMemoria(int pid,int idPage,int base,int top,int offset){
+void _modifyMemoryPage(int base,int top,int offset,void* memoryPage){
+	memcpy(memoryPage+offset,memoryPage+base,top-base);
+}
 
+void* getMemoryPage(int pid, int idPage){
+	//enviar che dame tal pagina
+	Mensaje* msg= lRecv(conexionMemoria);
+	return msg->data;
 }
 
 int defragging(int pid, int idPage, t_list* page){
+
 	if(!fragmented(page)) return 0;
+
+	void* memPage= getMemoryPage(pid,idPage);
+
 	int offset= 0,offsetList=0;
 	int cantOcupados= _usedFragments(page);
 	int cantMovidos= 0;
+
 	while(cantMovidos < cantOcupados){
 		int base,top,baseList,blockSize=0,i,stop=0,inBlock=0;
 		for(i=0; i<list_size(page) && stop==0 ;i++){
@@ -360,12 +376,12 @@ int defragging(int pid, int idPage, t_list* page){
 			if(!stop)top+= (hm->size + sizeof(HeapMetadata));//si no setie el stop es porque todavia no termine de iterar y tengo que seguir aumentando el puntero tope
 		}
 
-		_tirarMagiaConMemoria(pid,idPage,base,top,offset);//que me lo mueva al offset, en 0 al principio
+		_modifyMemoryPage(base,top,offset,memPage);//que me lo mueva al offset, en 0 al principio
 		defragPage(page,baseList,blockSize,offsetList);
 		offsetList+= blockSize;
 		offset+= (top-base);//cambio el offset, lo muevo como tanto espacio grabe para no pisar nada
 	}
-	calculateFreeSpace(page,cantMovidos);
+	calculateFreeSpace(page,cantMovidos,memPage);
 }
 
 void defragPage(t_list* page, int baseList, int blockSize, int offsetList){
@@ -373,20 +389,22 @@ void defragPage(t_list* page, int baseList, int blockSize, int offsetList){
 	for(i= baseList; i < (baseList + blockSize) ; i++){//desde donde esta el primer bloque, hasta el ultimo
 		HeapMetadata* hm= list_get(page,i);//agarro el bloque
 		list_remove(page,i);//lo saco de donde esta ahora
-		list_add(page,offsetList + (i-baseList));//lo pongo en el offset mas la cantidad que ya haya asignado para no pisar nada
+		list_add_in_index(page,offsetList + (i-baseList),hm);//lo pongo en el offset mas la cantidad que ya haya asignado para no pisar nada
 	}
 }
 
-void calculateFreeSpace(t_list* page, int cantMovidos){
+void calculateFreeSpace(t_list* page, int cantMovidos,void* memPage){
 	int i,acc=0;
 	for(i=0;i<cantMovidos;i++){
 		HeapMetadata* hm= list_get(page,i);
 		if(!hm->isFree) acc+=(hm->size + sizeof(HeapMetadata));//el if esta por las dudas pero no deberia haber ningun bloque que este for acceda que este libre
+		else list_remove_and_destroy_element(page,i,&(free));//si el hm dice que esta libre lo elimino porque voy a agregar uno al final
 	}
 	HeapMetadata* hm = malloc(sizeof(HeapMetadata));
 	hm->isFree=1;
 	hm->size= config->PAG_SIZE - acc;
 	list_add(page,hm);
+	memcpy(memPage+acc,hm,sizeof(HeapMetadata));
 }
 
 bool _usedFragment(HeapMetadata* hm){
