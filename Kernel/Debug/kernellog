@@ -1,602 +1,616 @@
-==5014== Memcheck, a memory error detector
-==5014== Copyright (C) 2002-2013, and GNU GPL'd, by Julian Seward et al.
-==5014== Using Valgrind-3.10.0.SVN and LibVEX; rerun with -h for copyright info
-==5014== Command: ./Kernel
-==5014== Parent PID: 2590
-==5014== 
-==5014== Conditional jump or move depends on uninitialised value(s)
-==5014==    at 0x804CA7F: handleSockets (ConnectionCore.c:9)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== Syscall param select(readfds) points to uninitialised byte(s)
-==5014==    at 0x41B071D: ___newselect_nocancel (syscall-template.S:81)
-==5014==    by 0x804FFE4: lSelect (SocketLibrary.c:147)
-==5014==    by 0x804EE32: handler (Listen.c:16)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014==  Address 0xbec6784c is on thread 1's stack
-==5014== 
-==5014== Syscall param select(writefds) points to uninitialised byte(s)
-==5014==    at 0x41B071D: ___newselect_nocancel (syscall-template.S:81)
-==5014==    by 0x804FFE4: lSelect (SocketLibrary.c:147)
-==5014==    by 0x804EE32: handler (Listen.c:16)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014==  Address 0xbec678cc is on thread 1's stack
-==5014== 
-==5014== Invalid read of size 1
-==5014==    at 0x402D413: __GI_strlen (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x41472DC: strdup (strdup.c:41)
-==5014==    by 0x40829D3: metadata_desde_literal (in /usr/lib/libparser-ansisop.so)
-==5014==    by 0x804F1C4: createProcess (Process.c:14)
-==5014==    by 0x804CC77: recibirDeConsola (ConnectionCore.c:59)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014==  Address 0x4280f09 is 0 bytes after a block of size 49 alloc'd
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804FCF4: lRecv (SocketLibrary.c:90)
-==5014==    by 0x804CC19: recibirDeConsola (ConnectionCore.c:48)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== Invalid read of size 2
-==5014==    at 0x402F1C0: __GI_memcpy (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x41472FB: strdup (strdup.c:47)
-==5014==    by 0x40829D3: metadata_desde_literal (in /usr/lib/libparser-ansisop.so)
-==5014==    by 0x804F1C4: createProcess (Process.c:14)
-==5014==    by 0x804CC77: recibirDeConsola (ConnectionCore.c:59)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014==  Address 0x4280f08 is 48 bytes inside a block of size 49 alloc'd
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804FCF4: lRecv (SocketLibrary.c:90)
-==5014==    by 0x804CC19: recibirDeConsola (ConnectionCore.c:48)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== Invalid read of size 1
-==5014==    at 0x402F338: __GI_memcpy (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x41472FB: strdup (strdup.c:47)
-==5014==    by 0x40829D3: metadata_desde_literal (in /usr/lib/libparser-ansisop.so)
-==5014==    by 0x804F1C4: createProcess (Process.c:14)
-==5014==    by 0x804CC77: recibirDeConsola (ConnectionCore.c:59)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014==  Address 0x4281ee0 is 0 bytes after a block of size 72 alloc'd
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804FCF4: lRecv (SocketLibrary.c:90)
-==5014==    by 0x804CC19: recibirDeConsola (ConnectionCore.c:48)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== Invalid read of size 4
-==5014==    at 0x404E92D: queue_push (in /usr/lib/libcommons.so)
-==5014==    by 0x804E56D: enviarAColaDelSemaforo (ConnectionCore.c:694)
-==5014==    by 0x804DDEC: recibirDeCPU (ConnectionCore.c:485)
-==5014==    by 0x804CB59: handleSockets (ConnectionCore.c:27)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014==  Address 0x0 is not stack'd, malloc'd or (recently) free'd
-==5014== 
-==5014== 
-==5014== Process terminating with default action of signal 11 (SIGSEGV)
-==5014==  Access not within mapped region at address 0x0
-==5014==    at 0x404E92D: queue_push (in /usr/lib/libcommons.so)
-==5014==    by 0x804E56D: enviarAColaDelSemaforo (ConnectionCore.c:694)
-==5014==    by 0x804DDEC: recibirDeCPU (ConnectionCore.c:485)
-==5014==    by 0x804CB59: handleSockets (ConnectionCore.c:27)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014==  If you believe this happened as a result of a stack
-==5014==  overflow in your program's main thread (unlikely but
-==5014==  possible), you can try to increase the size of the
-==5014==  main thread stack using the --main-stacksize= flag.
-==5014==  The main thread stack size used in this run was 8388608.
-==5014== 
-==5014== HEAP SUMMARY:
-==5014==     in use at exit: 994 bytes in 71 blocks
-==5014==   total heap usage: 339 allocs, 268 frees, 6,512 bytes allocated
-==5014== 
-==5014== 0 bytes in 1 blocks are still reachable in loss record 1 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804F244: createProcess (Process.c:19)
-==5014==    by 0x804CC77: recibirDeConsola (ConnectionCore.c:59)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 0 bytes in 1 blocks are still reachable in loss record 2 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804BEAE: deserializarPCB (Configuration.c:69)
-==5014==    by 0x804E364: recibirPCB (ConnectionCore.c:641)
-==5014==    by 0x804DBE0: recibirDeCPU (ConnectionCore.c:438)
-==5014==    by 0x804CB59: handleSockets (ConnectionCore.c:27)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 0 bytes in 1 blocks are indirectly lost in loss record 3 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804F244: createProcess (Process.c:19)
-==5014==    by 0x804CC77: recibirDeConsola (ConnectionCore.c:59)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 4 bytes in 1 blocks are still reachable in loss record 4 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404E843: queue_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804E9BB: main (Kernel.c:34)
-==5014== 
-==5014== 4 bytes in 1 blocks are still reachable in loss record 5 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404E843: queue_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804E9C5: main (Kernel.c:36)
-==5014== 
-==5014== 4 bytes in 1 blocks are still reachable in loss record 6 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404E843: queue_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804E9CF: main (Kernel.c:37)
-==5014== 
-==5014== 4 bytes in 1 blocks are still reachable in loss record 7 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404E843: queue_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804E9ED: main (Kernel.c:40)
-==5014== 
-==5014== 4 bytes in 1 blocks are still reachable in loss record 8 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404E843: queue_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804E720: crearListaDeColasSemaforos (ConnectionCore.c:737)
-==5014==    by 0x804EA0B: main (Kernel.c:43)
-==5014== 
-==5014== 4 bytes in 1 blocks are still reachable in loss record 9 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804FCF4: lRecv (SocketLibrary.c:90)
-==5014==    by 0x804DA38: recibirDeCPU (ConnectionCore.c:412)
-==5014==    by 0x804CB59: handleSockets (ConnectionCore.c:27)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 4 bytes in 1 blocks are still reachable in loss record 10 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804FCF4: lRecv (SocketLibrary.c:90)
-==5014==    by 0x804DDBB: recibirDeCPU (ConnectionCore.c:481)
-==5014==    by 0x804CB59: handleSockets (ConnectionCore.c:27)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 4 bytes in 1 blocks are still reachable in loss record 11 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804DDCA: recibirDeCPU (ConnectionCore.c:482)
-==5014==    by 0x804CB59: handleSockets (ConnectionCore.c:27)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 4 bytes in 1 blocks are definitely lost in loss record 12 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804DDCA: recibirDeCPU (ConnectionCore.c:482)
-==5014==    by 0x804CB59: handleSockets (ConnectionCore.c:27)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 5 bytes in 1 blocks are still reachable in loss record 13 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804DD4A: recibirDeCPU (ConnectionCore.c:474)
-==5014==    by 0x804CB59: handleSockets (ConnectionCore.c:27)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 6 bytes in 3 blocks are still reachable in loss record 14 of 59
-==5014==    at 0x402C324: realloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404F15A: string_trim_right (in /usr/lib/libcommons.so)
-==5014==    by 0x404F05F: string_trim (in /usr/lib/libcommons.so)
-==5014==    by 0x404F3C7: string_get_string_as_array (in /usr/lib/libcommons.so)
-==5014==    by 0x4050030: config_get_array_value (in /usr/lib/libcommons.so)
-==5014==    by 0x804ED2C: readConfigFile (KernelConfiguration.c:61)
-==5014==    by 0x804BDA1: configurate (Configuration.c:48)
-==5014==    by 0x804E964: main (Kernel.c:23)
-==5014== 
-==5014== 8 bytes in 1 blocks are still reachable in loss record 15 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804E9B1: main (Kernel.c:32)
-==5014== 
-==5014== 8 bytes in 1 blocks are still reachable in loss record 16 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
-==5014==    by 0x404E84B: queue_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804E9BB: main (Kernel.c:34)
-==5014== 
-==5014== 8 bytes in 1 blocks are still reachable in loss record 17 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
-==5014==    by 0x404E84B: queue_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804E9C5: main (Kernel.c:36)
-==5014== 
-==5014== 8 bytes in 1 blocks are still reachable in loss record 18 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
-==5014==    by 0x404E84B: queue_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804E9CF: main (Kernel.c:37)
-==5014== 
-==5014== 8 bytes in 1 blocks are still reachable in loss record 19 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804E9D9: main (Kernel.c:38)
-==5014== 
-==5014== 8 bytes in 1 blocks are still reachable in loss record 20 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804E9E3: main (Kernel.c:39)
-==5014== 
-==5014== 8 bytes in 1 blocks are still reachable in loss record 21 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
-==5014==    by 0x404E84B: queue_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804E9ED: main (Kernel.c:40)
-==5014== 
-==5014== 8 bytes in 1 blocks are still reachable in loss record 22 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804E9F7: main (Kernel.c:41)
-==5014== 
-==5014== 8 bytes in 1 blocks are still reachable in loss record 23 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804EA01: main (Kernel.c:42)
-==5014== 
-==5014== 8 bytes in 1 blocks are still reachable in loss record 24 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804E70D: crearListaDeColasSemaforos (ConnectionCore.c:733)
-==5014==    by 0x804EA0B: main (Kernel.c:43)
-==5014== 
-==5014== 8 bytes in 1 blocks are still reachable in loss record 25 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
-==5014==    by 0x404E84B: queue_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804E720: crearListaDeColasSemaforos (ConnectionCore.c:737)
-==5014==    by 0x804EA0B: main (Kernel.c:43)
-==5014== 
-==5014== 8 bytes in 1 blocks are still reachable in loss record 26 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404DF9F: list_create_element (in /usr/lib/libcommons.so)
-==5014==    by 0x404D628: list_add (in /usr/lib/libcommons.so)
-==5014==    by 0x804E737: crearListaDeColasSemaforos (ConnectionCore.c:738)
-==5014==    by 0x804EA0B: main (Kernel.c:43)
-==5014== 
-==5014== 8 bytes in 1 blocks are still reachable in loss record 27 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804C7B5: crearIndiceDeStack (Configuration.c:227)
-==5014==    by 0x804F2A8: createProcess (Process.c:23)
-==5014==    by 0x804CC77: recibirDeConsola (ConnectionCore.c:59)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 8 bytes in 1 blocks are still reachable in loss record 28 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804C7BF: crearIndiceDeStack (Configuration.c:228)
-==5014==    by 0x804F2A8: createProcess (Process.c:23)
-==5014==    by 0x804CC77: recibirDeConsola (ConnectionCore.c:59)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 8 bytes in 1 blocks are still reachable in loss record 29 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404DF9F: list_create_element (in /usr/lib/libcommons.so)
-==5014==    by 0x404D628: list_add (in /usr/lib/libcommons.so)
-==5014==    by 0x804F9EC: _processChangeStateToList (Process.c:251)
-==5014==    by 0x804F72B: _fromQueueToList (Process.c:180)
-==5014==    by 0x804F63E: fromReadyToExecute (Process.c:153)
-==5014==    by 0x804F497: executeProcess (Process.c:99)
-==5014==    by 0x804F455: readyProcess (Process.c:90)
-==5014==    by 0x804CCD9: recibirDeConsola (ConnectionCore.c:64)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 8 bytes in 1 blocks are still reachable in loss record 30 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404DF9F: list_create_element (in /usr/lib/libcommons.so)
-==5014==    by 0x404D628: list_add (in /usr/lib/libcommons.so)
-==5014==    by 0x804F9AF: modifyProcessState (Process.c:241)
-==5014==    by 0x804FA00: _processChangeStateToList (Process.c:252)
-==5014==    by 0x804F72B: _fromQueueToList (Process.c:180)
-==5014==    by 0x804F63E: fromReadyToExecute (Process.c:153)
-==5014==    by 0x804F497: executeProcess (Process.c:99)
-==5014==    by 0x804F455: readyProcess (Process.c:90)
-==5014==    by 0x804CCD9: recibirDeConsola (ConnectionCore.c:64)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014== 
-==5014== 8 bytes in 1 blocks are still reachable in loss record 31 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804C66E: deserializarIndiceDeStack (Configuration.c:192)
-==5014==    by 0x804BF58: deserializarPCB (Configuration.c:80)
-==5014==    by 0x804E364: recibirPCB (ConnectionCore.c:641)
-==5014==    by 0x804DBE0: recibirDeCPU (ConnectionCore.c:438)
-==5014==    by 0x804CB59: handleSockets (ConnectionCore.c:27)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 8 bytes in 1 blocks are still reachable in loss record 32 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804C68F: deserializarIndiceDeStack (Configuration.c:193)
-==5014==    by 0x804BF58: deserializarPCB (Configuration.c:80)
-==5014==    by 0x804E364: recibirPCB (ConnectionCore.c:641)
-==5014==    by 0x804DBE0: recibirDeCPU (ConnectionCore.c:438)
-==5014==    by 0x804CB59: handleSockets (ConnectionCore.c:27)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 8 bytes in 1 blocks are still reachable in loss record 33 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404DF9F: list_create_element (in /usr/lib/libcommons.so)
-==5014==    by 0x404D628: list_add (in /usr/lib/libcommons.so)
-==5014==    by 0x804F9EC: _processChangeStateToList (Process.c:251)
-==5014==    by 0x804F9D2: _processChangeStateToQueue (Process.c:246)
-==5014==    by 0x804F764: _fromListToQueue (Process.c:187)
-==5014==    by 0x804F5BB: fromBlockedToReady (Process.c:139)
-==5014==    by 0x804DECF: recibirDeCPU (ConnectionCore.c:507)
-==5014==    by 0x804CB59: handleSockets (ConnectionCore.c:27)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 8 bytes in 1 blocks are still reachable in loss record 34 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404DF9F: list_create_element (in /usr/lib/libcommons.so)
-==5014==    by 0x404D628: list_add (in /usr/lib/libcommons.so)
-==5014==    by 0x804F9AF: modifyProcessState (Process.c:241)
-==5014==    by 0x804FA00: _processChangeStateToList (Process.c:252)
-==5014==    by 0x804F9D2: _processChangeStateToQueue (Process.c:246)
-==5014==    by 0x804F764: _fromListToQueue (Process.c:187)
-==5014==    by 0x804F5BB: fromBlockedToReady (Process.c:139)
-==5014==    by 0x804DECF: recibirDeCPU (ConnectionCore.c:507)
-==5014==    by 0x804CB59: handleSockets (ConnectionCore.c:27)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 8 bytes in 1 blocks are indirectly lost in loss record 35 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804C7B5: crearIndiceDeStack (Configuration.c:227)
-==5014==    by 0x804F2A8: createProcess (Process.c:23)
-==5014==    by 0x804CC77: recibirDeConsola (ConnectionCore.c:59)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 8 bytes in 1 blocks are indirectly lost in loss record 36 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804C7BF: crearIndiceDeStack (Configuration.c:228)
-==5014==    by 0x804F2A8: createProcess (Process.c:23)
-==5014==    by 0x804CC77: recibirDeConsola (ConnectionCore.c:59)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 12 bytes in 1 blocks are still reachable in loss record 37 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804FC7A: lRecv (SocketLibrary.c:78)
-==5014==    by 0x804DA38: recibirDeCPU (ConnectionCore.c:412)
-==5014==    by 0x804CB59: handleSockets (ConnectionCore.c:27)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 12 bytes in 1 blocks are still reachable in loss record 38 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804FC7A: lRecv (SocketLibrary.c:78)
-==5014==    by 0x804DDBB: recibirDeCPU (ConnectionCore.c:481)
-==5014==    by 0x804CB59: handleSockets (ConnectionCore.c:27)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 15 bytes in 3 blocks are still reachable in loss record 39 of 59
-==5014==    at 0x402C324: realloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404F15A: string_trim_right (in /usr/lib/libcommons.so)
-==5014==    by 0x404F05F: string_trim (in /usr/lib/libcommons.so)
-==5014==    by 0x404F3C7: string_get_string_as_array (in /usr/lib/libcommons.so)
-==5014==    by 0x4050030: config_get_array_value (in /usr/lib/libcommons.so)
-==5014==    by 0x804ED13: readConfigFile (KernelConfiguration.c:60)
-==5014==    by 0x804BDA1: configurate (Configuration.c:48)
-==5014==    by 0x804E964: main (Kernel.c:23)
-==5014== 
-==5014== 16 bytes in 1 blocks are still reachable in loss record 40 of 59
-==5014==    at 0x402C324: realloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404F7F8: _string_split (in /usr/lib/libcommons.so)
-==5014==    by 0x404F298: string_split (in /usr/lib/libcommons.so)
-==5014==    by 0x404F3A4: string_get_string_as_array (in /usr/lib/libcommons.so)
-==5014==    by 0x4050030: config_get_array_value (in /usr/lib/libcommons.so)
-==5014==    by 0x804ED13: readConfigFile (KernelConfiguration.c:60)
-==5014==    by 0x804BDA1: configurate (Configuration.c:48)
-==5014==    by 0x804E964: main (Kernel.c:23)
-==5014== 
-==5014== 16 bytes in 1 blocks are still reachable in loss record 41 of 59
-==5014==    at 0x402C324: realloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404F7F8: _string_split (in /usr/lib/libcommons.so)
-==5014==    by 0x404F298: string_split (in /usr/lib/libcommons.so)
-==5014==    by 0x404F3A4: string_get_string_as_array (in /usr/lib/libcommons.so)
-==5014==    by 0x4050030: config_get_array_value (in /usr/lib/libcommons.so)
-==5014==    by 0x804ED2C: readConfigFile (KernelConfiguration.c:61)
-==5014==    by 0x804BDA1: configurate (Configuration.c:48)
-==5014==    by 0x804E964: main (Kernel.c:23)
-==5014== 
-==5014== 16 bytes in 1 blocks are still reachable in loss record 42 of 59
-==5014==    at 0x402C324: realloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404F7F8: _string_split (in /usr/lib/libcommons.so)
-==5014==    by 0x404F298: string_split (in /usr/lib/libcommons.so)
-==5014==    by 0x404F3A4: string_get_string_as_array (in /usr/lib/libcommons.so)
-==5014==    by 0x4050030: config_get_array_value (in /usr/lib/libcommons.so)
-==5014==    by 0x804ED45: readConfigFile (KernelConfiguration.c:62)
-==5014==    by 0x804BDA1: configurate (Configuration.c:48)
-==5014==    by 0x804E964: main (Kernel.c:23)
-==5014== 
-==5014== 16 bytes in 2 blocks are still reachable in loss record 43 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804B1BF: crearTablaDeProceso (CapaFileSystem.c:5)
-==5014==    by 0x804B1EB: crearEstructurasFSProceso (CapaFileSystem.c:13)
-==5014==    by 0x804F2CF: createProcess (Process.c:26)
-==5014==    by 0x804CC77: recibirDeConsola (ConnectionCore.c:59)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 16 bytes in 2 blocks are still reachable in loss record 44 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
-==5014==    by 0x804B1C7: crearTablaDeProceso (CapaFileSystem.c:6)
-==5014==    by 0x804B1EB: crearEstructurasFSProceso (CapaFileSystem.c:13)
-==5014==    by 0x804F2CF: createProcess (Process.c:26)
-==5014==    by 0x804CC77: recibirDeConsola (ConnectionCore.c:59)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 16 bytes in 2 blocks are still reachable in loss record 45 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404DF9F: list_create_element (in /usr/lib/libcommons.so)
-==5014==    by 0x404D628: list_add (in /usr/lib/libcommons.so)
-==5014==    by 0x804B202: crearEstructurasFSProceso (CapaFileSystem.c:14)
-==5014==    by 0x804F2CF: createProcess (Process.c:26)
-==5014==    by 0x804CC77: recibirDeConsola (ConnectionCore.c:59)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 25 bytes in 1 blocks are still reachable in loss record 46 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804C7AD: crearIndiceDeStack (Configuration.c:226)
-==5014==    by 0x804F2A8: createProcess (Process.c:23)
-==5014==    by 0x804CC77: recibirDeConsola (ConnectionCore.c:59)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 25 bytes in 1 blocks are still reachable in loss record 47 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804C5C3: deserializarIndiceDeStack (Configuration.c:180)
-==5014==    by 0x804BF58: deserializarPCB (Configuration.c:80)
-==5014==    by 0x804E364: recibirPCB (ConnectionCore.c:641)
-==5014==    by 0x804DBE0: recibirDeCPU (ConnectionCore.c:438)
-==5014==    by 0x804CB59: handleSockets (ConnectionCore.c:27)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 25 bytes in 3 blocks are still reachable in loss record 48 of 59
-==5014==    at 0x402C324: realloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x404F15A: string_trim_right (in /usr/lib/libcommons.so)
-==5014==    by 0x404F05F: string_trim (in /usr/lib/libcommons.so)
-==5014==    by 0x404F3C7: string_get_string_as_array (in /usr/lib/libcommons.so)
-==5014==    by 0x4050030: config_get_array_value (in /usr/lib/libcommons.so)
-==5014==    by 0x804ED45: readConfigFile (KernelConfiguration.c:62)
-==5014==    by 0x804BDA1: configurate (Configuration.c:48)
-==5014==    by 0x804E964: main (Kernel.c:23)
-==5014== 
-==5014== 25 bytes in 1 blocks are indirectly lost in loss record 49 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804C7AD: crearIndiceDeStack (Configuration.c:226)
-==5014==    by 0x804F2A8: createProcess (Process.c:23)
-==5014==    by 0x804CC77: recibirDeConsola (ConnectionCore.c:59)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 32 bytes in 2 blocks are still reachable in loss record 50 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804F3FF: newProcess (Process.c:74)
-==5014==    by 0x804CCCE: recibirDeConsola (ConnectionCore.c:63)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 40 bytes in 1 blocks are still reachable in loss record 51 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804F1A3: createProcess (Process.c:12)
-==5014==    by 0x804CC77: recibirDeConsola (ConnectionCore.c:59)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 40 bytes in 1 blocks are still reachable in loss record 52 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804DA2A: recibirDeCPU (ConnectionCore.c:411)
-==5014==    by 0x804CB59: handleSockets (ConnectionCore.c:27)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 40 bytes in 1 blocks are still reachable in loss record 53 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804BDB5: deserializarPCB (Configuration.c:54)
-==5014==    by 0x804E364: recibirPCB (ConnectionCore.c:641)
-==5014==    by 0x804DBE0: recibirDeCPU (ConnectionCore.c:438)
-==5014==    by 0x804CB59: handleSockets (ConnectionCore.c:27)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 40 bytes in 1 blocks are still reachable in loss record 54 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804BE4D: deserializarPCB (Configuration.c:64)
-==5014==    by 0x804E364: recibirPCB (ConnectionCore.c:641)
-==5014==    by 0x804DBE0: recibirDeCPU (ConnectionCore.c:438)
-==5014==    by 0x804CB59: handleSockets (ConnectionCore.c:27)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 40 bytes in 1 blocks are indirectly lost in loss record 55 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804F220: createProcess (Process.c:17)
-==5014==    by 0x804CC77: recibirDeConsola (ConnectionCore.c:59)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 56 bytes in 1 blocks are still reachable in loss record 56 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804F220: createProcess (Process.c:17)
-==5014==    by 0x804CC77: recibirDeConsola (ConnectionCore.c:59)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 88 bytes in 1 blocks are still reachable in loss record 57 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804EBB2: readConfigFile (KernelConfiguration.c:49)
-==5014==    by 0x804BDA1: configurate (Configuration.c:48)
-==5014==    by 0x804E964: main (Kernel.c:23)
-==5014== 
-==5014== 120 bytes in 3 blocks are definitely lost in loss record 58 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804DA2A: recibirDeCPU (ConnectionCore.c:411)
-==5014==    by 0x804CB59: handleSockets (ConnectionCore.c:27)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== 121 (40 direct, 81 indirect) bytes in 1 blocks are definitely lost in loss record 59 of 59
-==5014==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
-==5014==    by 0x804F1A3: createProcess (Process.c:12)
-==5014==    by 0x804CC77: recibirDeConsola (ConnectionCore.c:59)
-==5014==    by 0x804CB2F: handleSockets (ConnectionCore.c:23)
-==5014==    by 0x804EE73: handler (Listen.c:17)
-==5014==    by 0x804EA10: main (Kernel.c:45)
-==5014== 
-==5014== LEAK SUMMARY:
-==5014==    definitely lost: 164 bytes in 5 blocks
-==5014==    indirectly lost: 81 bytes in 5 blocks
-==5014==      possibly lost: 0 bytes in 0 blocks
-==5014==    still reachable: 749 bytes in 61 blocks
-==5014==         suppressed: 0 bytes in 0 blocks
-==5014== 
-==5014== For counts of detected and suppressed errors, rerun with: -v
-==5014== Use --track-origins=yes to see where uninitialised values come from
-==5014== ERROR SUMMARY: 6680274 errors from 10 contexts (suppressed: 0 from 0)
+==5550== Memcheck, a memory error detector
+==5550== Copyright (C) 2002-2013, and GNU GPL'd, by Julian Seward et al.
+==5550== Using Valgrind-3.10.0.SVN and LibVEX; rerun with -h for copyright info
+==5550== Command: ./Kernel
+==5550== Parent PID: 2590
+==5550== 
+==5550== Conditional jump or move depends on uninitialised value(s)
+==5550==    at 0x804D3B8: handleSockets (ConnectionCore.c:9)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== Syscall param select(readfds) points to uninitialised byte(s)
+==5550==    at 0x41B071D: ___newselect_nocancel (syscall-template.S:81)
+==5550==    by 0x8050A87: lSelect (SocketLibrary.c:147)
+==5550==    by 0x804F8D5: handler (Listen.c:16)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550==  Address 0xbee8f84c is on thread 1's stack
+==5550== 
+==5550== Syscall param select(writefds) points to uninitialised byte(s)
+==5550==    at 0x41B071D: ___newselect_nocancel (syscall-template.S:81)
+==5550==    by 0x8050A87: lSelect (SocketLibrary.c:147)
+==5550==    by 0x804F8D5: handler (Listen.c:16)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550==  Address 0xbee8f8cc is on thread 1's stack
+==5550== 
+==5550== Invalid read of size 1
+==5550==    at 0x402D413: __GI_strlen (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x41472DC: strdup (strdup.c:41)
+==5550==    by 0x40829D3: metadata_desde_literal (in /usr/lib/libparser-ansisop.so)
+==5550==    by 0x804FC67: createProcess (Process.c:14)
+==5550==    by 0x804D5B0: recibirDeConsola (ConnectionCore.c:59)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550==  Address 0x4280f09 is 0 bytes after a block of size 49 alloc'd
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x8050797: lRecv (SocketLibrary.c:90)
+==5550==    by 0x804D552: recibirDeConsola (ConnectionCore.c:48)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== Invalid read of size 2
+==5550==    at 0x402F1C0: __GI_memcpy (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x41472FB: strdup (strdup.c:47)
+==5550==    by 0x40829D3: metadata_desde_literal (in /usr/lib/libparser-ansisop.so)
+==5550==    by 0x804FC67: createProcess (Process.c:14)
+==5550==    by 0x804D5B0: recibirDeConsola (ConnectionCore.c:59)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550==  Address 0x4280f08 is 48 bytes inside a block of size 49 alloc'd
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x8050797: lRecv (SocketLibrary.c:90)
+==5550==    by 0x804D552: recibirDeConsola (ConnectionCore.c:48)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== Invalid read of size 1
+==5550==    at 0x402F338: __GI_memcpy (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x41472FB: strdup (strdup.c:47)
+==5550==    by 0x40829D3: metadata_desde_literal (in /usr/lib/libparser-ansisop.so)
+==5550==    by 0x804FC67: createProcess (Process.c:14)
+==5550==    by 0x804D5B0: recibirDeConsola (ConnectionCore.c:59)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550==  Address 0x4281ee0 is 0 bytes after a block of size 72 alloc'd
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x8050797: lRecv (SocketLibrary.c:90)
+==5550==    by 0x804D552: recibirDeConsola (ConnectionCore.c:48)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== Invalid read of size 4
+==5550==    at 0x404E92D: queue_push (in /usr/lib/libcommons.so)
+==5550==    by 0x804F010: enviarAColaDelSemaforo (ConnectionCore.c:721)
+==5550==    by 0x804E8A2: recibirDeCPU (ConnectionCore.c:512)
+==5550==    by 0x804D492: handleSockets (ConnectionCore.c:27)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550==  Address 0x0 is not stack'd, malloc'd or (recently) free'd
+==5550== 
+==5550== 
+==5550== Process terminating with default action of signal 11 (SIGSEGV)
+==5550==  Access not within mapped region at address 0x0
+==5550==    at 0x404E92D: queue_push (in /usr/lib/libcommons.so)
+==5550==    by 0x804F010: enviarAColaDelSemaforo (ConnectionCore.c:721)
+==5550==    by 0x804E8A2: recibirDeCPU (ConnectionCore.c:512)
+==5550==    by 0x804D492: handleSockets (ConnectionCore.c:27)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550==  If you believe this happened as a result of a stack
+==5550==  overflow in your program's main thread (unlikely but
+==5550==  possible), you can try to increase the size of the
+==5550==  main thread stack using the --main-stacksize= flag.
+==5550==  The main thread stack size used in this run was 8388608.
+==5550== 
+==5550== HEAP SUMMARY:
+==5550==     in use at exit: 1,004 bytes in 73 blocks
+==5550==   total heap usage: 339 allocs, 266 frees, 6,512 bytes allocated
+==5550== 
+==5550== 0 bytes in 1 blocks are still reachable in loss record 1 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x804FCE7: createProcess (Process.c:19)
+==5550==    by 0x804D5B0: recibirDeConsola (ConnectionCore.c:59)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 0 bytes in 1 blocks are still reachable in loss record 2 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x804C7E7: deserializarPCB (Configuration.c:69)
+==5550==    by 0x804EE07: recibirPCB (ConnectionCore.c:668)
+==5550==    by 0x804E696: recibirDeCPU (ConnectionCore.c:465)
+==5550==    by 0x804D492: handleSockets (ConnectionCore.c:27)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 0 bytes in 1 blocks are indirectly lost in loss record 3 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x804FCE7: createProcess (Process.c:19)
+==5550==    by 0x804D5B0: recibirDeConsola (ConnectionCore.c:59)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 4 bytes in 1 blocks are still reachable in loss record 4 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404E843: queue_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804F45E: main (Kernel.c:34)
+==5550== 
+==5550== 4 bytes in 1 blocks are still reachable in loss record 5 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404E843: queue_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804F468: main (Kernel.c:36)
+==5550== 
+==5550== 4 bytes in 1 blocks are still reachable in loss record 6 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404E843: queue_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804F472: main (Kernel.c:37)
+==5550== 
+==5550== 4 bytes in 1 blocks are still reachable in loss record 7 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404E843: queue_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804F490: main (Kernel.c:40)
+==5550== 
+==5550== 4 bytes in 1 blocks are still reachable in loss record 8 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404E843: queue_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804F1C3: crearListaDeColasSemaforos (ConnectionCore.c:764)
+==5550==    by 0x804F4AE: main (Kernel.c:43)
+==5550== 
+==5550== 4 bytes in 1 blocks are still reachable in loss record 9 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x8050797: lRecv (SocketLibrary.c:90)
+==5550==    by 0x804E4EE: recibirDeCPU (ConnectionCore.c:439)
+==5550==    by 0x804D492: handleSockets (ConnectionCore.c:27)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 4 bytes in 1 blocks are still reachable in loss record 10 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x8050797: lRecv (SocketLibrary.c:90)
+==5550==    by 0x804E871: recibirDeCPU (ConnectionCore.c:508)
+==5550==    by 0x804D492: handleSockets (ConnectionCore.c:27)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 4 bytes in 1 blocks are still reachable in loss record 11 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x804E880: recibirDeCPU (ConnectionCore.c:509)
+==5550==    by 0x804D492: handleSockets (ConnectionCore.c:27)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 4 bytes in 1 blocks are definitely lost in loss record 12 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x804E880: recibirDeCPU (ConnectionCore.c:509)
+==5550==    by 0x804D492: handleSockets (ConnectionCore.c:27)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 5 bytes in 1 blocks are still reachable in loss record 13 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x804E800: recibirDeCPU (ConnectionCore.c:501)
+==5550==    by 0x804D492: handleSockets (ConnectionCore.c:27)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 5 bytes in 1 blocks are definitely lost in loss record 14 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x804E800: recibirDeCPU (ConnectionCore.c:501)
+==5550==    by 0x804D492: handleSockets (ConnectionCore.c:27)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 5 bytes in 1 blocks are definitely lost in loss record 15 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x804E903: recibirDeCPU (ConnectionCore.c:526)
+==5550==    by 0x804D492: handleSockets (ConnectionCore.c:27)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 6 bytes in 3 blocks are still reachable in loss record 16 of 61
+==5550==    at 0x402C324: realloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404F15A: string_trim_right (in /usr/lib/libcommons.so)
+==5550==    by 0x404F05F: string_trim (in /usr/lib/libcommons.so)
+==5550==    by 0x404F3C7: string_get_string_as_array (in /usr/lib/libcommons.so)
+==5550==    by 0x4050030: config_get_array_value (in /usr/lib/libcommons.so)
+==5550==    by 0x804F7CF: readConfigFile (KernelConfiguration.c:61)
+==5550==    by 0x804C6DA: configurate (Configuration.c:48)
+==5550==    by 0x804F407: main (Kernel.c:23)
+==5550== 
+==5550== 8 bytes in 1 blocks are still reachable in loss record 17 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804F454: main (Kernel.c:32)
+==5550== 
+==5550== 8 bytes in 1 blocks are still reachable in loss record 18 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
+==5550==    by 0x404E84B: queue_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804F45E: main (Kernel.c:34)
+==5550== 
+==5550== 8 bytes in 1 blocks are still reachable in loss record 19 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
+==5550==    by 0x404E84B: queue_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804F468: main (Kernel.c:36)
+==5550== 
+==5550== 8 bytes in 1 blocks are still reachable in loss record 20 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
+==5550==    by 0x404E84B: queue_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804F472: main (Kernel.c:37)
+==5550== 
+==5550== 8 bytes in 1 blocks are still reachable in loss record 21 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804F47C: main (Kernel.c:38)
+==5550== 
+==5550== 8 bytes in 1 blocks are still reachable in loss record 22 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804F486: main (Kernel.c:39)
+==5550== 
+==5550== 8 bytes in 1 blocks are still reachable in loss record 23 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
+==5550==    by 0x404E84B: queue_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804F490: main (Kernel.c:40)
+==5550== 
+==5550== 8 bytes in 1 blocks are still reachable in loss record 24 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804F49A: main (Kernel.c:41)
+==5550== 
+==5550== 8 bytes in 1 blocks are still reachable in loss record 25 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804F4A4: main (Kernel.c:42)
+==5550== 
+==5550== 8 bytes in 1 blocks are still reachable in loss record 26 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804F1B0: crearListaDeColasSemaforos (ConnectionCore.c:760)
+==5550==    by 0x804F4AE: main (Kernel.c:43)
+==5550== 
+==5550== 8 bytes in 1 blocks are still reachable in loss record 27 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
+==5550==    by 0x404E84B: queue_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804F1C3: crearListaDeColasSemaforos (ConnectionCore.c:764)
+==5550==    by 0x804F4AE: main (Kernel.c:43)
+==5550== 
+==5550== 8 bytes in 1 blocks are still reachable in loss record 28 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404DF9F: list_create_element (in /usr/lib/libcommons.so)
+==5550==    by 0x404D628: list_add (in /usr/lib/libcommons.so)
+==5550==    by 0x804F1DA: crearListaDeColasSemaforos (ConnectionCore.c:765)
+==5550==    by 0x804F4AE: main (Kernel.c:43)
+==5550== 
+==5550== 8 bytes in 1 blocks are still reachable in loss record 29 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804D0EE: crearIndiceDeStack (Configuration.c:227)
+==5550==    by 0x804FD4B: createProcess (Process.c:23)
+==5550==    by 0x804D5B0: recibirDeConsola (ConnectionCore.c:59)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 8 bytes in 1 blocks are still reachable in loss record 30 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804D0F8: crearIndiceDeStack (Configuration.c:228)
+==5550==    by 0x804FD4B: createProcess (Process.c:23)
+==5550==    by 0x804D5B0: recibirDeConsola (ConnectionCore.c:59)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 8 bytes in 1 blocks are still reachable in loss record 31 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404DF9F: list_create_element (in /usr/lib/libcommons.so)
+==5550==    by 0x404D628: list_add (in /usr/lib/libcommons.so)
+==5550==    by 0x805048F: _processChangeStateToList (Process.c:251)
+==5550==    by 0x80501CE: _fromQueueToList (Process.c:180)
+==5550==    by 0x80500E1: fromReadyToExecute (Process.c:153)
+==5550==    by 0x804FF3A: executeProcess (Process.c:99)
+==5550==    by 0x804FEF8: readyProcess (Process.c:90)
+==5550==    by 0x804D612: recibirDeConsola (ConnectionCore.c:64)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 8 bytes in 1 blocks are still reachable in loss record 32 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404DF9F: list_create_element (in /usr/lib/libcommons.so)
+==5550==    by 0x404D628: list_add (in /usr/lib/libcommons.so)
+==5550==    by 0x8050452: modifyProcessState (Process.c:241)
+==5550==    by 0x80504A3: _processChangeStateToList (Process.c:252)
+==5550==    by 0x80501CE: _fromQueueToList (Process.c:180)
+==5550==    by 0x80500E1: fromReadyToExecute (Process.c:153)
+==5550==    by 0x804FF3A: executeProcess (Process.c:99)
+==5550==    by 0x804FEF8: readyProcess (Process.c:90)
+==5550==    by 0x804D612: recibirDeConsola (ConnectionCore.c:64)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550== 
+==5550== 8 bytes in 1 blocks are still reachable in loss record 33 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804CFA7: deserializarIndiceDeStack (Configuration.c:192)
+==5550==    by 0x804C891: deserializarPCB (Configuration.c:80)
+==5550==    by 0x804EE07: recibirPCB (ConnectionCore.c:668)
+==5550==    by 0x804E696: recibirDeCPU (ConnectionCore.c:465)
+==5550==    by 0x804D492: handleSockets (ConnectionCore.c:27)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 8 bytes in 1 blocks are still reachable in loss record 34 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804CFC8: deserializarIndiceDeStack (Configuration.c:193)
+==5550==    by 0x804C891: deserializarPCB (Configuration.c:80)
+==5550==    by 0x804EE07: recibirPCB (ConnectionCore.c:668)
+==5550==    by 0x804E696: recibirDeCPU (ConnectionCore.c:465)
+==5550==    by 0x804D492: handleSockets (ConnectionCore.c:27)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 8 bytes in 1 blocks are still reachable in loss record 35 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404DF9F: list_create_element (in /usr/lib/libcommons.so)
+==5550==    by 0x404D628: list_add (in /usr/lib/libcommons.so)
+==5550==    by 0x805048F: _processChangeStateToList (Process.c:251)
+==5550==    by 0x8050475: _processChangeStateToQueue (Process.c:246)
+==5550==    by 0x8050207: _fromListToQueue (Process.c:187)
+==5550==    by 0x805005E: fromBlockedToReady (Process.c:139)
+==5550==    by 0x804E97D: recibirDeCPU (ConnectionCore.c:534)
+==5550==    by 0x804D492: handleSockets (ConnectionCore.c:27)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 8 bytes in 1 blocks are still reachable in loss record 36 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404DF9F: list_create_element (in /usr/lib/libcommons.so)
+==5550==    by 0x404D628: list_add (in /usr/lib/libcommons.so)
+==5550==    by 0x8050452: modifyProcessState (Process.c:241)
+==5550==    by 0x80504A3: _processChangeStateToList (Process.c:252)
+==5550==    by 0x8050475: _processChangeStateToQueue (Process.c:246)
+==5550==    by 0x8050207: _fromListToQueue (Process.c:187)
+==5550==    by 0x805005E: fromBlockedToReady (Process.c:139)
+==5550==    by 0x804E97D: recibirDeCPU (ConnectionCore.c:534)
+==5550==    by 0x804D492: handleSockets (ConnectionCore.c:27)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 8 bytes in 1 blocks are indirectly lost in loss record 37 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804D0EE: crearIndiceDeStack (Configuration.c:227)
+==5550==    by 0x804FD4B: createProcess (Process.c:23)
+==5550==    by 0x804D5B0: recibirDeConsola (ConnectionCore.c:59)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 8 bytes in 1 blocks are indirectly lost in loss record 38 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804D0F8: crearIndiceDeStack (Configuration.c:228)
+==5550==    by 0x804FD4B: createProcess (Process.c:23)
+==5550==    by 0x804D5B0: recibirDeConsola (ConnectionCore.c:59)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 12 bytes in 1 blocks are still reachable in loss record 39 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x805071D: lRecv (SocketLibrary.c:78)
+==5550==    by 0x804E4EE: recibirDeCPU (ConnectionCore.c:439)
+==5550==    by 0x804D492: handleSockets (ConnectionCore.c:27)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 12 bytes in 1 blocks are still reachable in loss record 40 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x805071D: lRecv (SocketLibrary.c:78)
+==5550==    by 0x804E871: recibirDeCPU (ConnectionCore.c:508)
+==5550==    by 0x804D492: handleSockets (ConnectionCore.c:27)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 15 bytes in 3 blocks are still reachable in loss record 41 of 61
+==5550==    at 0x402C324: realloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404F15A: string_trim_right (in /usr/lib/libcommons.so)
+==5550==    by 0x404F05F: string_trim (in /usr/lib/libcommons.so)
+==5550==    by 0x404F3C7: string_get_string_as_array (in /usr/lib/libcommons.so)
+==5550==    by 0x4050030: config_get_array_value (in /usr/lib/libcommons.so)
+==5550==    by 0x804F7B6: readConfigFile (KernelConfiguration.c:60)
+==5550==    by 0x804C6DA: configurate (Configuration.c:48)
+==5550==    by 0x804F407: main (Kernel.c:23)
+==5550== 
+==5550== 16 bytes in 1 blocks are still reachable in loss record 42 of 61
+==5550==    at 0x402C324: realloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404F7F8: _string_split (in /usr/lib/libcommons.so)
+==5550==    by 0x404F298: string_split (in /usr/lib/libcommons.so)
+==5550==    by 0x404F3A4: string_get_string_as_array (in /usr/lib/libcommons.so)
+==5550==    by 0x4050030: config_get_array_value (in /usr/lib/libcommons.so)
+==5550==    by 0x804F7B6: readConfigFile (KernelConfiguration.c:60)
+==5550==    by 0x804C6DA: configurate (Configuration.c:48)
+==5550==    by 0x804F407: main (Kernel.c:23)
+==5550== 
+==5550== 16 bytes in 1 blocks are still reachable in loss record 43 of 61
+==5550==    at 0x402C324: realloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404F7F8: _string_split (in /usr/lib/libcommons.so)
+==5550==    by 0x404F298: string_split (in /usr/lib/libcommons.so)
+==5550==    by 0x404F3A4: string_get_string_as_array (in /usr/lib/libcommons.so)
+==5550==    by 0x4050030: config_get_array_value (in /usr/lib/libcommons.so)
+==5550==    by 0x804F7CF: readConfigFile (KernelConfiguration.c:61)
+==5550==    by 0x804C6DA: configurate (Configuration.c:48)
+==5550==    by 0x804F407: main (Kernel.c:23)
+==5550== 
+==5550== 16 bytes in 1 blocks are still reachable in loss record 44 of 61
+==5550==    at 0x402C324: realloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404F7F8: _string_split (in /usr/lib/libcommons.so)
+==5550==    by 0x404F298: string_split (in /usr/lib/libcommons.so)
+==5550==    by 0x404F3A4: string_get_string_as_array (in /usr/lib/libcommons.so)
+==5550==    by 0x4050030: config_get_array_value (in /usr/lib/libcommons.so)
+==5550==    by 0x804F7E8: readConfigFile (KernelConfiguration.c:62)
+==5550==    by 0x804C6DA: configurate (Configuration.c:48)
+==5550==    by 0x804F407: main (Kernel.c:23)
+==5550== 
+==5550== 16 bytes in 2 blocks are still reachable in loss record 45 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x804BAF8: crearTablaDeProceso (CapaFileSystem.c:5)
+==5550==    by 0x804BB24: crearEstructurasFSProceso (CapaFileSystem.c:13)
+==5550==    by 0x804FD72: createProcess (Process.c:26)
+==5550==    by 0x804D5B0: recibirDeConsola (ConnectionCore.c:59)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 16 bytes in 2 blocks are still reachable in loss record 46 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404D5F8: list_create (in /usr/lib/libcommons.so)
+==5550==    by 0x804BB00: crearTablaDeProceso (CapaFileSystem.c:6)
+==5550==    by 0x804BB24: crearEstructurasFSProceso (CapaFileSystem.c:13)
+==5550==    by 0x804FD72: createProcess (Process.c:26)
+==5550==    by 0x804D5B0: recibirDeConsola (ConnectionCore.c:59)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 16 bytes in 2 blocks are still reachable in loss record 47 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404DF9F: list_create_element (in /usr/lib/libcommons.so)
+==5550==    by 0x404D628: list_add (in /usr/lib/libcommons.so)
+==5550==    by 0x804BB3B: crearEstructurasFSProceso (CapaFileSystem.c:14)
+==5550==    by 0x804FD72: createProcess (Process.c:26)
+==5550==    by 0x804D5B0: recibirDeConsola (ConnectionCore.c:59)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 25 bytes in 1 blocks are still reachable in loss record 48 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x804D0E6: crearIndiceDeStack (Configuration.c:226)
+==5550==    by 0x804FD4B: createProcess (Process.c:23)
+==5550==    by 0x804D5B0: recibirDeConsola (ConnectionCore.c:59)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 25 bytes in 1 blocks are still reachable in loss record 49 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x804CEFC: deserializarIndiceDeStack (Configuration.c:180)
+==5550==    by 0x804C891: deserializarPCB (Configuration.c:80)
+==5550==    by 0x804EE07: recibirPCB (ConnectionCore.c:668)
+==5550==    by 0x804E696: recibirDeCPU (ConnectionCore.c:465)
+==5550==    by 0x804D492: handleSockets (ConnectionCore.c:27)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 25 bytes in 3 blocks are still reachable in loss record 50 of 61
+==5550==    at 0x402C324: realloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x404F15A: string_trim_right (in /usr/lib/libcommons.so)
+==5550==    by 0x404F05F: string_trim (in /usr/lib/libcommons.so)
+==5550==    by 0x404F3C7: string_get_string_as_array (in /usr/lib/libcommons.so)
+==5550==    by 0x4050030: config_get_array_value (in /usr/lib/libcommons.so)
+==5550==    by 0x804F7E8: readConfigFile (KernelConfiguration.c:62)
+==5550==    by 0x804C6DA: configurate (Configuration.c:48)
+==5550==    by 0x804F407: main (Kernel.c:23)
+==5550== 
+==5550== 25 bytes in 1 blocks are indirectly lost in loss record 51 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x804D0E6: crearIndiceDeStack (Configuration.c:226)
+==5550==    by 0x804FD4B: createProcess (Process.c:23)
+==5550==    by 0x804D5B0: recibirDeConsola (ConnectionCore.c:59)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 32 bytes in 2 blocks are still reachable in loss record 52 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x804FEA2: newProcess (Process.c:74)
+==5550==    by 0x804D607: recibirDeConsola (ConnectionCore.c:63)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 40 bytes in 1 blocks are still reachable in loss record 53 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x804FC46: createProcess (Process.c:12)
+==5550==    by 0x804D5B0: recibirDeConsola (ConnectionCore.c:59)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 40 bytes in 1 blocks are still reachable in loss record 54 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x804E4E0: recibirDeCPU (ConnectionCore.c:438)
+==5550==    by 0x804D492: handleSockets (ConnectionCore.c:27)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 40 bytes in 1 blocks are still reachable in loss record 55 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x804C6EE: deserializarPCB (Configuration.c:54)
+==5550==    by 0x804EE07: recibirPCB (ConnectionCore.c:668)
+==5550==    by 0x804E696: recibirDeCPU (ConnectionCore.c:465)
+==5550==    by 0x804D492: handleSockets (ConnectionCore.c:27)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 40 bytes in 1 blocks are still reachable in loss record 56 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x804C786: deserializarPCB (Configuration.c:64)
+==5550==    by 0x804EE07: recibirPCB (ConnectionCore.c:668)
+==5550==    by 0x804E696: recibirDeCPU (ConnectionCore.c:465)
+==5550==    by 0x804D492: handleSockets (ConnectionCore.c:27)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 40 bytes in 1 blocks are indirectly lost in loss record 57 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x804FCC3: createProcess (Process.c:17)
+==5550==    by 0x804D5B0: recibirDeConsola (ConnectionCore.c:59)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 56 bytes in 1 blocks are still reachable in loss record 58 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x804FCC3: createProcess (Process.c:17)
+==5550==    by 0x804D5B0: recibirDeConsola (ConnectionCore.c:59)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 88 bytes in 1 blocks are still reachable in loss record 59 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x804F655: readConfigFile (KernelConfiguration.c:49)
+==5550==    by 0x804C6DA: configurate (Configuration.c:48)
+==5550==    by 0x804F407: main (Kernel.c:23)
+==5550== 
+==5550== 120 bytes in 3 blocks are definitely lost in loss record 60 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x804E4E0: recibirDeCPU (ConnectionCore.c:438)
+==5550==    by 0x804D492: handleSockets (ConnectionCore.c:27)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== 121 (40 direct, 81 indirect) bytes in 1 blocks are definitely lost in loss record 61 of 61
+==5550==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5550==    by 0x804FC46: createProcess (Process.c:12)
+==5550==    by 0x804D5B0: recibirDeConsola (ConnectionCore.c:59)
+==5550==    by 0x804D468: handleSockets (ConnectionCore.c:23)
+==5550==    by 0x804F916: handler (Listen.c:17)
+==5550==    by 0x804F4B3: main (Kernel.c:45)
+==5550== 
+==5550== LEAK SUMMARY:
+==5550==    definitely lost: 174 bytes in 7 blocks
+==5550==    indirectly lost: 81 bytes in 5 blocks
+==5550==      possibly lost: 0 bytes in 0 blocks
+==5550==    still reachable: 749 bytes in 61 blocks
+==5550==         suppressed: 0 bytes in 0 blocks
+==5550== 
+==5550== For counts of detected and suppressed errors, rerun with: -v
+==5550== Use --track-origins=yes to see where uninitialised values come from
+==5550== ERROR SUMMARY: 1514091 errors from 12 contexts (suppressed: 0 from 0)

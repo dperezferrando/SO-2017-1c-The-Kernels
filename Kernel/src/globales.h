@@ -10,6 +10,7 @@
 #include "KernelConfiguration.h"
 #include "SocketLibrary.h"
 
+
 struct ProcessControl{
 	int pid;
 	int state; //0-> new, 1->ready, 2->execute, 3-> blocked, 4-> suspended, 9-> killed, //NULL-> no fue aceptado todavia//
@@ -61,6 +62,7 @@ struct tablaDeProceso // Lista de tablas de proceso (que a su vez son una lista)
 } typedef tablaDeProceso;
 
 bool test;
+bool morir;
 
 int maxPID;
 int conexionFS;
@@ -83,6 +85,8 @@ t_list* tablaGlobalFS;
 t_list* tablasDeProcesosFS;
 
 configFile* config;
+
+pthread_t consolaKernel;
 
 /*
  * en caso de ver que sea necesario *
