@@ -135,13 +135,14 @@ void conexion_kernel(int conexion)
 			{
 				// ESCRIBIR EN MEMORIA
 				int pid;
-				pedidoEscrituraMemoria* pedido = malloc(sizeof(pedidoEscrituraMemoria));
+				pedidoEscrituraDelKernel* pedido = malloc(sizeof(pedidoEscrituraMemoria));
 				memcpy(&pid,mensaje->data,sizeof(int));
 				memcpy(&pedido->posicion.pagina,mensaje->data+sizeof(int),sizeof(int));
 				memcpy(&pedido->posicion.offset,mensaje->data+(sizeof(int)*2),sizeof(int));
 				memcpy(&pedido->posicion.size,mensaje->data+(sizeof(int)*3),sizeof(int));
-				memcpy(&pedido->valor, mensaje->data+(sizeof(int)*4),pedido->posicion.size);
-				escribirDondeCorresponda(pid, pedido);
+				pedido->data = malloc(pedido->posicion.size);
+				memcpy(pedido->data, mensaje->data+(sizeof(int)*4),pedido->posicion.size);
+				escribirDondeCorrespondaKernel(pid, pedido);
 				free(pedido);
 				break;
 			}
@@ -175,6 +176,22 @@ void conexion_kernel(int conexion)
 				pointer->pid = -1;
 				free(pointer);
 				break;
+			}
+			case 5:
+			{
+				// LEER
+				int pid;
+				posicionEnMemoria* posicion = malloc(sizeof(posicionEnMemoria));
+				memcpy(&pid,mensaje->data,sizeof(int));
+				memcpy(&posicion->pagina,mensaje->data+sizeof(int),sizeof(int));
+				memcpy(&posicion->offset,mensaje->data+(sizeof(int)*2),sizeof(int));
+				memcpy(&posicion->size,mensaje->data+(sizeof(int)*3),sizeof(int));
+				char* lectura = leerDondeCorresponda(pid, posicion);
+				lSend(conexion, lectura, 104, posicion->size);
+				free(posicion);
+				free(lectura);
+				break;
+
 			}
 			case 9:
 			{
@@ -538,6 +555,36 @@ char* leerDondeCorresponda(int pid, posicionEnMemoria* posicion)
 	return linea;
 }
 
+void escribirDondeCorrespondaKernel(int pid, pedidoEscrituraDelKernel* pedido)
+{
+
+	char* linea;
+	if(config->entradas_cache > 0 && existeEnCache(pid, pedido->posicion.pagina))
+	{
+		puts("[CACHE]: EXISTE EN CACHE");
+		escribirBytesCache(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->data);
+		linea = solicitarBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
+	}
+	else
+	{
+		puts("[CACHE]: NO EXISTE EN CACHE - RETARDO");
+		usleep(1000*config->retardo_memoria);
+		puts("[CACHE]: SLEEP LISTO, SOLICITO Y AGREGO A CACHE");
+		if(!escribirBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->data))
+			puts("[CACHE]: ERROR (ESTO DEBERIA SER UNREACHABLE, SI LO VES SE ROMPIO TODO)");
+		else
+		{
+			puts("[CACHE]: SE ESCRIBIO EN MEMORIA - AGREGANDO A CACHE LA PAGINA");
+			if(config->entradas_cache != 0)
+			{
+				agregarACache(pid, pedido->posicion.pagina);
+				linea = solicitarBytesACache(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
+			}
+		}
+	}
+
+}
+
 void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
 {
 	int* valorPuntero = &pedido->valor;
@@ -565,13 +612,7 @@ void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
 			}
 		}
 	}
-/*	// HUMO DEBUG
-	int valor;
-	char* puntero = &valor;
-	puntero += (sizeof(int) - pedido->posicion.size);
-	memcpy(puntero, linea, pedido->posicion.size);
-	printf("[TEST]: LEYENDO VALOR EN LA POSICION GUARDADA, VALOR = %i\n", valor);
-	free(linea);*/
+
 }
 
 
