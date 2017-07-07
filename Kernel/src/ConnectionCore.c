@@ -178,6 +178,7 @@ int freeMemory(int pid, int page, int offset){
 	hm= list_get(po->occSpaces,i);
 	hm->isFree=1;
 	sendKillRequest(pid,page,offset,hm);
+	defragging(pid,page,po->occSpaces);
 	return 1;
 }
 
@@ -343,12 +344,11 @@ void _modifyMemoryPage(int base,int top,int offset,void* memoryPage){
 }
 
 void* getMemoryPage(int pid, int idPage){
-	//enviar che dame tal pagina
+	//enviar a memoria che dame tal pagina
 	if(!test){//esto esta asi por el test
 		Mensaje* msg= lRecv(conexionMemoria);
 		return msg->data;
 	}
-	else 1;
 	return res->data;
 }
 
@@ -363,25 +363,29 @@ void* defragging(int pid, int idPage, t_list* page){
 	int cantMovidos= 0;
 
 	while(cantMovidos < cantOcupados){
-		int base=0,top=0,baseList,blockSize=0,i,stop=0,inBlock=0;
+		int base=offset,top=offset,baseList,blockSize=0,i,stop=0,inBlock=0,esPrincipio=1;
 		for(i=offsetList; i<list_size(page) && stop==0 ;i++){
 			HeapMetadata* hm= list_get(page,i);
-			if(!inBlock)base+= (hm->size + sizeof(HeapMetadata));//si no estoy en un bloque significa que no llegue a donde voy a empezar a mover, tengo que aumentar el puntero base
-			if(!hm->isFree){//si esta ocupada la pagina, entro a un bloque
-				if(!inBlock)baseList=i;//si no estaba en un bloque, este es el i desde donde voy a mover en la lista
-				inBlock=1;
-				cantMovidos++;//cada vez que sigo adentro de un bloque es porque voy a mover otro elemento
-				blockSize++;
-			}
-			else{
-				if(inBlock){//si no esta libre y yo estaba en un bloque, se termino el bloque y tengo que parar
-				stop=1;
+
+			if(!hm->isFree){//si no esta libre
+				if(!esPrincipio){//si esta ocupada la pagina, y no está al principio, entro a un bloque
+					if(!inBlock)baseList=i;//si no estaba en un bloque, este es el i desde donde voy a mover en la lista
+					inBlock=1;
+					cantMovidos++;//cada vez que sigo adentro de un bloque es porque voy a mover otro elemento
+					blockSize++;
 				}
-				else{
+				else {//no esta libre y es principio entonces o hay bloques al principio o ya movi y no los tengo que pisar
+					cantOcupados--;//como considero que este bloque ya esta al principio, hay un bloque menos para ser movido
 					offsetList++;//aca si no esta libre y no estoy en bloque muevo el offset para que al principio si los primeros bloques estan ocupados no los pise
 					offset+= (hm->size + sizeof(HeapMetadata));
 				}
 			}
+			else {//si esta libre
+				if(inBlock)stop=1;//si esta libre y yo estaba en un bloque, se termino el bloque y tengo que parar
+				else if(esPrincipio)esPrincipio=0;
+			}
+
+			if(!inBlock)base+= (hm->size + sizeof(HeapMetadata));//si no estoy en un bloque significa que no llegue a donde voy a empezar a mover, tengo que aumentar el puntero base
 			if(!stop)top+= (hm->size + sizeof(HeapMetadata));//si no setie el stop es porque todavia no termine de iterar y tengo que seguir aumentando el puntero tope
 		}
 
@@ -390,7 +394,7 @@ void* defragging(int pid, int idPage, t_list* page){
 		offsetList+= blockSize;
 		offset+= (top-base);//cambio el offset, lo muevo como tanto espacio grabe para no pisar nada
 	}
-	calculateFreeSpace(page,cantMovidos,memPage);
+	calculateFreeSpace(page,_usedFragments(page),memPage);
 	return memPage;
 }
 
@@ -403,22 +407,30 @@ void defragPage(t_list* page, int baseList, int blockSize, int offsetList){
 	}
 }
 
-void calculateFreeSpace(t_list* page, int cantMovidos,void* memPage){
-	int i,acc=0;
-	for(i=0;i<cantMovidos;i++){
-		HeapMetadata* hm= list_get(page,i);
-		if(!hm->isFree) acc+=(hm->size + sizeof(HeapMetadata));//el if esta por las dudas pero no deberia haber ningun bloque que este for acceda que este libre
-		else list_remove_and_destroy_element(page,i,&(free));//si el hm dice que esta libre lo elimino porque voy a agregar uno al final
+void calculateFreeSpace(t_list* page,int cantOcupados, void* memPage){
+	int i,acc=0,j=0;
+	int c= list_size(page);
+
+	for(i=0;i<c;i++){
+		HeapMetadata* hm= list_get(page,j);
+		if(!hm->isFree){
+			acc+=(hm->size + sizeof(HeapMetadata));
+			j++;
+		}
+		else list_remove_and_destroy_element(page,j,&(free));
 	}
+
 	HeapMetadata* hm = malloc(sizeof(HeapMetadata));
+	acc+=sizeof(HeapMetadata);
 	hm->isFree=1;
 	hm->size= config->PAG_SIZE - acc;
 	list_add(page,hm);
 	memcpy(memPage+acc,hm,sizeof(HeapMetadata));
+
 }
 
 bool _usedFragment(HeapMetadata* hm){
-	return hm->isFree==1;
+	return hm->isFree==0;
 }
 
 int _usedFragments(t_list* page){

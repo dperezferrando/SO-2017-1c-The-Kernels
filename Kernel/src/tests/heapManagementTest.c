@@ -346,33 +346,92 @@ void defraggingTest(){
 
 	void* newmemPage= defragging(1,1,page);
 
-	HeapMetadata* res = list_get(page,0);
-	CU_ASSERT_EQUAL(res->isFree,0);
-	CU_ASSERT_EQUAL(res->size,50);
+	HeapMetadata* rest = list_get(page,0);
+	CU_ASSERT_EQUAL(rest->isFree,0);
+	CU_ASSERT_EQUAL(rest->size,50);
 
-	res = list_get(page,0);
-	CU_ASSERT_EQUAL(res->isFree,0);
-	CU_ASSERT_EQUAL(res->size,80);
+	rest = list_get(page,1);
+	CU_ASSERT_EQUAL(rest->isFree,0);
+	CU_ASSERT_EQUAL(rest->size,80);
 
-	res = list_get(page,0);
-	CU_ASSERT_EQUAL(res->isFree,0);
-	CU_ASSERT_EQUAL(res->size,30);
+	rest = list_get(page,2);
+	CU_ASSERT_EQUAL(rest->isFree,0);
+	CU_ASSERT_EQUAL(rest->size,30);
 
-	res = list_get(page,0);
-	CU_ASSERT_EQUAL(res->isFree,0);
-	CU_ASSERT_EQUAL(res->size,50);
+	rest = list_get(page,3);
+	CU_ASSERT_EQUAL(rest->isFree,0);
+	CU_ASSERT_EQUAL(rest->size,50);
 
-	res = list_get(page,0);
-	CU_ASSERT_EQUAL(res->isFree,0);
-	CU_ASSERT_EQUAL(res->size,30);
+	rest = list_get(page,4);
+	CU_ASSERT_EQUAL(rest->isFree,0);
+	CU_ASSERT_EQUAL(rest->size,30);
 
-	res = list_get(page,0);
-	CU_ASSERT_EQUAL(res->isFree,0);
-	CU_ASSERT_EQUAL(res->size,80);
+	rest = list_get(page,5);
+	CU_ASSERT_EQUAL(rest->isFree,0);
+	CU_ASSERT_EQUAL(rest->size,80);
 
-	res = list_get(page,0);
-	CU_ASSERT_EQUAL(res->isFree,1);
-	CU_ASSERT_EQUAL(res->size,136);
+	rest = list_get(page,6);
+	CU_ASSERT_EQUAL(rest->isFree,1);
+	CU_ASSERT_EQUAL(rest->size,136);
 
+	char* contenidoPagina= malloc(100);
+
+	memcpy(contenidoPagina,newmemPage+sizeof(HeapMetadata),50);
+	char* control= malloc(5);
+	memcpy(control,contenidoPagina,5);
+
+	printf("\n1: %s\n",contenidoPagina);
+
+	//printf("A ver = %s ;",control);
+
+	free(control);
+
+	memcpy(contenidoPagina,newmemPage+sizeof(HeapMetadata)*2+50,80);
+	control= malloc(7);
+	memcpy(control,contenidoPagina,7);
+
+	printf("2: %s\n",contenidoPagina);
+
+	//printf("si esto = %s ;",control);
+
+	free(control);
+
+	memcpy(contenidoPagina,newmemPage+sizeof(HeapMetadata)*3+130,30);
+	control= malloc(5);
+	memcpy(control,contenidoPagina,5);
+
+	printf("3: %s\n",contenidoPagina);
+
+	//printf("queda = %s ;",control);
+
+	free(control);
+
+	memcpy(contenidoPagina,newmemPage+sizeof(HeapMetadata)*4+160,50);
+	control= malloc(8);
+	memcpy(control,contenidoPagina,8);
+
+	printf("4: %s\n",contenidoPagina);
+
+	//printf("en orden = %s ;",control);
+
+	free(control);
+
+	memcpy(contenidoPagina,newmemPage+sizeof(HeapMetadata)*5+210,30);
+	control= malloc(4);
+	memcpy(control,contenidoPagina,4);
+
+	printf("5: %s\n",contenidoPagina);
+
+	//printf("o no = %s ;",control);
+
+	free(control);
+
+	memcpy(contenidoPagina,newmemPage+sizeof(HeapMetadata)*6+240,80);
+	control= malloc(5);
+	memcpy(control,contenidoPagina,5);
+
+	printf("6: %s\n",contenidoPagina);
+
+	//printf("queda = %s ; en orden.",control);
 
 }
