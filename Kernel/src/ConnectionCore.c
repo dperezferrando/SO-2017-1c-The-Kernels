@@ -94,8 +94,7 @@ void recibirDeConsola(int socket, connHandle* master)
 		case 9:
 		{
 			int pid = *(int*)mensaje->data;
-			ProcessControl* pc = PIDFind(pid);
-			matarCuandoCorresponda(pc);
+			matarCuandoCorresponda(pid);
 			break;
 		}
 	}
@@ -104,8 +103,9 @@ void recibirDeConsola(int socket, connHandle* master)
 
 }
 
-void matarCuandoCorresponda(ProcessControl* pc)
+void matarCuandoCorresponda(int pid)
 {
+	ProcessControl* pc = PIDFind(pid);
 	if(pc->state == 2)
 		pc->toBeKilled = 1;
 	else

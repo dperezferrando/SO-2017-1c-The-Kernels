@@ -11,7 +11,7 @@ void handler(){
 	connHandle handleMaster= initializeConnectionHandler();
 	socketHandler result;
 	initialize(config, &handleMaster);
-	while(1){
+	while(morir == 0){
 		result= updateSockets(handleMaster);
 		result= lSelect(result,0);
 		handleSockets(&handleMaster, result);

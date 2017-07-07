@@ -14,6 +14,7 @@
 #include "globales.h"
 #include "tests/KernelTest.h"
 #include "KernelConfiguration.h"
+#include "ConsolaKernel.h"
 const char* keys[15] = {"PUERTO_PROG", "PUERTO_CPU", "IP_MEMORIA", "PUERTO_MEMORIA", "IP_FS", "PUERTO_FS", "QUANTUM", "QUANTUM_SLEEP", "ALGORITMO", "GRADO_MULTIPROG", "SEM_IDS", "SEM_INIT", "SHARED_VARS", "STACK_SIZE", "NULL"};
 
 
@@ -28,6 +29,7 @@ int main(int argc, char** argsv) {
 		return EXIT_SUCCESS;
 	}
 	test=0;
+	morir =0;
 
 	process= list_create();
 
@@ -41,11 +43,17 @@ int main(int argc, char** argsv) {
 	tablaGlobalFS = list_create();
 	tablasDeProcesosFS = list_create();
 	crearListaDeColasSemaforos();
-
+	pthread_create(&consolaKernel, NULL, (void*) recibir_comandos, NULL);
 	handler();
-	destruirConfig(config);
+	pthread_join(consolaKernel, NULL);
+	morirDecentemente();
 	// EN ALGUN MOMENTO DESTRUIR ESAS COLAS
 	//list_clean_and_destroy_elements(destruirPCB);
 	return 0;
 }
 
+void morirDecentemente()
+{
+	destruirConfig(config);
+	// TO DO
+}

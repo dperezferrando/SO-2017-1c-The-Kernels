@@ -52,7 +52,7 @@ void calculateFreeSpace(t_list*,int,void*);
 void initializePageOwnership(PageOwnership*);
 void storeVariable(PageOwnership*, char*, int);
 void handleSockets(connHandle*, socketHandler);
-void matarCuandoCorresponda(ProcessControl* pc);
+void matarCuandoCorresponda(int);
 
 
 void* getMemoryPage(int, int);
