@@ -136,8 +136,11 @@ void conexion_kernel(int conexion)
 				// ESCRIBIR EN MEMORIA
 				int pid;
 				pedidoEscrituraMemoria* pedido = malloc(sizeof(pedidoEscrituraMemoria));
-				memcpy(&pid, mensaje->data, sizeof(int));
-				memcpy(pedido, mensaje->data, sizeof(pedidoEscrituraMemoria));
+				memcpy(&pid,mensaje->data,sizeof(int));
+				memcpy(&pedido->posicion.size,mensaje->data+sizeof(int),sizeof(int));
+				memcpy(&pedido->posicion.pagina,mensaje->data+(sizeof(int)*2),sizeof(int));
+				memcpy(&pedido->posicion.offset,mensaje->data+(sizeof(int)*3),sizeof(int));
+				memcpy(&pedido->valor, mensaje->data+(sizeof(int)*4),pedido->posicion.size);
 				escribirDondeCorresponda(pid, pedido);
 				free(pedido);
 				break;
@@ -145,18 +148,17 @@ void conexion_kernel(int conexion)
 			case 3:
 			{
 				//OTORGAR PAGINAS HEAP
-				int pid, cantidadPaginas;
+				int pid;
 				memcpy(&pid, mensaje->data, sizeof(int));
-				memcpy(&cantidadPaginas, mensaje->data, sizeof(int));
-				if(!sePuedenAsignarPaginas(pid, cantidadPaginas))
+				if(!sePuedenAsignarPaginas(pid, 1))
 				{
 					lSend(conexion, NULL,-2,0);
 					break;
 				}
-				lSend(conexion, NULL, 104,0);
-				int paginaInicial = tamanioProceso(pid);
-				crearEntradas(pid, cantidadPaginas, paginaInicial);
-				printf("[OTORGAR PAGINAS HEAP]: PID: %i | Paginas: %i\n", pid, cantidadPaginas);
+				int paginaAsignada = tamanioProceso(pid);
+				lSend(conexion, paginaAsignada, 104,sizeof(int));
+				crearEntradas(pid, 1, paginaAsignada);
+				printf("[OTORGAR PAGINAS HEAP]: PID: %i | Paginas: %i\n", pid, 1);
 				//https://github.com/sisoputnfrba/foro/issues/652
 				break;
 

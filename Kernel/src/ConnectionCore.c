@@ -494,7 +494,8 @@ void recibirDeCPU(int socket, connHandle* master)
 		case 204:
 		{
 			MemoryRequest mr = deserializeMemReq(mensaje->data);
-			memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr));
+			if(memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr)) == -1)
+				puts("NO HAY ESPACIO DEBE FINALIZAR PROCESO");
 			break;
 		}
 		case 205:

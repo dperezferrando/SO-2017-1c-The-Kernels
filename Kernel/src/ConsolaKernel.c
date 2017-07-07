@@ -56,12 +56,17 @@ void recibir_comandos()
 				mostrarTablaDeArchivosGlobal();
 				puts("-------TABLA DE ARCHIVOS GLOBAL-------");
 			}
-			else if(isdigit(comando[1]))
+			else
 			{
 				int pid = atoi(comando[1]);
-				printf("-------TABLA DE ARCHIVOS PID: %i-------", pid);
-				mostrarTablaDeArchivosProceso(pid);
-				printf("-------TABLA DE ARCHIVOS PID: %i-------", pid);
+				if(pid > maxPID | pid < 0)
+					puts("PID INVALIDO");
+				else
+				{
+					printf("-------TABLA DE ARCHIVOS PID: %i-------\n", pid);
+					mostrarTablaDeArchivosProceso(pid);
+					printf("-------TABLA DE ARCHIVOS PID: %i-------\n", pid);
+				}
 			}
 		}
 		else if(!strcmp(comando[0], "multiprog"))
@@ -105,7 +110,10 @@ char* leerCaracteresEntrantes() {
 void mostrarTablaDeArchivosProceso(int pid)
 {
 	tablaDeProceso* tabla = encontrarTablaDelProceso(pid);
-	list_iterate(tabla, mostrarEntradaTablaArchivoProceso);
+	if(tabla == NULL)
+		puts("NO TIENE ARCHIVOS");
+	else
+		list_iterate(tabla, mostrarEntradaTablaArchivoProceso);
 }
 
 void mostrarEntradaTablaArchivoProceso(entradaTablaFSProceso* entrada)
