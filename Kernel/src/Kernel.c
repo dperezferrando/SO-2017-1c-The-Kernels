@@ -21,8 +21,8 @@ const char* keys[15] = {"PUERTO_PROG", "PUERTO_CPU", "IP_MEMORIA", "PUERTO_MEMOR
 int main(int argc, char** argsv) {
 
 	puts("!!!Hello Kernel!!!\n"); /* prints !!!Hello World!!! */
-	//config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/Kernel/Debug/config.conf", readConfigFile, keys);
-	config = configurate("/home/utnso/workspace/tp-2017-1c-The-Kernels/Kernel/Debug/config.conf", readConfigFile, keys);
+	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/Kernel/Debug/config.conf", readConfigFile, keys);
+	//config = configurate("/home/utnso/workspace/tp-2017-1c-The-Kernels/Kernel/Debug/config.conf", readConfigFile, keys);
 	if(argc > 1 && strcmp(argsv[1],"-test")==0){
 		test=1;
 		kernelTest(1);

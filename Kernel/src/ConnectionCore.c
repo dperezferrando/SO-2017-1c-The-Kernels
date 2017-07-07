@@ -145,9 +145,9 @@ MemoryRequest deserializeMemReq(void* mr){
 void* serializeMemReq(MemoryRequest mr, int idPage, int offset, int msgSize, void* msg){
 	void* res= malloc(sizeof(int)*5+msgSize);
 	memcpy(res,&mr.pid,sizeof(int));
-	memcpy(res+sizeof(int),&mr.size,sizeof(int));
-	memcpy(res+sizeof(int)*2,&idPage,sizeof(int));
-	memcpy(res+sizeof(int)*3,&offset,sizeof(int));
+	memcpy(res+sizeof(int),&idPage,sizeof(int));
+	memcpy(res+sizeof(int)*2,&offset,sizeof(int));
+	memcpy(res+sizeof(int)*3,&mr.size,sizeof(int));
 	memcpy(res+sizeof(int)*4,msg,msgSize);
 	return res;
 }
@@ -183,15 +183,15 @@ int freeMemory(int pid, int page, int offset){
 }
 
 void sendKillRequest(int pid, int page, int offset, HeapMetadata* hm){
-	int size= sizeof(int)*3+sizeof(HeapMetadata);
+	int size= sizeof(int)*4+sizeof(HeapMetadata);
 	void* request= malloc(size);
 	memcpy(request,&pid,sizeof(int));
 	memcpy(request+sizeof(int),&page,sizeof(int));
 	memcpy(request+sizeof(int)*2,&offset,sizeof(int));
-	memcpy(request+sizeof(int)*3,&hm->size,sizeof(uint32_t));
-	memcpy(request+sizeof(int)*3+sizeof(uint32_t),&hm->isFree,sizeof(bool));
+	memcpy(request+sizeof(int)*3, sizeof(HeapMetadata), sizeof(int));
+	memcpy(request+sizeof(int)*4,hm,sizeof(HeapMetadata));
 
-	if(!test)lSend(conexionMemoria,request, 205, size);
+	if(!test)lSend(conexionMemoria,request, 2, size);
 
 }
 

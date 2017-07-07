@@ -137,9 +137,9 @@ void conexion_kernel(int conexion)
 				int pid;
 				pedidoEscrituraMemoria* pedido = malloc(sizeof(pedidoEscrituraMemoria));
 				memcpy(&pid,mensaje->data,sizeof(int));
-				memcpy(&pedido->posicion.size,mensaje->data+sizeof(int),sizeof(int));
-				memcpy(&pedido->posicion.pagina,mensaje->data+(sizeof(int)*2),sizeof(int));
-				memcpy(&pedido->posicion.offset,mensaje->data+(sizeof(int)*3),sizeof(int));
+				memcpy(&pedido->posicion.pagina,mensaje->data+sizeof(int),sizeof(int));
+				memcpy(&pedido->posicion.offset,mensaje->data+(sizeof(int)*2),sizeof(int));
+				memcpy(&pedido->posicion.size,mensaje->data+(sizeof(int)*3),sizeof(int));
 				memcpy(&pedido->valor, mensaje->data+(sizeof(int)*4),pedido->posicion.size);
 				escribirDondeCorresponda(pid, pedido);
 				free(pedido);
