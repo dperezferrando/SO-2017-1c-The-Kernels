@@ -1,14 +1,41 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <dirent.h>
+#include <ctype.h>
+#include <math.h>
 #include <commons/config.h>
+#include <commons/bitarray.h>
 #include <commons/collections/list.h>
 #include "../../ConfigLibrary/src/Configuration.c"
 #include "../../SocketLibrary/src/SocketLibrary.c"
 
 int kernel;
 int conexion;
+int flagC;
+int flagR;
+int flagW;
+int cantBloq;
+int tamBloq;
+char* bitarray;
+t_bitarray* Ebitarray;
 #define CONFIG_FILE "filesystem.conf"
+#define ruta_Conf "/home/utnso/tp-2017-1c-The-Kernels/mnt/filesystem.conf"
+#define	ruta_Meta "/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Metadata/Metadata.bin"
+#define	ruta_BitM "/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Metadata/Bitmap.bin"
+#define	ruta_CMeta "/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Metadata/"
+#define	ruta_Blqs "/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Bloques/"
+#define	ruta_Arch "/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Archivos/"
+int tamRuta_Conf = strlen(ruta_Conf);
+int tamRuta_Meta = strlen(ruta_Meta);
+int tamRuta_BitM = strlen(ruta_BitM);
+int tamRuta_CMeta = strlen(ruta_CMeta);
+int tamRuta_Blqs = strlen(ruta_Blqs);
+int tamRuta_Arch = strlen(ruta_Arch);
 const char* keys[3] = {"PUERTO", "PUNTO_MONTAJE" , "NULL"};
 const char* metaKeys[4]={"TAMANIO_BLOQUES","CANTIDAD_BLOQUES","MAGIC_NUMBER","NULL"};
 const char* archKeys[3] = {"TAMANIO", "BLOQUES" , "NULL"};
@@ -34,6 +61,11 @@ typedef struct {
 } archivo;
 
 typedef struct {
+	int tamanio;
+	int* bloques;
+} bloques;
+
+typedef struct {
 	char data[65];
 } data;
 
@@ -48,4 +80,18 @@ char* leerArchivo(char*,int,int);
 int escribirArchivo(char*,int,int,char*);
 int borrarArchivo(char*);
 int enviarTamanioArchivo(int);
+int levantarBitmap(void);
+int levantarBloquesEnUso(void);
+void destruirBitmap(void);
+void retornoDePath(char*);
+bloques* getbloques(char*);
+int addbloque(char*);
+void quitarUltimoBloque(char*);
+int getTamanio(char*);
+int cambiarTamanio(char*,int);
+char *rutabloque(int);
+char* IntToString(int);
+
+
+
 
