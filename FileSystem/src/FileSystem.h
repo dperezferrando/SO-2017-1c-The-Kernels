@@ -24,12 +24,12 @@ int tamBloq;
 char* bitarray;
 t_bitarray* Ebitarray;
 #define CONFIG_FILE "filesystem.conf"
-#define ruta_Conf "/home/utnso/tp-2017-1c-The-Kernels/mnt/filesystem.conf"
-#define	ruta_Meta "/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Metadata/Metadata.bin"
-#define	ruta_BitM "/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Metadata/Bitmap.bin"
-#define	ruta_CMeta "/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Metadata/"
-#define	ruta_Blqs "/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Bloques/"
-#define	ruta_Arch "/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Archivos/"
+#define ruta_Conf "/home/utnso/Escritorio/tp-2017-1c-The-Kernels/mnt/filesystem.conf"
+#define	ruta_Meta "/home/utnso/Escritorio/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Metadata/Metadata.bin"
+#define	ruta_BitM "/home/utnso/Escritorio/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Metadata/Bitmap.bin"
+#define	ruta_CMeta "/home/utnso/Escritorio/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Metadata/"
+#define	ruta_Blqs "/home/utnso/Escritorio/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Bloques/"
+#define	ruta_Arch "/home/utnso/Escritorio/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Archivos/"
 int tamRuta_Conf = strlen(ruta_Conf);
 int tamRuta_Meta = strlen(ruta_Meta);
 int tamRuta_BitM = strlen(ruta_BitM);

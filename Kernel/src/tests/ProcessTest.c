@@ -37,7 +37,7 @@ void testCPUReturnsProcessToBlocked(){
 void testNewProcess(){
 	initializeProcessQueuesAndLists();//inicializo las listas
 	initializePCB();//pcb fantasma
-	newProcess(pcb);//procedimiento
+	newProcess(pcb, -1, "", 0);//procedimiento
 
 	//------------------------------------------Asserts----------------------------------------//
 	CU_ASSERT_EQUAL(queue_size(colaNew),1);
@@ -54,7 +54,7 @@ void testReadyProcess(int multiprogOK){
 	//initializeConfigFile();
 	//initializePCBinReady();
 	initializePCB();
-	newProcess(pcb);
+	newProcess(pcb, -1, "",0);
 	int expected=1,cantNew=0,cantReady=1,state=1;
 	if(!multiprogOK){
 		expected= -1;
@@ -88,7 +88,7 @@ void testReadyProcess(int multiprogOK){
 void testExecuteProcess(int cpuOK){
 	initializeProcessQueuesAndLists();
 	initializePCB();
-	newProcess(pcb);
+	newProcess(pcb, -1, "",0);
 	config->GRADO_MULTIPROG= 1;
 	readyProcess();
 	int sizeReady=0,sizeExecute=1,expected=1;
@@ -110,7 +110,7 @@ void testExecuteProcess(int cpuOK){
 void testCPUReturnsProcess(int processState){
 	initializeProcessQueuesAndLists();
 	initializePCB();
-	newProcess(pcb);
+	newProcess(pcb,-1, "", 0);
 	config->GRADO_MULTIPROG= 1;
 	readyProcess();
 	queue_push(colaCPUS, (int*)10);

@@ -29,7 +29,17 @@ PCB* createProcess(char* script, int tamanioScript){
 }
 
 
-void killProcess(int PID){
+void _modifyExitCode(int PID,int exitCode){
+	bool _PIDFind(PCB* pcb){
+		return pcb->pid== PID;
+	}
+
+	PCB* pcb= list_find(colaFinished->elements,&(_PIDFind));
+	pcb->exitCode= exitCode;
+}
+
+
+void killProcess(int PID,int exitCode){
 	bool encontrarPorPID(PCB* PCB){
 		return (PCB->pid)==PID;
 	}
@@ -50,15 +60,23 @@ void killProcess(int PID){
 		fromBlockedToFinished(PID);
 		break;
 	}
-	lSend(conexionMemoria, &PID, 9, sizeof(int));
-	lSend(pc->consola, &PID, 9, sizeof(int));
+	if(exitCode == -1) // Si no hay espacio le digo a la consola que murio por no haber espacio
+		lSend(pc->consola, &PID, -2, sizeof(int));
+	else // Si murio por otra razon le aviso tambien a memoria
+	{
+		lSend(pc->consola, &PID, 9, sizeof(int));
+		lSend(conexionMemoria, &PID, 9, sizeof(int));
+	}
 	//Verifica si esta en alguna de cola de algun semaoforo
 	quitarDeColaDelSemaforoPorKill(PID);
 	eliminarEntradasTabla(PID);
+	_modifyExitCode(PID,exitCode);
 	if(checkMultiprog() && queue_size(colaNew) >0)
-		fromNewToReady();
+		readyProcess();
 
 }
+
+
 
 
 
@@ -68,7 +86,7 @@ void killProcess(int PID){
 
 
 
-void newProcess(PCB* pcb, int consola)
+void newProcess(PCB* pcb, int consola, char* script, int tamanioScript)
 {
 	queue_push(colaNew, pcb);
 	ProcessControl* pc= malloc(sizeof(ProcessControl));
@@ -76,6 +94,9 @@ void newProcess(PCB* pcb, int consola)
 	pc->state= 0;
 	pc->consola = consola;
 	pc->toBeKilled = 0;
+	pc->script = malloc(tamanioScript);
+	memcpy(pc->script, script, tamanioScript);
+	pc->tamanioScript = tamanioScript;
 	list_add(process,pc);
 }
 
@@ -131,7 +152,19 @@ void cpuReturnsProcessTo(PCB* newPCB, int state){
 
 
 PCB* fromNewToReady(){
-	return _fromQueueToQueue(colaNew,colaReady,1);
+	PCB* pcb = _fromQueueToQueue(colaNew,colaReady,1);
+	if(pcb == NULL)
+		return NULL;
+	ProcessControl* pc = PIDFind(pcb->pid);
+	if(!enviarScriptAMemoria(pcb, pc->script, pc->tamanioScript))
+	{
+		puts("NO HAY ESPACIO");
+		killProcess(pcb->pid, -1);
+	}
+	else
+		lSend(pc->consola, &pcb->pid, 2, sizeof(int));
+
+	return pcb;
 }
 
 
@@ -171,6 +204,8 @@ PCB* fromBlockedToFinished(int pid){
 
 PCB* _fromQueueToQueue(t_queue* fromQueue, t_queue* toQueue, int newState){
 	PCB* pcb = queue_pop(fromQueue);
+	if(pcb == NULL)
+		return NULL;
 	_processChangeStateToQueue(toQueue,pcb,newState);
 	return pcb;
 }
