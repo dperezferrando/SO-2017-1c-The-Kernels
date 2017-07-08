@@ -72,15 +72,20 @@ void recibir_comandos()
 		else if(!strcmp(comando[0], "multiprog"))
 		{
 			int multiprog = atoi(comando[1]);
-			config->GRADO_MULTIPROG = multiprog;
-			printf("NUEVO GRADO DE MULTIPROGRAMACION: %i\n", config->GRADO_MULTIPROG);
-			readyProcess();
+			if(multiprog <= 0)
+				puts("NO ES NU NUMERO VALIDO");
+			else
+			{
+				config->GRADO_MULTIPROG = multiprog;
+				printf("NUEVO GRADO DE MULTIPROGRAMACION: %i\n", config->GRADO_MULTIPROG);
+				readyProcess();
+			}
 		}
 		else if(!strcmp(comando[0], "kill"))
 		{
 			int pid = atoi(comando[1]);
 			matarCuandoCorresponda(pid);
-			printf("SE ENVIO A AJUSTICIAR EL PROCESO PID: %i. SE AJUSTICIARA CUANDO CORRESPONDA.", pid);
+			printf("SE ENVIO A AJUSTICIAR EL PROCESO PID: %i. SE AJUSTICIARA CUANDO CORRESPONDA.\n", pid);
 		}
 		else if(!strcmp(comando[0], "togglePlanif"))
 		{
@@ -90,6 +95,8 @@ void recibir_comandos()
 		{
 			morir = 1;
 		}
+		else
+			puts("COMANDO INVALIDO");
 		free(comando[0]);
 		free(comando[1]);
 		free(comando);

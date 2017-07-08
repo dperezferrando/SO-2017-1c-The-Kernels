@@ -577,7 +577,7 @@ void recibirDeCPU(int socket, connHandle* master)
 
 		case 206: // ABRIR ARCHIVO
 		{
-			// FALTA CREAR ARCHIVO SI NO EXISTE
+
 			int pid;
 			char* ruta;
 			char* permisos;

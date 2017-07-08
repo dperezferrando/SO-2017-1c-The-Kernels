@@ -208,7 +208,10 @@ void conexion_kernel(int conexion)
 
 }
 
-
+bool frameValido(int frame)
+{
+	return frame > 0 && frame < config->marcos;
+}
 void finalizarPrograma(int pid)
 {
 	int pag = 0;
@@ -221,7 +224,7 @@ void finalizarPrograma(int pid)
 		pag++;
 		pointer++;
 	}
-	while(pointer->pid == pid);
+	while(pointer->pid == pid && frameValido(pointer->frame));
 	bool pidDistintoA(entradaCache* entrada)
 	{
 		return entrada->pid != pid;

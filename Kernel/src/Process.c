@@ -60,14 +60,19 @@ void killProcess(int PID,int exitCode){
 		fromBlockedToFinished(PID);
 		break;
 	}
-	lSend(conexionMemoria, &PID, 9, sizeof(int));
-	lSend(pc->consola, &PID, 9, sizeof(int));
+	if(exitCode == -1) // Si no hay espacio le digo a la consola que murio por no haber espacio
+		lSend(pc->consola, &PID, -2, sizeof(int));
+	else // Si murio por otra razon le aviso tambien a memoria
+	{
+		lSend(pc->consola, &PID, 9, sizeof(int));
+		lSend(conexionMemoria, &PID, 9, sizeof(int));
+	}
 	//Verifica si esta en alguna de cola de algun semaoforo
 	quitarDeColaDelSemaforoPorKill(PID);
 	eliminarEntradasTabla(PID);
 	_modifyExitCode(PID,exitCode);
 	if(checkMultiprog() && queue_size(colaNew) >0)
-		fromNewToReady();
+		readyProcess();
 
 }
 
@@ -151,15 +156,13 @@ PCB* fromNewToReady(){
 	if(pcb == NULL)
 		return NULL;
 	ProcessControl* pc = PIDFind(pcb->pid);
-	if(enviarScriptAMemoria(pcb, pc->script, pc->tamanioScript))
-		lSend(pc->consola, &pcb->pid, 2, sizeof(int));
-	else
+	if(!enviarScriptAMemoria(pcb, pc->script, pc->tamanioScript))
 	{
 		puts("NO HAY ESPACIO");
-		// DELEGAR EL EXITCODE A OTRO LADO, POSIBLEMENTE KILL PROCESS
-		//lSend(pc->consola, NULL, -2, 0);
-		killProcess(pcb->pid);
+		killProcess(pcb->pid, -1);
 	}
+	else
+		lSend(pc->consola, &pcb->pid, 2, sizeof(int));
 
 	return pcb;
 }
