@@ -40,7 +40,7 @@ bool isListener(int, connHandle);
 bool _usedFragment(HeapMetadata*);
 
 
-void newProcess(PCB*, int);
+
 void enviarInformacion(int);
 void aceptarNuevoCPU(int);
 void closeHandle(int, connHandle*);

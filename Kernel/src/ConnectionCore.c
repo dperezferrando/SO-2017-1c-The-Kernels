@@ -57,18 +57,20 @@ void recibirDeConsola(int socket, connHandle* master)
 		{
 			int tamanioScript = mensaje->header.tamanio;
 			PCB* pcb = createProcess(mensaje->data, tamanioScript);
-			if(enviarScriptAMemoria(pcb, mensaje->data, tamanioScript))
+			newProcess(pcb, socket, mensaje->data, tamanioScript);
+			if(readyProcess() == -1)
+				puts("SE ALCANZO EL LIMITE DE MULTIPROGRAMACION - QUEDA EN NEW");
+/*			if(enviarScriptAMemoria(pcb, mensaje->data, tamanioScript))
 			{
 				lSend(socket, &pcb->pid, 2, sizeof(int));
-				newProcess(pcb, socket);
-				if(readyProcess(pcb) == -1)
-					puts("SE ALCANZO EL LIMITE DE MULTIPROGRAMACION - QUEDA EN NEW");
+
+
 			}
 			else
 			{
 				puts("NO HAY ESPACIO");
 				lSend(socket, NULL, -2, 0);
-			}
+			}*/
 
 			break;
 		}

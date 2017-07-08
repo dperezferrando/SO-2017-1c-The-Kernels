@@ -642,7 +642,6 @@ bloques* getbloques(char* path){
 	while(c!='['){
 		c = fgetc(arch);
 	}
-
 	int i = 1;
 	int j = 1;
 	int k = 0;
@@ -682,7 +681,6 @@ bloques* getbloques(char* path){
 		strcpy(retorno,buffer);
 		free (buffer);
 		return retorno;
-
         buffer = (char*)realloc(NULL, sizeof(char));
 	        c = fgetc(archivo);
 	        i = 0;
@@ -696,7 +694,6 @@ bloques* getbloques(char* path){
 	        //Agrego el \n al buffer
 	        buffer = (char*)realloc(buffer, (i+1)*sizeof(char));
 	        buffer[i] = c;
-
 	       //Trabajar con el buffer
 	       free(buffer);
 	}*/
