@@ -60,18 +60,6 @@ void recibirDeConsola(int socket, connHandle* master)
 			newProcess(pcb, socket, mensaje->data, tamanioScript);
 			if(readyProcess() == -1)
 				puts("SE ALCANZO EL LIMITE DE MULTIPROGRAMACION - QUEDA EN NEW");
-/*			if(enviarScriptAMemoria(pcb, mensaje->data, tamanioScript))
-			{
-				lSend(socket, &pcb->pid, 2, sizeof(int));
-
-
-			}
-			else
-			{
-				puts("NO HAY ESPACIO");
-				lSend(socket, NULL, -2, 0);
-			}*/
-
 			break;
 		}
 		//Abortar procesos
@@ -481,7 +469,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
 			// HAY QUE ENVIAR EL PCB RECIBIDO A LA COLA FINISHED, EN ESTE MOMENTO NO SE HACE, SE PASA EL PCB VIEJO QUE ESTA EN LA COLA EXECUTED.
 			killProcess(pcb->pid,0);
-			queue_push(colaCPUS, socket);
+			pushearAColaCPUS(socket);
 			executeProcess();
 			free(pcb);
 			break;
@@ -491,14 +479,14 @@ void recibirDeCPU(int socket, connHandle* master)
 			cpuReturnsProcessTo(pcb,1);
 			matarSiCorresponde(pcb->pid);
 			executeProcess();
-			queue_push(colaCPUS, socket);
+			pushearAColaCPUS(socket);
 			break;
 		case 3:
 			pcb = recibirPCB(mensaje);
 			puts("VUELVE PCB POR BLOQUEO");
 			cpuReturnsProcessTo(pcb,3);
 			matarSiCorresponde(pcb->pid);
-			queue_push(colaCPUS, socket);
+			pushearAColaCPUS(socket);
 			executeProcess();
 			break;
 		case 4:
@@ -507,7 +495,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
 			killProcess(pcb->pid,-5);
 			executeProcess();
-			queue_push(colaCPUS, socket);
+			pushearAColaCPUS(socket);
 			free(pcb);
 			break;
 		case 204:
@@ -646,6 +634,15 @@ void recibirDeCPU(int socket, connHandle* master)
 	}
 	destruirMensaje(mensaje);
 }
+
+void pushearAColaCPUS(int cpu)
+{
+	pthread_mutex_lock(&mColaCPUS);
+	queue_push(colaCPUS, cpu);
+	pthread_mutex_unlock(&mColaCPUS);
+
+}
+
 void matarSiCorresponde(int pid,int exitCode)
 {
 	ProcessControl* pc = PIDFind(pid);
@@ -718,7 +715,10 @@ void closeHandle(int s, connHandle* master)
 
 int checkMultiprog(){
 	int currentMultiprog= queue_size(colaReady) + list_size(blockedList) + list_size(executeList);
-	return config->GRADO_MULTIPROG > currentMultiprog;
+	pthread_mutex_lock(&mMultiprog);
+	int res = config->GRADO_MULTIPROG > currentMultiprog;
+	pthread_mutex_unlock(&mMultiprog);
+	return res;
 }
 
 

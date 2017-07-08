@@ -76,9 +76,17 @@ void recibir_comandos()
 				puts("NO ES NU NUMERO VALIDO");
 			else
 			{
+				pthread_mutex_lock(&mMultiprog);
 				config->GRADO_MULTIPROG = multiprog;
+				pthread_mutex_unlock(&mMultiprog);
 				printf("NUEVO GRADO DE MULTIPROGRAMACION: %i\n", config->GRADO_MULTIPROG);
-				readyProcess();
+				int i;
+				pthread_mutex_lock(&mColaNew);
+				int new = queue_size(colaNew);
+				pthread_mutex_unlock(&mColaNew);
+				for(i = 0;i<new;i++)
+					readyProcess();
+
 			}
 		}
 		else if(!strcmp(comando[0], "kill"))

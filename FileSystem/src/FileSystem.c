@@ -12,7 +12,7 @@ int main(int argc, char** argsv) {
 	//return EXIT_SUCCESS;
 	levantarBloquesEnUso();
 	puts("bitmap al dia");
-	testsmuycabezitas();
+	//testsmuycabezitas();
 	//while(1){puts("listo");}
 	kernel = getBindedSocket("127.0.0.1", config->puerto);
 	while(1){

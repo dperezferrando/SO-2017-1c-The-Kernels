@@ -776,6 +776,11 @@ configFile* leerArchivoConfig(t_config* configHandler)
 	config->retardo_memoria = config_get_int_value(configHandler, "RETARDO_MEMORIA");
 	config_destroy(configHandler);
 	imprimirConfig(config);
+	if(config->entradas_cache > 0 && config->cache_x_proc == 0)
+	{
+		config->cache_x_proc++;
+		puts("[ERROR]: SI LA CACHE ESTA ACTIVADA NO PUEDE HABER 0 ENTRADAS X PROC. SE SUBIO A 1");
+	}
 	return config;
 }
 

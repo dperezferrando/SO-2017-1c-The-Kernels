@@ -88,7 +88,9 @@ void killProcess(int PID,int exitCode){
 
 void newProcess(PCB* pcb, int consola, char* script, int tamanioScript)
 {
+	pthread_mutex_lock(&mColaNew);
 	queue_push(colaNew, pcb);
+	pthread_mutex_unlock(&mColaNew);
 	ProcessControl* pc= malloc(sizeof(ProcessControl));
 	pc->pid= pcb->pid;
 	pc->state= 0;
@@ -114,12 +116,20 @@ int readyProcess(){//-1 ==> no se pudo poner en ready
 
 
 int executeProcess(){
-	if(queue_size(colaCPUS)<=0 || queue_size(colaReady) <=0){
+	pthread_mutex_lock(&mColaCPUS);
+	int cpus = queue_size(colaCPUS);
+	pthread_mutex_unlock(&mColaCPUS);
+	pthread_mutex_lock(&mColaReady);
+	int ready = queue_size(colaReady);
+	pthread_mutex_unlock(&mColaReady);
+	if(cpus <=0 ||  ready <=0){
 		return -1;
 	} else{
 		PCB* pcb= fromReadyToExecute();
 		serializado pcbSerializado;
+		pthread_mutex_lock(&mColaCPUS);
 		int CPU = (int)queue_pop(colaCPUS);
+		pthread_mutex_unlock(&mColaCPUS);
 		if(!test){
 			pcbSerializado = serializarPCB(pcb);
 			lSend(CPU, pcbSerializado.data, 1, pcbSerializado.size);
@@ -259,21 +269,29 @@ ProcessControl* PIDFindAndRemove(int PID){
 	bool _PIDFind(ProcessControl* pc){
 		return pc->pid== PID;
 	}
-	return list_remove_by_condition(process,&(_PIDFind));
+	pthread_mutex_lock(&mProcess);
+	ProcessControl* pc = list_remove_by_condition(process,&(_PIDFind));
+	pthread_mutex_unlock(&mProcess);
+	return pc;
 }
 
 ProcessControl* PIDFind(int PID){
 	bool _PIDFind(ProcessControl* pc){
 		return pc->pid== PID;
 	}
-	return list_find(process,&(_PIDFind));
+	pthread_mutex_lock(&mProcess);
+	ProcessControl* pc =  list_find(process,&(_PIDFind));
+	pthread_mutex_unlock(&mProcess);
+	return pc;
 }
 
 
 void modifyProcessState(int PID, int newState){
 	ProcessControl* pc = PIDFindAndRemove(PID);
 	pc->state= newState;
+	pthread_mutex_lock(&mProcess);
 	list_add(process, pc);
+	pthread_mutex_unlock(&mProcess);
 }
 
 
