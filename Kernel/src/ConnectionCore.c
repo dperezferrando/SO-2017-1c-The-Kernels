@@ -94,7 +94,7 @@ void recibirDeConsola(int socket, connHandle* master)
 		case 9:
 		{
 			int pid = *(int*)mensaje->data;
-			matarCuandoCorresponda(pid);
+			matarCuandoCorresponda(pid,-7);
 			break;
 		}
 	}
@@ -103,13 +103,13 @@ void recibirDeConsola(int socket, connHandle* master)
 
 }
 
-void matarCuandoCorresponda(int pid)
+void matarCuandoCorresponda(int pid, int exitCode)
 {
 	ProcessControl* pc = PIDFind(pid);
 	if(pc->state == 2)
 		pc->toBeKilled = 1;
 	else
-		killProcess(pc->pid);
+		killProcess(pc->pid,exitCode);
 }
 
 bool consSock(int p, connHandle* master){
@@ -159,8 +159,9 @@ int memoryRequest(MemoryRequest mr, int size, void* contenido){
 	if(!test) res= lRecv(conexionMemoria);
 	if(res->header.tipoOperacion==-1) return -1;
 	int operation= grabarPedido(po,mr,hm,offset);
-	if(sendMemoryRequest(mr,size,contenido,po,offset)==-1) return -1;
 	free(res);
+	int memreq;
+	if((memreq=sendMemoryRequest(mr,size,contenido,po,*offset))!=1) return memreq;
 	return operation;
 }
 
@@ -220,13 +221,24 @@ int grabarPedido(PageOwnership* po, MemoryRequest mr, HeapMetadata* hm, int* off
 
 }
 
+int getNewPage(PageOwnership* po){
+	lSend(conexionMemoria,&po->pid,3,sizeof(int));
+	Mensaje* msg= lRecv(conexionMemoria);
+	if(msg->header.tipoOperacion==-2)return -2;
+	memcpy(&po->idpage,msg->data,sizeof(int));
+	return 1;
+}
+
 int sendMemoryRequest(MemoryRequest mr, int size, void* msg, PageOwnership* po, int offset){
 	if(!viableRequest(mr.size)) return -1;
 	po->pid= mr.pid;
 	po->idpage= pageToStore(mr);//busco la pagina para guardarlo, si no hay -1
+
+	if(po->idpage==-1){if(!test)if(getNewPage(po)==-2)return -2;}//pido nueva pagina
+
 	void* serializedMSG= serializeMemReq(mr,po->idpage,offset,size,msg);
-	if(!test) lSend(conexionMemoria,serializedMSG,3,sizeof(mr)+size);//si el idPag es 0 no tiene pagina donde se puede grabar y necesita una nueva
-	free(serializedMSG);
+	if(!test) lSend(conexionMemoria,serializedMSG,2,sizeof(mr)+size);//envío el pedido de grabacion
+
 	return 1;
 }
 
@@ -344,12 +356,19 @@ void _modifyMemoryPage(int base,int top,int offset,void* memoryPage){
 }
 
 void* getMemoryPage(int pid, int idPage){
-	//enviar a memoria che dame tal pagina
-	if(!test){//esto esta asi por el test
-		Mensaje* msg= lRecv(conexionMemoria);
-		return msg->data;
+	int offset=0, size=sizeof(int)*4;
+	void* msg= malloc(size);
+	memcpy(msg,&pid,sizeof(int));
+	memcpy(msg+sizeof(int),&idPage,sizeof(int));
+	memcpy(msg+sizeof(int)*2,&offset,sizeof(int));
+	memcpy(msg+sizeof(int)*3,&config->PAG_SIZE,sizeof(int));
+	lSend(conexionMemoria,msg,5,size);
+	if(test){//esto esta asi por el test
+		return res->data;
 	}
-	return res->data;
+	Mensaje* mes= lRecv(conexionMemoria);
+	return mes->data;
+
 }
 
 void* defragging(int pid, int idPage, t_list* page){
@@ -458,9 +477,8 @@ void recibirDeCPU(int socket, connHandle* master)
 			pcb = recibirPCB(mensaje);
 			puts("SE TERMINO LA EJECUCION DE UN PROCESO. SE DEBERIA ENVIAR A COLA FINALIZADO EL PCB");
 			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
-			pcb->exitCode = 0;
 			// HAY QUE ENVIAR EL PCB RECIBIDO A LA COLA FINISHED, EN ESTE MOMENTO NO SE HACE, SE PASA EL PCB VIEJO QUE ESTA EN LA COLA EXECUTED.
-			killProcess(pcb->pid);
+			killProcess(pcb->pid,0);
 			queue_push(colaCPUS, socket);
 			executeProcess();
 			free(pcb);
@@ -485,8 +503,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			pcb = recibirPCB(mensaje);
 			puts("PROGRAMA ABORTADO");
 			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
-			pcb->exitCode = -5;
-			killProcess(pcb->pid);
+			killProcess(pcb->pid,-5);
 			executeProcess();
 			queue_push(colaCPUS, socket);
 			free(pcb);
@@ -494,8 +511,14 @@ void recibirDeCPU(int socket, connHandle* master)
 		case 204:
 		{
 			MemoryRequest mr = deserializeMemReq(mensaje->data);
-			if(memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr)) == -1)
+			int res= memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr));
+			if( res== -1){
+				puts("PEDIDO MAYOR QUE EL TAMAÑO DE UNA PAGINA");
+				killProcess(mr.pid,-8);
+			}
+			else if (res == -2)
 				puts("NO HAY ESPACIO DEBE FINALIZAR PROCESO");
+			killProcess(mr.pid,-9);
 			break;
 		}
 		case 205:
@@ -621,11 +644,11 @@ void recibirDeCPU(int socket, connHandle* master)
 	}
 	destruirMensaje(mensaje);
 }
-void matarSiCorresponde(int pid)
+void matarSiCorresponde(int pid,int exitCode)
 {
 	ProcessControl* pc = PIDFind(pid);
 	if(pc->toBeKilled == 1)
-		killProcess(pid);
+		killProcess(pid,exitCode);
 }
 void deserializarPedidoEscritura(char* serializado, char** data, fileInfo* info)
 {

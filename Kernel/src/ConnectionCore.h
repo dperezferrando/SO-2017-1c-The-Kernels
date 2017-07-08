@@ -45,6 +45,7 @@ void enviarInformacion(int);
 void aceptarNuevoCPU(int);
 void closeHandle(int, connHandle*);
 void recibirDeCPU(int, connHandle*);
+void matarCuandoCorresponda(int, int);
 void recibirDeConsola(int, connHandle*);
 void defragPage(t_list*, int, int, int);
 void _modifyMemoryPage(int,int,int,void*);
@@ -52,7 +53,6 @@ void calculateFreeSpace(t_list*,int,void*);
 void initializePageOwnership(PageOwnership*);
 void storeVariable(PageOwnership*, char*, int);
 void handleSockets(connHandle*, socketHandler);
-void matarCuandoCorresponda(int);
 
 
 void* getMemoryPage(int, int);
