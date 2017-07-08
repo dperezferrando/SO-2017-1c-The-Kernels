@@ -91,6 +91,7 @@ int getTamanio(char*);
 int cambiarTamanio(char*,int);
 char *rutabloque(int);
 char* IntToString(int);
+char* agregarBarraCero(char* data, int tamanio);
 
 
 

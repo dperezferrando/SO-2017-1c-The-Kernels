@@ -223,17 +223,30 @@ void esperarOperacion()
 	Mensaje* mensaje = lRecv(conexion);
 	puts("Operacion recibida");
 	int sizePath;
-	char* path;
+	//char* path;
 	int offset;
 	int  size;
 	int sizeBuffer;
-	char* buffer;
+	//char* buffer;
 	switch(mensaje->header.tipoOperacion){
 		case -1:
 			puts("MURIO EL KERNEL /FF");
 			exit(EXIT_FAILURE);
 			break;
-		case 0:{
+		case 1:
+		{
+			// verificar archivo
+			char* path = agregarBarraCero(mensaje->data, mensaje->header.tamanio);
+			// LO QUE HAYA QUE HACER PARA VALIDAR EL ARCHIVO
+			// DEVOLVER CON lSend OPERACION 104 y EL ARCHIVO ES VALIDO, SINO
+			// NUMERO NEGATIVO QUE NO SEA -1
+
+			free(path);
+			break;
+		}
+
+
+		/*case 2:{
 			//Op.abrir
 			memcpy(flagC,mensaje->data,sizeof(int));
 			memcpy(flagR,mensaje->data + sizeof(int),sizeof(int));
@@ -257,7 +270,7 @@ void esperarOperacion()
 				}
 			}
 			break;
-		}
+		}*/
 		/*case 1:{
 			//Op.crear
 			memcpy(flagC,mensaje->data,sizeof(int));
@@ -268,77 +281,92 @@ void esperarOperacion()
 			crearArchivo(path);
 			break;
 		}*/
-		case 1:{
+		case 2:{
 			//Op.leer
-			memcpy(flagC,mensaje->data,sizeof(int));
-			memcpy(flagR,mensaje->data + sizeof(int),sizeof(int));
-			memcpy(flagW,mensaje->data + sizeof(int)*2,sizeof(int));
-			memcpy(sizePath, mensaje->data + sizeof(int)*3, sizeof(int));
-			memcpy(path, mensaje->data + sizeof(int)*4, sizePath);
-			memcpy(offset, mensaje->data+ sizeof(int)*4 + sizeof(sizePath), sizeof(int));
-			memcpy(size, mensaje->data + sizeof(int)*5 + sizeof(sizePath), sizeof(int));
-			int retorno = validarArchivo(path);
+			char* path;
+			memcpy(sizePath, mensaje->data, sizeof(int));
+			path = agregarBarraCero(mensaje->data + sizeof(int), sizePath);
+			memcpy(offset, mensaje->data+ sizeof(int) +sizePath, sizeof(int));
+			memcpy(size, mensaje->data + sizeof(int)*2 + sizePath, sizeof(int));
+			// NO SE VALIDA, SE VALIDO CUANDO SE ABRIO EL ARCHIVO, SI EL PEDIDO ES INCORRECTO YA LO CHEQUEO EL KERNEL
+		/*	int retorno = validarArchivo(path);
 			if(retorno==-1){
 				lSend(kernel, 0, 1, sizeof(int));
 				break;
-			}
+			}*/
 			char* buffer = leerArchivo(path,offset,size);
+			// ESTE CHEQUEO NO SE QUE ES PERO CAPAZ NO ES NECESARIO, POR AHORA EL KERNEL LO IGNORA
 			if(buffer=="-1"){
 				lSend(kernel, 0, 1, sizeof(int));
 				free(buffer);
 				break;
 			}
 			//enviar el buffer
-			lSend(kernel, buffer, 1, sizeof(char)*size);
+			lSend(kernel, buffer, 2, sizeof(char)*size);
 			free(buffer);
 			break;
 		}
-		case 2:{
+		case 3:{
 			//Op.escribir
-			memcpy(flagC,mensaje->data,sizeof(int));
-			memcpy(flagR,mensaje->data + sizeof(int),sizeof(int));
-			memcpy(flagW,mensaje->data + sizeof(int)*2,sizeof(int));
-			memcpy(sizePath, mensaje->data + sizeof(int)*3, sizeof(int));
-			memcpy(path, mensaje->data + sizeof(int)*4, sizePath);
-			memcpy(offset, mensaje->data+ sizeof(int)*4 + sizeof(sizePath), sizeof(int));
-			memcpy(size, mensaje->data + sizeof(int)*5 + sizeof(sizePath), sizeof(int));
-			memcpy(sizeBuffer, mensaje->data + sizeof(int)*6 + sizeof(sizePath), sizeof(int));
-			memcpy(buffer, mensaje->data + sizeof(int)*7 + sizeof(sizePath), sizeBuffer);
-			int retorno = validarArchivo(path);
+			char* buffer;
+			memcpy(sizePath, mensaje->data, sizeof(int));
+			char* path = agregarBarraCero(mensaje->data + sizeof(int), sizePath);
+			memcpy(offset, mensaje->data+ sizeof(int) +sizePath, sizeof(int));
+			memcpy(size, mensaje->data + sizeof(int)*2 +sizePath, sizeof(int));
+			memcpy(buffer, mensaje->data + sizeof(int)*3 + sizePath, size);
+			// IDEM LEER
+		/*	int retorno = validarArchivo(path);
 			if(retorno==-1){
 				lSend(kernel, 0, 1, sizeof(int));
 				break;
-			}
+			}*/
+			// IDEM LEER, PUEDE NO SER NECESARIO
 			int result = escribirArchivo(path,offset,size,buffer);
 			if(result==-1){
 				lSend(kernel, 0, 1, sizeof(int));
 				break;
 			}
-			retornoDePath(path);
+			// WHY? EL KERNEL YA CONOCE EL PATH
+			//retornoDePath(path);
 			break;
 		}
-		case 3:{
+		case 5:{
 			//Op.borrar
-			memcpy(flagC,mensaje->data,sizeof(int));
-			memcpy(flagR,mensaje->data + sizeof(int),sizeof(int));
-			memcpy(flagW,mensaje->data + sizeof(int)*2,sizeof(int));
-			memcpy(sizePath, mensaje->data + sizeof(int)*3, sizeof(int));
-			memcpy(path, mensaje->data + sizeof(int)*4, sizePath);
-			int retorno = validarArchivo(path);
+			memcpy(sizePath, mensaje->data, sizeof(int));
+			char* path = agregarBarraCero(mensaje->data+sizeof(int), sizePath);
+			// IDEM
+		/*	int retorno = validarArchivo(path);
 			if(retorno==-1){
 				lSend(kernel, 0, 1, sizeof(int));
 				break;
-			}
+			}*/
 			int result = borrarArchivo(path);
+			// IDEM
 			if(result==-1){
 				lSend(kernel, 0, 1, sizeof(int));
 				break;
 			}
-			lSend(kernel, 1, 1, sizeof(int));
+			// CREO QUE NO LO NECESITA
+			//lSend(kernel, 1, 1, sizeof(int));
 			break;
+		}
+		case 4:
+		{
+			// CREAR ARCHIVO
+			char* path = agregarBarraCero(mensaje->data, mensaje->header.tamanio);
+			// HACER LA MAGIA
+			free(path);
 		}
 	}
 	destruirMensaje(mensaje);
+}
+
+char* agregarBarraCero(char* data, int tamanio)
+{
+	char* path = malloc(tamanio+1);
+	memcpy(path, data, tamanio);
+	path[tamanio] = '\0';
+	return path;
 }
 
 int validarArchivo(char* path){

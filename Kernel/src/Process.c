@@ -33,7 +33,6 @@ void _modifyExitCode(int PID,int exitCode){
 	bool _PIDFind(PCB* pcb){
 		return pcb->pid== PID;
 	}
-
 	PCB* pcb= list_find(colaFinished->elements,&(_PIDFind));
 	pcb->exitCode= exitCode;
 }
