@@ -29,7 +29,17 @@ PCB* createProcess(char* script, int tamanioScript){
 }
 
 
-void killProcess(int PID){
+void _modifyExitCode(int PID,int exitCode){
+	bool _PIDFind(PCB* pcb){
+		return pcb->pid== PID;
+	}
+
+	PCB* pcb= list_find(colaFinished->elements,&(_PIDFind));
+	pcb->exitCode= exitCode;
+}
+
+
+void killProcess(int PID,int exitCode){
 	bool encontrarPorPID(PCB* PCB){
 		return (PCB->pid)==PID;
 	}
@@ -55,10 +65,13 @@ void killProcess(int PID){
 	//Verifica si esta en alguna de cola de algun semaoforo
 	quitarDeColaDelSemaforoPorKill(PID);
 	eliminarEntradasTabla(PID);
+	_modifyExitCode(PID,exitCode);
 	if(checkMultiprog() && queue_size(colaNew) >0)
 		fromNewToReady();
 
 }
+
+
 
 
 
