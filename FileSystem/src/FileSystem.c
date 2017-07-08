@@ -15,12 +15,12 @@ int main(int argc, char** argsv) {
 	testsmuycabezitas();
 	//while(1){puts("listo");}
 	kernel = getBindedSocket("127.0.0.1", config->puerto);
-	while(1){
+	/*while(1){
 	lListen(kernel, 5);
 		puts("ESPERANDO AL KERNEL");
 		conexion = lAccept(kernel, KERNEL_ID);
 		esperarOperacion();
-	}
+	}*/
 	close(kernel);
 	free(config);
 	free(metad);
@@ -74,7 +74,7 @@ testsmuycabezitas(){ //no se rian los estoy haciendo asi para comitearselos rapi
 		 free(rutablq);
 		//test4
 
-		/*//test5 crear archivo con 35 bloques
+		//test5 crear archivo con 35 bloques
 		 crearArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin");
 		 int i;
 		 int cont=0;
@@ -138,7 +138,7 @@ testsmuycabezitas(){ //no se rian los estoy haciendo asi para comitearselos rapi
 		free (bloques);
 		free(bloqs);
 	}
-		//test7*/
+		//test7
 }
 
 void esperarOperacion()
@@ -616,6 +616,23 @@ char* rutabloque(bloque){
 
 bloques* getbloques(char* path){
 	bloques* bloqs;
+	int cont=0;
+	t_config* Archconf=config_create(path);
+	char* sBloques =config_get_array_value(Archconf,"BLOQUES");
+	while(sBloques[cont]!=NULL){
+		cont++;
+	}
+	int*bloques=malloc(sizeof(int)*(cont));
+	cont=0;
+	while(sBloques[cont]!=NULL){
+		bloques[cont]=atoi(sBloques[cont]);
+		cont++;
+		}
+	bloqs->bloques=bloques;
+	bloqs->tamanio=cont;
+	return bloqs;
+}
+	/*bloques* bloqs;
 	bloqs=malloc(sizeof(bloques));
 	FILE* arch;
 	arch = fopen(path,"r");
@@ -660,7 +677,7 @@ bloques* getbloques(char* path){
 	bloqs->tamanio=k;
 	free(buffer);
 	return bloqs;
-}
+}*/
 		/*char* retorno;
 		strcpy(retorno,buffer);
 		free (buffer);

@@ -36,6 +36,11 @@ typedef struct entradaCache {
 
 } entradaCache;
 
+typedef struct __attribute__ ((packed)) pedidoEscrituraDelKernel {
+	posicionEnMemoria posicion;
+	char* data;
+} pedidoEscrituraDelKernel;
+
 void imprimirConfigFile(configFile*);
 configFile* leerArchivoConfig(t_config*);
 void conexion_kernel();
@@ -62,5 +67,6 @@ int cantidadEntradasCacheDelProceso(int pid);
 void reemplazarLRU(entradaCache* entrada);
 char* deserializarScript(void* data, int* pid, int* paginasTotales, int* tamanioArchivo);
 void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido);
+void escribirDondeCorrespondaKernel(int pid, pedidoEscrituraDelKernel* pedido);
 char* leerDondeCorresponda(int pid, posicionEnMemoria* posicion);
 
