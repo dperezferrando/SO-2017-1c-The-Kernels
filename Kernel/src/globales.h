@@ -23,7 +23,7 @@ struct MemoryRequest{
 	int size;
 } typedef MemoryRequest;
 
-struct HeapMetadata{
+struct __attribute__ ((packed)) HeapMetadata{
 	uint32_t size;
 	bool isFree;
 } typedef HeapMetadata;
