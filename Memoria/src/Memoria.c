@@ -25,7 +25,7 @@ pthread_mutex_t cacheSem;
 
 int main(int argc, char** argsv) {
 
-	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/Memoria/Debug/memoria.conf", leerArchivoConfig, keys);
+	config = configurate("/home/dario/Escritorio/tp-2017-1c-The-Kernels/Memoria/Debug/memoria.conf", leerArchivoConfig, keys);
 	arrancarMemoria();
 	levantarSockets();
 	puts("[MEMORIA]: ESPERANDO AL KERNEL");

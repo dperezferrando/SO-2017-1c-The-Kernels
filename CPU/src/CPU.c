@@ -10,7 +10,7 @@
 #include "CPU.h"
 
 int main(int argc, char** argsv) {
-	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/CPU/Debug/CPU.conf", leer_archivo_configuracion, keys);
+	config = configurate("/home/dario/Escritorio/tp-2017-1c-The-Kernels/CPU/Debug/CPU.conf", leer_archivo_configuracion, keys);
 	iniciarConexiones();
 	while(1) // EN UN FUTURO ESTO SE CAMBIA POR EL ENVIO DE LA SEÑAL SIGUSR1
 	{
@@ -612,7 +612,7 @@ void escribir(t_descriptor_archivo fileDescriptor, void* info, t_valor_variable 
  	 fi.pid = pcb->pid;
  	 fi.tamanio = tamanio;
  	 serializado escrituraSerializada = serializarPedidoEscrituraFS((char*)info, fi);
- 	 lSend(kernel, &escrituraSerializada, ESCRIBIR_ARCHIVO, sizeof(serializado));
+ 	 lSend(kernel, escrituraSerializada.data, ESCRIBIR_ARCHIVO, escrituraSerializada.size);
  	 Mensaje* m = lRecv(kernel);
  	if(m->header.tipoOperacion == -3)
  		estado = ESCRITURA_ARCHIVO_SIN_PERMISO;

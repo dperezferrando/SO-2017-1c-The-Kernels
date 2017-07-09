@@ -19,7 +19,7 @@
 
 //Archivo de configuracion
 #define CONFIG_FILE "consola.conf"
-#define PATH_CONFIG_FILE "/home/utnso/Escritorio/tp-2017-1c-The-Kernels/Consola/Debug/consola.conf"
+#define PATH_CONFIG_FILE "/home/dario/Escritorio/tp-2017-1c-The-Kernels/Consola/Debug/consola.conf"
 
 //Cadena identificadora de cada comando
 #define C_RUN "run"
