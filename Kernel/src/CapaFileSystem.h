@@ -20,12 +20,14 @@ int agregarEntradaTablaProceso(entradaTablaGlobalFS* entradaGlobal, int pid, cha
 
 
 void crearEstructurasFSProceso(int pid);
-void destruirTablaProceso(tablaDeProceso* tabla);
 void imprimirPorPantalla(fileInfo info, char* data);
 void destruirEntradaGlobal(entradaTablaGlobalFS* entrada);
 void cerrarArchivoEnTablaGlobal(entradaTablaGlobalFS* entrada);
 void destruirEntradaTablaProceso(entradaTablaFSProceso* entrada);
 void deserializarInfoArchivo(char* data, int* pid, char** ruta, char** permisos);
+
+
+void* destruirTablaProceso(tablaDeProceso* tabla);
 
 
 entradaTablaGlobalFS* buscarEnTablaGlobal(char* ruta);
