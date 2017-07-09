@@ -532,18 +532,14 @@ void recibirDeCPU(int socket, connHandle* master)
 			sem[mensaje->header.tamanio] = '\0';
 			puts("OBTENER VALOR");
 			if(obtenerValorSemaforo(sem) <= 0) {
-				puts("DENTRO DE IF");
 				//Aviso a CPU que hay bloqueo
 				lSend(socket, mensaje->data, 3, sizeof(int));
 				//CPU me envia el pid a bloquearse
 				Mensaje* m = lRecv(socket);
-				puts("ANTES DEL SIDA");
 				int* pidblock = malloc(sizeof(int));
 				*pidblock = *(int*)m->data;
-				puts("POST SIDA");
 				//Envio el pid a la cola del semaforo
 				enviarAColaDelSemaforo(sem, pidblock);
-				puts("POST COLA SEMAFARO");
 				free(sem);
 				destruirMensaje(m);
 			} else {
@@ -816,7 +812,6 @@ void crearListaDeColasSemaforos() {
 		//Cada semaforo tiene su cola de bloqueados
 		t_queue* cola = queue_create();
 		list_add(listaDeColasSemaforos, cola);
-		printf("CREO COLA SEMAFORO POSICION: %i\n", i);
 	}
 }
 
