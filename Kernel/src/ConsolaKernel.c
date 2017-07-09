@@ -25,25 +25,25 @@ void recibir_comandos()
 			else if(!strcmp(comando[1], "ready"))
 			{
 				puts("-------COLA READY------");
-				mostrarProcesosEnEstado(1);
+				list_iterate(colaReady->elements, mostrarPID);
 				puts("-------COLA READY------");
 			}
 			else if(!strcmp(comando[1], "execute"))
 			{
 				puts("-------COLA EXECUTE------");
-				mostrarProcesosEnEstado(2);
+				list_iterate(executeList, mostrarPID);
 				puts("-------COLA EXECUTE------");
 			}
 			else if(!strcmp(comando[1], "blocked"))
 			{
 				puts("-------COLA BLOCKED------");
-				mostrarProcesosEnEstado(3);
+				list_iterate(blockedList, mostrarPID);
 				puts("-------COLA BLOCKED------");
 			}
 			else if(!strcmp(comando[1], "exit"))
 			{
 				puts("-------COLA EXIT------");
-				mostrarProcesosEnEstado(9);
+				list_iterate(colaFinished->elements, mostrarPID);
 				puts("-------COLA EXIT------");
 			}
 		}
@@ -111,6 +111,11 @@ void recibir_comandos()
 		free(entrada);
 	}
 
+}
+
+void mostrarPID(PCB* pcb)
+{
+	printf("PID: %i\n", pcb->pid);
 }
 
 char* leerCaracteresEntrantes() {

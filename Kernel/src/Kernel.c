@@ -47,13 +47,48 @@ int main(int argc, char** argsv) {
 	handler();
 	pthread_join(consolaKernel, NULL);
 	morirDecentemente();
-	// EN ALGUN MOMENTO DESTRUIR ESAS COLAS
-	//list_clean_and_destroy_elements(destruirPCB);
 	return 0;
 }
 
 void morirDecentemente()
 {
 	destruirConfig(config);
-	// TO DO
+	destruirColasPlanificacion();
+	destruirTablasFS();
+	destruirListaProcesos();
+	destruirListaDeColasSemaforos();
 }
+
+void destruirColasPlanificacion()
+{
+	queue_destroy_and_destroy_elements(colaFinished, destruirPCB);
+	queue_destroy_and_destroy_elements(colaNew, destruirPCB);
+	queue_destroy_and_destroy_elements(colaReady, destruirPCB);
+	queue_destroy(colaCPUS);
+	list_destroy_and_destroy_elements(blockedList, destruirPCB);
+	list_destroy_and_destroy_elements(executeList, destruirPCB);
+}
+
+void destruirTablasFS()
+{
+	list_destroy_and_destroy_elements(tablasDeProcesosFS, destruirTablaProceso);
+	list_destroy_and_destroy_elements(tablaGlobalFS, destruirEntradaGlobal);
+
+}
+
+void destruirListaProcesos()
+{
+	list_destroy_and_destroy_elements(process, destruirProcessControl);
+}
+
+void destruirColaSemaforo(t_queue* cola)
+{
+	queue_destroy_and_destroy_elements(cola, free);
+}
+
+void destruirListaDeColasSemaforos()
+{
+	list_destroy_and_destroy_elements(listaDeColasSemaforos, destruirColaSemaforo);
+}
+
+

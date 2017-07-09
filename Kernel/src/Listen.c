@@ -29,6 +29,7 @@ connHandle initializeConnectionHandler(){
 
 socketHandler updateSockets(connHandle master){
 	fd_set aux;
+	FD_ZERO(&aux);
 	int maxSocket= max(max(master.consola.nfds,master.cpu.nfds),max(master.listenCPU+1,master.listenConsola+1));
 	int p;
 	//printf("max: %i\nSockets:", maxSocket);

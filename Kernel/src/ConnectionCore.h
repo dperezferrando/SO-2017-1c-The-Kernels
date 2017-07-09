@@ -71,7 +71,7 @@ int sonIguales(char* s1, char* s2);
 int obtenerPosicionSemaforo(char* c);
 int obtenerValorSemaforo(char* c);
 void enviarAColaDelSemaforo(char* c, int* pid);
-int* quitarDeColaDelSemaforo(char* c);
+int quitarDeColaDelSemaforo(char* c);
 void operarSemaforo(char* c, int num);
 void waitSemaforo(char* c);
 void signalSemaforo(char* c);

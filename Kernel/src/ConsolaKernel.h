@@ -12,4 +12,5 @@ void mostrarEntradaTablaGlobalFS(entradaTablaGlobalFS* entrada);
 void mostrarProcesosEnEstado(int estado);
 void mostrarPorConsola(ProcessControl* pc);
 char* leerCaracteresEntrantes();
+void mostrarPID(PCB* pcb);
 #endif

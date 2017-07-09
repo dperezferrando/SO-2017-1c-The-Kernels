@@ -3,7 +3,7 @@
 //----------------------------------------------------Main Function---------------------------------------------------------//
 
 void handleSockets(connHandle* master, socketHandler result){
-	int p;
+	int p = 0;
 	for(p=0;p<=(result.nfds);p++)
 	{
 		if(isReading(p,result))
@@ -55,11 +55,15 @@ void recibirDeConsola(int socket, connHandle* master)
 			break;
 		case 1:
 		{
-			int tamanioScript = mensaje->header.tamanio;
-			PCB* pcb = createProcess(mensaje->data, tamanioScript);
-			newProcess(pcb, socket, mensaje->data, tamanioScript);
+			int tamanioScript = mensaje->header.tamanio + 1;
+			char* script = malloc(tamanioScript);
+			memcpy(script, mensaje->data, mensaje->header.tamanio);
+			script[mensaje->header.tamanio] = '\0';
+			PCB* pcb = createProcess(script, tamanioScript);
+			newProcess(pcb, socket, script, tamanioScript);
 			if(readyProcess() == -1)
 				puts("SE ALCANZO EL LIMITE DE MULTIPROGRAMACION - QUEDA EN NEW");
+			free(script);
 			break;
 		}
 		//Abortar procesos
@@ -456,7 +460,7 @@ int _usedFragments(t_list* page){
 void recibirDeCPU(int socket, connHandle* master)
 {
 	puts("CPU");
-	PCB* pcb= malloc(sizeof(PCB));
+	PCB* pcb;
 	Mensaje* mensaje = lRecv(socket);
 	switch(mensaje->header.tipoOperacion)
 	{
@@ -467,11 +471,10 @@ void recibirDeCPU(int socket, connHandle* master)
 			pcb = recibirPCB(mensaje);
 			puts("SE TERMINO LA EJECUCION DE UN PROCESO. SE DEBERIA ENVIAR A COLA FINALIZADO EL PCB");
 			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
-			// HAY QUE ENVIAR EL PCB RECIBIDO A LA COLA FINISHED, EN ESTE MOMENTO NO SE HACE, SE PASA EL PCB VIEJO QUE ESTA EN LA COLA EXECUTED.
+			cpuReturnsProcessTo(pcb, 9);
 			killProcess(pcb->pid,0);
 			pushearAColaCPUS(socket);
 			executeProcess();
-			free(pcb);
 			break;
 		case 2:
 			pcb = recibirPCB(mensaje);
@@ -493,10 +496,10 @@ void recibirDeCPU(int socket, connHandle* master)
 			pcb = recibirPCB(mensaje);
 			puts("PROGRAMA ABORTADO");
 			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
-			killProcess(pcb->pid,-5);
+			cpuReturnsProcessTo(pcb, 9);
+			killProcess(pcb->pid, -5);
 			executeProcess();
 			pushearAColaCPUS(socket);
-			free(pcb);
 			break;
 		case 204:
 		{
@@ -527,15 +530,20 @@ void recibirDeCPU(int socket, connHandle* master)
 			char* sem = malloc(mensaje->header.tamanio+1);
 			memcpy(sem, mensaje->data, mensaje->header.tamanio);
 			sem[mensaje->header.tamanio] = '\0';
+			puts("OBTENER VALOR");
 			if(obtenerValorSemaforo(sem) <= 0) {
+				puts("DENTRO DE IF");
 				//Aviso a CPU que hay bloqueo
 				lSend(socket, mensaje->data, 3, sizeof(int));
 				//CPU me envia el pid a bloquearse
 				Mensaje* m = lRecv(socket);
+				puts("ANTES DEL SIDA");
 				int* pidblock = malloc(sizeof(int));
 				*pidblock = *(int*)m->data;
+				puts("POST SIDA");
 				//Envio el pid a la cola del semaforo
 				enviarAColaDelSemaforo(sem, pidblock);
+				puts("POST COLA SEMAFARO");
 				free(sem);
 				destruirMensaje(m);
 			} else {
@@ -556,7 +564,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			if(laColaDelSemaforoEstaVacia(pos))
 				signalSemaforo(sem);
 			else {
-				int pid = *quitarDeColaDelSemaforo(sem);
+				int pid = quitarDeColaDelSemaforo(sem);
 				fromBlockedToReady(pid);
 			}
 			free(sem);
@@ -637,6 +645,8 @@ void recibirDeCPU(int socket, connHandle* master)
 
 void pushearAColaCPUS(int cpu)
 {
+/*	int* pCpu = malloc(sizeof(int));
+	memcpy(pCpu, &cpu, sizeof(int));*/
 	pthread_mutex_lock(&mColaCPUS);
 	queue_push(colaCPUS, cpu);
 	pthread_mutex_unlock(&mColaCPUS);
@@ -760,11 +770,13 @@ void enviarAColaDelSemaforo(char* c, int* pid) {
 	printf("EL SEMAFORO %s BLOQUEO EL PROCESO %i\n",config->SEM_IDS[pos], *pid);
 }
 
-int* quitarDeColaDelSemaforo(char* c) {
+int quitarDeColaDelSemaforo(char* c) {
 	int pos = obtenerPosicionSemaforo(c);
-	int* pid = queue_peek(list_get(listaDeColasSemaforos, pos));
-	queue_pop(list_get(listaDeColasSemaforos, pos));
-	printf("EL SEMAFORO %s DESBLOQUEO EL PROCESO %i\n",config->SEM_IDS[pos], *pid);
+	//int* pid = queue_peek(list_get(listaDeColasSemaforos, pos));
+	int* punteroPid = queue_pop(list_get(listaDeColasSemaforos, pos));
+	int pid = *punteroPid;
+	printf("EL SEMAFORO %s DESBLOQUEO EL PROCESO %i\n",config->SEM_IDS[pos], pid);
+	free(punteroPid);
 	return pid;
 }
 
@@ -790,7 +802,10 @@ void signalSemaforo(char* c) {
 
 //Me dice cuantos elementos hay en SEM_INIT
 int cantidadSemaforos() {
-	return strlen((char*)config->SEM_INIT)/ sizeof(char*);
+	int i = 0;
+	while(config->SEM_INIT[i] != NULL)
+		i++;
+	return i;
 }
 
 //Inicio la lista y las colas
@@ -801,6 +816,7 @@ void crearListaDeColasSemaforos() {
 		//Cada semaforo tiene su cola de bloqueados
 		t_queue* cola = queue_create();
 		list_add(listaDeColasSemaforos, cola);
+		printf("CREO COLA SEMAFORO POSICION: %i\n", i);
 	}
 }
 

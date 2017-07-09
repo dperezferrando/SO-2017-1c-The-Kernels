@@ -150,6 +150,10 @@ void cpuReturnsProcessTo(PCB* newPCB, int state){
 			fromExecuteToBlocked(newPCB->pid);
 			replacePCBInList(newPCB,blockedList);
 			break;
+		case 9:
+			fromExecuteToFinished(newPCB->pid);
+			replacePCBinQueue(newPCB, colaFinished);
+			break;
 	}
 
 }
@@ -249,8 +253,10 @@ int replacePCBInList(PCB* pcb,t_list* list){
 	PCB* replacedPCB= removePcbFromList(pcb->pid,list);
 	if(pcb->pid == replacedPCB->pid){
 		list_add(list,pcb);
+		destruirPCB(replacedPCB);
 		return 1;
 	}
+	destruirPCB(replacedPCB);
 	return -1;
 }
 
@@ -304,3 +310,8 @@ void _processChangeStateToList(t_list* toList, PCB* pcb, int newState){
 	modifyProcessState(pcb->pid,newState);
 }
 
+void destruirProcessControl(ProcessControl* pc)
+{
+	free(pc->script);
+	free(pc);
+}
