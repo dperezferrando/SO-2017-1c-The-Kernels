@@ -566,19 +566,17 @@ void recibirDeCPU(int socket, connHandle* master)
 			free(sem);
 			break;
 		}
-
 		case 206: // ABRIR ARCHIVO
 		{
-
 			int pid;
-			char* ruta;
-			char* permisos;
-			deserializarInfoArchivo(mensaje->data, &pid, ruta, permisos);
+			char* ruta = malloc(100);
+			char* permisos = malloc(100);
+			deserializarRutaPermisos(mensaje->data, &pid, ruta, permisos);
 			int fd = abrirArchivo(pid,ruta, permisos);
 			if(fd != -1)
 				lSend(socket, &fd, 104, sizeof(int));
 			else
-				lSend(socket, NULL, -3,0);
+				lSend(socket, NULL, -3, 0);
 			break;
 		}
 
@@ -588,6 +586,10 @@ void recibirDeCPU(int socket, connHandle* master)
 			int pid;
 			memcpy(&pid, mensaje->data, sizeof(int));
 			memcpy(&fd, mensaje->data+sizeof(int), sizeof(int));
+
+			printf("EL PID ES: %i\n", pid);
+			printf("EL FD ES: %s\n", fd);
+
 			if(!borrarArchivo(pid,fd))
 				puts("NO SE PUEDE BORRAR, HAY OTROS PROCESOS USANDOLO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
 			break;
@@ -637,6 +639,7 @@ void recibirDeCPU(int socket, connHandle* master)
 		}
 	}
 	destruirMensaje(mensaje);
+
 }
 
 void pushearAColaCPUS(int cpu)

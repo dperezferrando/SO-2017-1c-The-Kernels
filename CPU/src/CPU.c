@@ -500,6 +500,21 @@ serializado serializarRutaYPermisos(char* ruta, char* permisos)
 	return infoSerializada;
 }
 
+serializado serializarRutaPermisos(char* ruta, char* permisos) {
+	serializado s;
+	int tamRuta = strlen(ruta);
+	int tamPermisos = strlen(permisos);
+	s.size = tamRuta+tamPermisos+3*sizeof(int);
+	s.data = malloc(s.size);
+	memcpy(s.data, &pcb->pid, sizeof(int));
+	memcpy(s.data+sizeof(int), &tamRuta, sizeof(int));
+	memcpy(s.data+sizeof(int)*2, ruta, tamRuta);;
+	memcpy(s.data+sizeof(int)*2+tamRuta, &tamPermisos, sizeof(int));
+	memcpy(s.data+sizeof(int)*2+tamRuta+sizeof(int), permisos, tamPermisos);
+	return s;
+}
+
+
 serializado serializarPedidoEscrituraFS(char* data, fileInfo info)
 {
 	serializado pedido;
@@ -510,43 +525,109 @@ serializado serializarPedidoEscrituraFS(char* data, fileInfo info)
 	return pedido;
 }
 
-/* ACLARACIONES PARA POMITA:
- - CUANDO SE MANDA A ABRIR UN ARCHIVO QUE NO EXISTE EL KERNEL DEVUELVE TIPO DE OPERACION
- -3 - EL PROCESO DEBE FINALIZAR, POR LO QUE CPU DEBERIA DEVOLVER EL PCB. SI ESTA TODO OK
- - ALGUNAS DE LAS PRIMITIVAS DE ABAJO CREO QUE TIENEN LOS PARAMETROS DESACTUALIZADOS,
- ANTES DE BORRAR CHEQUEAR LOS COMENTARIOS QUE DEJE PARA COMUNICACION CON EL KERNEL
- DEVUELVE EL FD CON TIPO DE OPERACION 104 PERO EN ESTE CASO EL TIPO DE OP TE LA CHUPA
-*/
-/*	t_descriptor_archivo abrir(t_direccion_archivo, t_banderas){
- * 		// POMITA: USAR FUNCION serializarRutaYPermisos
-		return;
-	}
 
-	void borrar(t_descriptor_archivo){
-		lSend(kernel,&fileDescriptor, BORRAR_ARCHIVO,sizeof(t_descriptor_archivo));
-		return;
-	}
+char* flagsDecentes(t_banderas flags) {
+	char* cadenaFlags = string_new();
+	if(flags.lectura)
+		string_append(&cadenaFlags, "r");
+	if(flags.escritura)
+		string_append(&cadenaFlags, "w");
+	if(flags.creacion)
+		string_append(&cadenaFlags, "c");
+	return cadenaFlags;
+}
 
-	void cerrar(t_descriptor_archivo){
-		lSend(kernel,&fileDescriptor, CERRAR_ARCHIVO, sizeof(t_descriptor_archivo));
-		return;
-	}
+void deserializarRutaPermisos(void* data, int* pid, char* ruta, char* permisos) {
+	memcpy(pid, data, sizeof(int));
+	int tamRuta;
+	memcpy(&tamRuta, data+sizeof(int) , sizeof(int));
+	memcpy(ruta, data+sizeof(int)*2 , tamRuta);
+	ruta[tamRuta] = '\0';
+	int tamPermiso;
+	memcpy(&tamPermiso, data+sizeof(int)*2+tamRuta , sizeof(int));
+	memcpy(permisos, data+sizeof(int)*2+tamRuta+sizeof(int) , tamPermiso);
+	permisos[tamPermiso] = '\0';
+	printf("TAM RUTA ES: %i\n", tamRuta);
+	printf("TAM PERMISO ES: %i\n", tamPermiso);
+}
 
-	void moverCursor(t_descriptor_archivo, t_valor_variable){
-		// ENVIAR ESTRUCTURA FILEINFO A KERNEL
-		return;
+t_descriptor_archivo abrir(t_direccion_archivo ruta , t_banderas flags){
+	t_descriptor_archivo fileDescriptor;
+	serializado rutaYFlagsSerializados;
+	char* cadenaFlags = flagsDecentes(flags);
+	rutaYFlagsSerializados = serializarRutaPermisos(ruta,cadenaFlags);
+	printf("EL SIZE ES: %i\n", rutaYFlagsSerializados.size);
+	lSend(kernel, rutaYFlagsSerializados.data, ABRIR_ARCHIVO, rutaYFlagsSerializados.size);
+	Mensaje* mensaje = lRecv(kernel);
+	if (mensaje->header.tipoOperacion == -3) {
+		puts("NO EXISTE ARCHIVO");
+		estado = ACCESO_ARCHIVO_INEXISTENTE;
+		fileDescriptor = -1;
 	}
-
-	void escribir(t_descriptor_archivo fileDescriptor, void* info, t_valor_variable tamanio){
- 	 	 // USAR SERIALIZARPEDIDOESCRITURAFS
- 	 	 return;
+	else {
+		fileDescriptor = *(int*)mensaje->data;
+		printf("EL FD ES %i\n", fileDescriptor);
 	}
+	free(cadenaFlags);
+	free(rutaYFlagsSerializados.data);
+	return fileDescriptor;
+}
 
-	void leer(t_descriptor_archivo fileDescriptor, t_puntero info, t_valor_variable tamanio){
-		return;
-	}
 
-*/
+void borrar(t_descriptor_archivo fileDescriptor){
+	fileInfo fi;
+	fi.fd = fileDescriptor;
+	fi.pid = pcb->pid;
+	lSend(kernel, &fi, BORRAR_ARCHIVO, sizeof(fileInfo));
+	Mensaje* m = lRecv(kernel);
+	if(m->header.tipoOperacion == -3)
+		estado = INTENTAR_BORRAR_ARCHIVO_EN_USO;
+}
+
+void cerrar(t_descriptor_archivo fileDescriptor) {
+	fileInfo fi;
+	fi.fd = fileDescriptor;
+	fi.pid = pcb->pid;
+	lSend(kernel, &fi, CERRAR_ARCHIVO, sizeof(fileInfo));
+	Mensaje* m = lRecv(kernel);
+	if(m->header.tipoOperacion == -3)
+		estado = ARCHIVO_NULO;
+}
+
+void moverCursor(t_descriptor_archivo fileDescriptor, t_valor_variable cursor){
+	fileInfo fi;
+	fi.fd = fileDescriptor;
+	fi.pid = pcb->pid;
+	fi.cursor = cursor;
+	lSend(kernel, &fi, MOVER_CURSOR_ARCHIVO, sizeof(fileInfo));
+	Mensaje* m = lRecv(kernel);
+	if(m->header.tipoOperacion == -3)
+		estado = ARCHIVO_NULO;
+}
+
+
+void escribir(t_descriptor_archivo fileDescriptor, void* info, t_valor_variable tamanio){
+ 	 fileInfo fi;
+ 	 fi.fd = fileDescriptor;
+ 	 fi.pid = pcb->pid;
+ 	 fi.tamanio = tamanio;
+ 	 serializado escrituraSerializada = serializarPedidoEscrituraFS((char*)info, fi);
+ 	 lSend(kernel, &escrituraSerializada, ESCRIBIR_ARCHIVO, sizeof(serializado));
+ 	 Mensaje* m = lRecv(kernel);
+ 	if(m->header.tipoOperacion == -3)
+ 		estado = ESCRITURA_ARCHIVO_SIN_PERMISO;
+}
+
+void leer(t_descriptor_archivo fileDescriptor, t_puntero info, t_valor_variable tamanio){
+	fileInfo fi;
+	fi.fd = fileDescriptor;
+	fi.pid = pcb->pid;
+	fi.tamanio = tamanio;
+	lSend(kernel, &fi, LEER_ARCHIVO, sizeof(fileInfo));
+	Mensaje* m = lRecv(kernel);
+	if(m->header.tipoOperacion == -3)
+		estado = LECTURA_ARCHIVO_SIN_PERMISO;
+}
 
 
 /*t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas banderas){

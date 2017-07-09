@@ -41,6 +41,14 @@
 #define ESCRIBIR_ARCHIVO 210
 #define LEER_ARCHIVO 211
 
+
+#define ACCESO_ARCHIVO_INEXISTENTE -2
+#define LECTURA_ARCHIVO_SIN_PERMISO -3
+#define ESCRITURA_ARCHIVO_SIN_PERMISO -4
+#define INTENTAR_BORRAR_ARCHIVO_EN_USO -10
+#define ARCHIVO_NULO -11
+#define NO_DEFINIDO -20
+
 typedef struct configFile{
 	char ip_Kernel[16];
 	char puerto_Kernel[5];
@@ -103,9 +111,8 @@ AnSISOP_funciones primitivas = {
 
 AnSISOP_kernel primitivas_kernel = {
 		.AnSISOP_wait = wait,
-		.AnSISOP_signal = signal
-		/*
-		.AnSISOP_reservar = reservar,
+		.AnSISOP_signal = signal,
+		//.AnSISOP_reservar = reservar,
 		.AnSISOP_liberar = liberar,
 		.AnSISOP_abrir = abrir,
 		.AnSISOP_borrar = borrar,
@@ -113,7 +120,6 @@ AnSISOP_kernel primitivas_kernel = {
 		.AnSISOP_moverCursor = moverCursor,
 		.AnSISOP_escribir = escribir,
 		.AnSISOP_leer = leer
-		*/
 };
 
 

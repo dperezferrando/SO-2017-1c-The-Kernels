@@ -14,19 +14,32 @@ void crearEstructurasFSProceso(int pid)
 	list_add(tablasDeProcesosFS, unaTabla);
 }
 
-void deserializarInfoArchivo(char* data, int* pid, char** ruta, char** permisos)
-{
-	memcpy(&pid, data, sizeof(int));
-	int tamanioRuta;
-	memcpy(&tamanioRuta, data+sizeof(int), sizeof(int));
-	*ruta = malloc(tamanioRuta+1); // agrego 1 byte para \0
-	memcpy(*ruta, data+sizeof(int)+sizeof(int), tamanioRuta);
-	*ruta[tamanioRuta] = '\0';
-	int tamanioPermisos;
-	memcpy(&tamanioPermisos, data+sizeof(int)+sizeof(int)+tamanioRuta, sizeof(int));
-	*permisos = malloc(tamanioPermisos+1);
-	memcpy(*permisos, data+sizeof(int)+sizeof(int)+tamanioRuta+sizeof(int), tamanioPermisos);
-	*permisos[tamanioPermisos] = '\0';
+
+serializado serializarRutaPermisos(char* ruta, char* permisos) {
+	serializado s;
+	int tamRuta = strlen(ruta);
+	int tamPermisos = strlen(permisos);
+	int pid = 14;
+	s.size = tamRuta+tamPermisos+3*sizeof(int);
+	s.data = malloc(s.size);
+	memcpy(s.data, &pid, sizeof(int));
+	memcpy(s.data+sizeof(int), &tamRuta, sizeof(int));
+	memcpy(s.data+sizeof(int)*2, ruta, tamRuta);
+	memcpy(s.data+sizeof(int)*2+tamRuta, &tamPermisos, sizeof(int));
+	memcpy(s.data+sizeof(int)*2+tamRuta+sizeof(int), permisos, tamPermisos);
+	return s;
+}
+
+void deserializarRutaPermisos(void* data, int* pid, char* ruta, char* permisos) {
+	memcpy(pid, data, sizeof(int));
+	int tamRuta;
+	memcpy(&tamRuta, data+sizeof(int) , sizeof(int));
+	memcpy(ruta, data+sizeof(int)*2 , tamRuta);
+	ruta[tamRuta] = '\0';
+	int tamPermiso;
+	memcpy(&tamPermiso, data+sizeof(int)*2+tamRuta , sizeof(int));
+	memcpy(permisos, data+sizeof(int)*2+tamRuta+sizeof(int) , tamPermiso);
+	permisos[tamPermiso] = '\0';
 }
 
 int abrirArchivo(int pid, char* ruta, char* permisos)
