@@ -613,11 +613,17 @@ void recibirDeCPU(int socket, connHandle* master)
 
 		case 210: // ESCRIBIR ARCHIVO
 		{
-			char* data = malloc(100);
+
 			fileInfo info;
-			deserializarPedidoEscritura(mensaje->data, data,&info);
+			char* data = deserializarPedidoEscritura(mensaje->data,&info);
+			printf("[ESCRITURA]: PID: %i | FD: %i | TAMANIO: %i\n", info.pid, info.fd, info.tamanio);
 			if(!escribirArchivo(info, data))
+			{
 				puts("CPU NO PUEDE ESCRIBIR DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				lSend(socket, NULL, -3 ,0);
+			}
+			else
+				lSend(socket, NULL, 104, 0);
 			free(data);
 			break;
 		}
@@ -654,11 +660,13 @@ void matarSiCorresponde(int pid,int exitCode)
 	if(pc->toBeKilled == 1)
 		killProcess(pid,exitCode);
 }
-void deserializarPedidoEscritura(char* serializado, char** data, fileInfo* info)
+char* deserializarPedidoEscritura(char* serializado, fileInfo* info)
 {
+
 	memcpy(info, serializado, sizeof(fileInfo));
-	*data = malloc(info->tamanio);
-	memcpy(*data, serializado+sizeof(fileInfo), info->tamanio);
+	char* data = malloc(info->tamanio);
+	memcpy(data, serializado+sizeof(fileInfo), info->tamanio);
+	return data;
 }
 
 void aceptarNuevoCPU(int unCPU)

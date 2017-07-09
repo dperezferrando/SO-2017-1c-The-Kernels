@@ -39,7 +39,7 @@ serializado serializarPedidoEscritura(char* ruta, int offset, int size, char* da
 
 tablaDeProceso* crearTablaDeProceso(int pid);
 serializado serializarRutaPermisos(char* ruta, char* permisos);
-void deserializarRutaPermisos(void* data, int* pid, char* ruta, char* permisos);
+char* deserializarPedidoEscritura(char* serializado, fileInfo* info);
 
 
 #endif

@@ -611,6 +611,8 @@ void escribir(t_descriptor_archivo fileDescriptor, void* info, t_valor_variable 
  	 fi.fd = fileDescriptor;
  	 fi.pid = pcb->pid;
  	 fi.tamanio = tamanio;
+ 	 fi.cursor = -1;
+ 	 printf("[ESCRIBIR]: ESCRIBO '%s' | FD: %i | SIZE: %i\n", (char*)info, fileDescriptor, tamanio);
  	 serializado escrituraSerializada = serializarPedidoEscrituraFS((char*)info, fi);
  	 lSend(kernel, escrituraSerializada.data, ESCRIBIR_ARCHIVO, escrituraSerializada.size);
  	 Mensaje* m = lRecv(kernel);

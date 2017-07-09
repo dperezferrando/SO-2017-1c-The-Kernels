@@ -200,10 +200,11 @@ void destruirEntradaTablaProceso(entradaTablaFSProceso* entrada)
 void imprimirPorPantalla(fileInfo info, char* data)
 {
 	char* impresion = malloc(info.tamanio+1);
-	strcpy(impresion, data);
+	memcpy(impresion, data, info.tamanio);
 	impresion[info.tamanio] = '\0';
 	ProcessControl* pc= PIDFind(info.pid);
-	lSend(pc->consola, impresion, 2, info.tamanio+1);
+	printf("[IMPRIMIR]: PID %i IMPRIMIE: %s\n", pc->pid, data);
+	lSend(pc->consola, impresion, 1, info.tamanio+1);
 	free(impresion);
 
 }

@@ -29,13 +29,13 @@ all: CPU
 CPU: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/dario/Escritorio/tp-2017-1c-The-Kernels/ConfigLibrary/src" -o "CPU" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/utnso/Escritorio/tp-2017-1c-The-Kernels/ConfigLibrary/src" -o "CPU" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(EXECUTABLES)$(OBJS)$(C_DEPS) CPU
+	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) CPU
 	-@echo ' '
 
 .PHONY: all clean dependents
