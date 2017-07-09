@@ -90,6 +90,8 @@ Mensaje* lRecv(int receiver)
 		mensaje->data = malloc(tamanioData);
 		internalRecv(receiver, mensaje->data, tamanioData);
 	}
+	else
+		mensaje->data = NULL;
 	return mensaje;
 
 }
@@ -132,7 +134,8 @@ void lSend(int sender, void* msg, int tipoOperacion, int size){
 
 void destruirMensaje(Mensaje* mensaje)
 {
-	free(mensaje->data);
+	if(mensaje->data != NULL)
+		free(mensaje->data);
 	free(mensaje);
 }
 

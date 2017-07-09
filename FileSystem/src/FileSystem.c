@@ -1,12 +1,11 @@
 #include "FileSystem.h"
 
+configFile* config;
+metadata* metad;
+
 int main(int argc, char** argsv) {
-	configFile* config;
-	metadata* metad;
-	config = configurate(ruta_Conf, leerArchivoConfig, keys);
-	metad = configurate(ruta_Meta, leerArchivoMetadata, metaKeys);
-	cantBloq= metad->cantidad_Bloques;
-	tamBloq= metad->tamanio_Bloques;
+	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/FileSystem/Debug/filesystem.conf", leerArchivoConfig, keys);
+	levantarPaths();
 	levantarBitmap();
 	puts("bitmap levantado");
 	//return EXIT_SUCCESS;
@@ -15,12 +14,10 @@ int main(int argc, char** argsv) {
 	//testsmuycabezitas();
 	//while(1){puts("listo");}
 	kernel = getBindedSocket("127.0.0.1", config->puerto);
-	while(1){
 	lListen(kernel, 5);
-		puts("ESPERANDO AL KERNEL");
-		conexion = lAccept(kernel, KERNEL_ID);
-		esperarOperacion();
-	}
+	puts("ESPERANDO AL KERNEL");
+	conexion = lAccept(kernel, KERNEL_ID);
+	esperarOperacion();
 	close(kernel);
 	free(config);
 	free(metad);
@@ -29,336 +26,178 @@ int main(int argc, char** argsv) {
 	return EXIT_SUCCESS;
 }
 
-testsmuycabezitas(){ //no se rian los estoy haciendo asi para comitearselos rapido
-		bloques* bloqs;
-		int *bloques;
-		//test1 validarchexistente
-		if (validarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/existo.bin")==0){
-			puts("piola test1");
-		}
-		else puts("error test1");
-		//test1
-
-		//test2 validarchnoexistente
-		if (validarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/NOexisto.bin")==0){
-			puts("error test2");
-		}
-		else puts("piola test2");
-		//test2
-
-		//test3 crear
-		crearArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin");
-		bloqs=getbloques("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin");
-		bloques = bloqs->bloques;
-		char* rutablq = rutabloque(bloques[0]);
-		//free (bloques);
-		if (validarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin")==0){
-			if (validarArchivo(rutablq)==0){
-				puts("piola test3");
-			}
-			else puts("error test3");
-		}
-		else puts("error test3");
-		free(bloqs);
-		free(bloques);
-		//test3
-
-		//test4 borrar creado
-		 borrarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin");
-		 if (validarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin")==0){
-		 	puts("error test4");
-		 }else if(validarArchivo(rutablq)==0){
-			 puts("error test4");
-		 		}
-		 		else puts("piola test4");
-		 free(rutablq);
-		//test4
-
-		//test5 crear archivo con 35 bloques
-		 crearArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin");
-		 int i;
-		 int cont=0;
-		 for(i=0;i<34;i++){
-		 addbloque("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin");
-		 }
-		 bloqs=getbloques("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin");
-		 bloques = bloqs->bloques;
-		 if (validarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin")==0){
-			 int j;
-			 for(j=0;j<=34;j++){
-				char* rutablq = rutabloque(bloques[j]);
-				if (validarArchivo(rutablq)==0){
-					cont++;
-				}
-				free(rutablq);
-			}
-		 	if(cont==35){
-		 		puts("piola test5");
-		 	}
-		 	else puts("error test5");
-		 	}
-		 else puts("error test5");
-		free (bloqs);
-		free (bloques);
-		//test5
-
-		//test6 quitar un bloque
-		 quitarUltimoBloque("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin");
-		 bloqs=getbloques("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin");
-		 bloques = bloqs->bloques;
-		 if(bloqs->tamanio==34){
-			 puts("piola test6");
-		 }
-		 else puts("error test6");
-		 free (bloqs);
-		 free (bloques);
-		//test6
-
-		//test7 borrar archivo con muchos bloques
-		 cont=0;
-		 bloqs=getbloques("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin");
-		 bloques = bloqs->bloques;
-		 borrarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin");
-		 if (validarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin")==0){
-			puts("error test4");
-		 }
-		 else{
-			int i;
-			if (validarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin")==-1){
-				for(i=0;i<34;i++){
-					char* rutablq = rutabloque(bloques[0]);
-					if(validarArchivo(rutablq)==-1){
-						cont++;
-					}
-					free(rutablq);
-				}
-			if(cont==34){
-				puts("piola test7");
-			}
-			else	puts("error test7");
-		}
-		else puts("error test7");
-		free (bloques);
-		free(bloqs);
-	}
-		//test7
-
-		//test8 //Leer
-		char* buffer=leerArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/leeme.bin",0,4);
-		char *hola="hola";
-		if(*buffer==*hola){
-			puts("piola test8");
-		}
-		else puts("error test8");
-		free(buffer);
-		//test8
-
-		//test9 LEER con offset
-		buffer=leerArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/leeme2.bin",5,4);
-		if(*buffer==*hola){
-		 	puts("piola test9");
-		}
-		else puts("error test9");
-		free(buffer);
-		//test9
-
-		//test10 //Crea,escribe,lee(luego lo borra)
-		crearArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin");
-		escribirArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin",0,5,"piola");
-		buffer=leerArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin",0,5);
-		char *piola="piola";
-		if(*buffer==*piola){
-			puts("piola test10");
-		}
-		else puts("error test10");
-		free(buffer);
-		borrarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin");
-		//test10
-
-		//test11 //Crea,escribe,lee(luego lo borra) (gran size)
-		crearArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin");
-		escribirArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin",0,10,"piolaaaaaa");
-		buffer=leerArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin",0,10);
-		piola="piolaaaaaa";
-		if(*buffer==*piola){
-			puts("piola test11");
-		}
-		else puts("error test11");
-		free(buffer);
-		borrarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin");
-		//test11
-
-		//test12 //Crea,escribe,lee(luego lo borra) (gran size con offset)
-		crearArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin");
-		escribirArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin",0,10,"piolaaaaaa");
-		escribirArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin",10,2,"xd");
-		buffer=leerArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin",0,12);
-		piola="piolaaaaaaxd";
-		if(*buffer==*piola){
-			puts("piola test12");
-		}
-		else puts("error test12");
-		free(buffer);
-		borrarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin");
-		//test12
-
-		//test13 //Crea,escribe,lee(luego lo borra) (gran size con offset y sobreescritura)
-		crearArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin");
-		escribirArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin",0,10,"piolaaaaaa");
-		escribirArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin",7,2,"xd");
-		buffer=leerArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin",0,10);
-		piola="piolaaaxda";
-		if(*buffer==*piola){
-			puts("piola test13");
-		}
-		else puts("error test13");
-		free(buffer);
-		borrarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin");
-		//test13
+void levantarPaths()
+{
+	ruta_CMeta = string_from_format("%s/Metadata/", config->punto_montaje);
+	ruta_Meta = string_from_format("%sMetadata.bin", ruta_CMeta);
+	ruta_BitM = string_from_format("%s/Metadata/Bitmap.bin", config->punto_montaje);
+	ruta_Arch = string_from_format("%s/Archivos", config->punto_montaje);
+	ruta_Blqs = string_from_format("%s/Bloques/", config->punto_montaje);
+//	tamRuta_Conf = strlen(ruta_Conf);
+	tamRuta_Meta = strlen(ruta_Meta);
+	tamRuta_BitM = strlen(ruta_BitM);
+	tamRuta_CMeta = strlen(ruta_CMeta);
+	tamRuta_Blqs = strlen(ruta_Blqs);
+	tamRuta_Arch = strlen(ruta_Arch);
+	metad = configurate(ruta_Meta, leerArchivoMetadata, metaKeys);
+	cantBloq= metad->cantidad_Bloques;
+	tamBloq= metad->tamanio_Bloques;
 }
+
 
 void esperarOperacion()
 {
 	puts("Esperando Operacion");
-	Mensaje* mensaje = lRecv(conexion);
-	puts("Operacion recibida");
-	int sizePath;
-	//char* path;
-	int offset;
-	int  size;
-	int sizeBuffer;
-	//char* buffer;
-	switch(mensaje->header.tipoOperacion){
-		case -1:
-			puts("MURIO EL KERNEL /FF");
-			exit(EXIT_FAILURE);
-			break;
-		case 1:
-		{
-			// verificar archivo
-			char* path = agregarBarraCero(mensaje->data, mensaje->header.tamanio);
-			// LO QUE HAYA QUE HACER PARA VALIDAR EL ARCHIVO
-			// DEVOLVER CON lSend OPERACION 104 y EL ARCHIVO ES VALIDO, SINO
-			// NUMERO NEGATIVO QUE NO SEA -1
+	while(1)
+	{
+		Mensaje* mensaje = lRecv(conexion);
+		puts("Operacion recibida");
+		int sizePath;
+		//char* path;
+		int offset;
+		int  size;
+		int sizeBuffer;
+		//char* buffer;
+		switch(mensaje->header.tipoOperacion){
+			case -1:
+				puts("MURIO EL KERNEL /FF");
+				exit(EXIT_FAILURE);
+				break;
+			case 1:
+			{
+				// verificar archivo
+				puts("VERIFICAR ARCHIVO");
+				char* path = agregarBarraCero(mensaje->data, mensaje->header.tamanio);
+				// LO QUE HAYA QUE HACER PARA VALIDAR EL ARCHIVO
+				// DEVOLVER CON lSend OPERACION 104 y EL ARCHIVO ES VALIDO, SINO
+				// NUMERO NEGATIVO QUE NO SEA -1
 
-			free(path);
-			break;
-		}
-
-
-		/*case 2:{
-			//Op.abrir
-			memcpy(flagC,mensaje->data,sizeof(int));
-			memcpy(flagR,mensaje->data + sizeof(int),sizeof(int));
-			memcpy(flagW,mensaje->data + sizeof(int)*2,sizeof(int));
-			memcpy(sizePath, mensaje->data + sizeof(int)*3, sizeof(int));
-			memcpy(path, mensaje->data + sizeof(int)*4, sizePath);
-			int retorno = validarArchivo(path);
-			if(retorno==0){
-				retornoDePath(path);
+				int retorno = validarArchivo(path);
+				if(retorno==-1)
+					lSend(conexion, NULL, -5,0);
+				else
+					lSend(conexion, NULL, 104, 0);
+				free(path);
+				break;
 			}
-			if(retorno==-1){
-				if(flagC==1){
-					int result = crearArchivo(path);
-					if(result==-1){
-						lSend(kernel, 0, 1, sizeof(int));
-					}
+
+
+			/*case 2:{
+				//Op.abrir
+				memcpy(flagC,mensaje->data,sizeof(int));
+				memcpy(flagR,mensaje->data + sizeof(int),sizeof(int));
+				memcpy(flagW,mensaje->data + sizeof(int)*2,sizeof(int));
+				memcpy(sizePath, mensaje->data + sizeof(int)*3, sizeof(int));
+				memcpy(path, mensaje->data + sizeof(int)*4, sizePath);
+				int retorno = validarArchivo(path);
+				if(retorno==0){
 					retornoDePath(path);
 				}
-				else{
-					lSend(kernel, 0, 1, sizeof(int));
+				if(retorno==-1){
+					if(flagC==1){
+						int result = crearArchivo(path);
+						if(result==-1){
+							lSend(kernel, 0, 1, sizeof(int));
+						}
+						retornoDePath(path);
+					}
+					else{
+						lSend(kernel, 0, 1, sizeof(int));
+					}
 				}
-			}
-			break;
-		}*/
-		/*case 1:{
-			//Op.crear
-			memcpy(flagC,mensaje->data,sizeof(int));
-			memcpy(flagR,mensaje->data + sizeof(int),sizeof(int));
-			memcpy(flagW,mensaje->data + sizeof(int)*2,sizeof(int));
-			memcpy(sizePath, mensaje->data + sizeof(int)*3, sizeof(int));
-			memcpy(path, mensaje->data + sizeof(int)*4, sizePath);
-			crearArchivo(path);
-			break;
-		}*/
-		case 2:{
-			//Op.leer
-			char* path;
-			memcpy(sizePath, mensaje->data, sizeof(int));
-			path = agregarBarraCero(mensaje->data + sizeof(int), sizePath);
-			memcpy(offset, mensaje->data+ sizeof(int) +sizePath, sizeof(int));
-			memcpy(size, mensaje->data + sizeof(int)*2 + sizePath, sizeof(int));
-			// NO SE VALIDA, SE VALIDO CUANDO SE ABRIO EL ARCHIVO, SI EL PEDIDO ES INCORRECTO YA LO CHEQUEO EL KERNEL
-		/*	int retorno = validarArchivo(path);
-			if(retorno==-1){
-				lSend(kernel, 0, 1, sizeof(int));
 				break;
 			}*/
-			char* buffer = leerArchivo(path,offset,size);
-			// ESTE CHEQUEO NO SE QUE ES PERO CAPAZ NO ES NECESARIO, POR AHORA EL KERNEL LO IGNORA
-			if(buffer=="-1"){
-				lSend(kernel, 0, 1, sizeof(int));
+			/*case 1:{
+				//Op.crear
+				memcpy(flagC,mensaje->data,sizeof(int));
+				memcpy(flagR,mensaje->data + sizeof(int),sizeof(int));
+				memcpy(flagW,mensaje->data + sizeof(int)*2,sizeof(int));
+				memcpy(sizePath, mensaje->data + sizeof(int)*3, sizeof(int));
+				memcpy(path, mensaje->data + sizeof(int)*4, sizePath);
+				crearArchivo(path);
+				break;
+			}*/
+			case 2:{
+				//Op.leer
+				char* path;
+				memcpy(sizePath, mensaje->data, sizeof(int));
+				path = agregarBarraCero(mensaje->data + sizeof(int), sizePath);
+				memcpy(offset, mensaje->data+ sizeof(int) +sizePath, sizeof(int));
+				memcpy(size, mensaje->data + sizeof(int)*2 + sizePath, sizeof(int));
+				// NO SE VALIDA, SE VALIDO CUANDO SE ABRIO EL ARCHIVO, SI EL PEDIDO ES INCORRECTO YA LO CHEQUEO EL KERNEL
+			/*	int retorno = validarArchivo(path);
+				if(retorno==-1){
+					lSend(kernel, 0, 1, sizeof(int));
+					break;
+				}*/
+				char* buffer = leerArchivo(path,offset,size);
+				// ESTE CHEQUEO NO SE QUE ES PERO CAPAZ NO ES NECESARIO, POR AHORA EL KERNEL LO IGNORA
+				if(buffer=="-1"){
+					lSend(conexion, 0, 1, sizeof(int));
+					free(buffer);
+					break;
+				}
+				//enviar el buffer
+				lSend(conexion, buffer, 2, sizeof(char)*size);
 				free(buffer);
 				break;
 			}
-			//enviar el buffer
-			lSend(kernel, buffer, 2, sizeof(char)*size);
-			free(buffer);
-			break;
-		}
-		case 3:{
-			//Op.escribir
-			char* buffer;
-			memcpy(sizePath, mensaje->data, sizeof(int));
-			char* path = agregarBarraCero(mensaje->data + sizeof(int), sizePath);
-			memcpy(offset, mensaje->data+ sizeof(int) +sizePath, sizeof(int));
-			memcpy(size, mensaje->data + sizeof(int)*2 +sizePath, sizeof(int));
-			memcpy(buffer, mensaje->data + sizeof(int)*3 + sizePath, size);
-			// IDEM LEER
-		/*	int retorno = validarArchivo(path);
-			if(retorno==-1){
-				lSend(kernel, 0, 1, sizeof(int));
-				break;
-			}*/
-			// IDEM LEER, PUEDE NO SER NECESARIO
-			int result = escribirArchivo(path,offset,size,buffer);
-			if(result==-1){
-				lSend(kernel, 0, 1, sizeof(int));
-				break;
-			}
-			// WHY? EL KERNEL YA CONOCE EL PATH
-			//retornoDePath(path);
-			break;
-		}
-		case 5:{
-			//Op.borrar
-			memcpy(sizePath, mensaje->data, sizeof(int));
-			char* path = agregarBarraCero(mensaje->data+sizeof(int), sizePath);
-			// IDEM
-		/*	int retorno = validarArchivo(path);
-			if(retorno==-1){
-				lSend(kernel, 0, 1, sizeof(int));
-				break;
-			}*/
-			int result = borrarArchivo(path);
-			// IDEM
-			if(result==-1){
-				lSend(kernel, 0, 1, sizeof(int));
+			case 3:{
+				//Op.escribir
+				char* buffer;
+				memcpy(sizePath, mensaje->data, sizeof(int));
+				char* path = agregarBarraCero(mensaje->data + sizeof(int), sizePath);
+				memcpy(offset, mensaje->data+ sizeof(int) +sizePath, sizeof(int));
+				memcpy(size, mensaje->data + sizeof(int)*2 +sizePath, sizeof(int));
+				memcpy(buffer, mensaje->data + sizeof(int)*3 + sizePath, size);
+				// IDEM LEER
+			/*	int retorno = validarArchivo(path);
+				if(retorno==-1){
+					lSend(kernel, 0, 1, sizeof(int));
+					break;
+				}*/
+				// IDEM LEER, PUEDE NO SER NECESARIO
+				int result = escribirArchivo(path,offset,size,buffer);
+				if(result==-1){
+					lSend(conexion, 0, 1, sizeof(int));
+					break;
+				}
+				// WHY? EL KERNEL YA CONOCE EL PATH
+				//retornoDePath(path);
 				break;
 			}
-			// CREO QUE NO LO NECESITA
-			//lSend(kernel, 1, 1, sizeof(int));
-			break;
+			case 5:{
+				//Op.borrar
+				memcpy(sizePath, mensaje->data, sizeof(int));
+				char* path = agregarBarraCero(mensaje->data+sizeof(int), sizePath);
+				// IDEM
+			/*	int retorno = validarArchivo(path);
+				if(retorno==-1){
+					lSend(kernel, 0, 1, sizeof(int));
+					break;
+				}*/
+				int result = borrarArchivo(path);
+				// IDEM
+				if(result==-1){
+					lSend(conexion, 0, 1, sizeof(int));
+					break;
+				}
+				// CREO QUE NO LO NECESITA
+				//lSend(kernel, 1, 1, sizeof(int));
+				break;
+			}
+			case 4:
+			{
+				// CREAR ARCHIVO
+				puts("CREAR ARCHIVO");
+				char* path = agregarBarraCero(mensaje->data, mensaje->header.tamanio);
+				if(crearArchivo(path) == -1)
+					puts("ALGO FALLO");
+				free(path);
+			}
 		}
-		case 4:
-		{
-			// CREAR ARCHIVO
-			char* path = agregarBarraCero(mensaje->data, mensaje->header.tamanio);
-			// HACER LA MAGIA
-			free(path);
-		}
+		destruirMensaje(mensaje);
 	}
-	destruirMensaje(mensaje);
 }
 
 char* agregarBarraCero(char* data, int tamanio)
@@ -369,13 +208,15 @@ char* agregarBarraCero(char* data, int tamanio)
 	return path;
 }
 
-int validarArchivo(char* path){
+int validarArchivo(char* pathRelativa){
+	char* path = string_from_format("%s%s.bin", ruta_Arch, pathRelativa);
 	FILE *arch;
 	arch = fopen (path,"r");
 	if (arch==NULL){
 		return -1;
 	}
 	fclose(arch);
+	free(path);
 	return 0;
 	/*archivo* arch;
 	arch = configurate(path, leerArch, archKeys);
@@ -389,7 +230,8 @@ int validarArchivo(char* path){
 	lSend(conexion,  tamanio, 1, sizeof(int));
 }*/
 
-int crearArchivo(char* path){
+int crearArchivo(char* pathRelativa){
+	char* path = string_from_format("%s%s.bin", ruta_Arch, pathRelativa);
 	FILE *arch;
 	arch = fopen (path,"w");
 	if (arch==NULL){
@@ -436,6 +278,7 @@ int crearArchivo(char* path){
 	free(ruta_Blq);
 	free(Sbloque);
 	free(sbloques);
+	free(path);
 	return 0;
 }
 
@@ -1207,9 +1050,10 @@ retornoDePath(path){
 
 configFile* leerArchivoConfig(t_config* configHandler){
 	configFile* config= malloc(sizeof(configFile));
-	strcpy(config->puerto, config_get_string_value(configHandler, "PUERTO"));
-	strcpy(config->punto_montaje,config_get_string_value(configHandler, "PUNTO_MONTAJE"));
-	config_destroy(configHandler);
+	config->puerto = config_get_string_value(configHandler, "PUERTO");
+	printf("FFSFASFAS: %s\n", config->puerto);
+	config->punto_montaje = config_get_string_value(configHandler, "PUNTO_MONTAJE");
+	//config_destroy(configHandler);
 	imprimirConfig(config);
 	return config;
 }
@@ -1262,4 +1106,192 @@ char* IntToString(entero){
 		chars[cont2]= (char)ints[i-1];
 	}
 	return chars;
+}
+
+testsmuycabezitas(){ //no se rian los estoy haciendo asi para comitearselos rapido
+		bloques* bloqs;
+		int *bloques;
+		//test1 validarchexistente
+		if (validarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/existo.bin")==0){
+			puts("piola test1");
+		}
+		else puts("error test1");
+		//test1
+
+		//test2 validarchnoexistente
+		if (validarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/NOexisto.bin")==0){
+			puts("error test2");
+		}
+		else puts("piola test2");
+		//test2
+
+		//test3 crear
+		crearArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin");
+		bloqs=getbloques("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin");
+		bloques = bloqs->bloques;
+		char* rutablq = rutabloque(bloques[0]);
+		//free (bloques);
+		if (validarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin")==0){
+			if (validarArchivo(rutablq)==0){
+				puts("piola test3");
+			}
+			else puts("error test3");
+		}
+		else puts("error test3");
+		free(bloqs);
+		free(bloques);
+		//test3
+
+		//test4 borrar creado
+		 borrarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin");
+		 if (validarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin")==0){
+		 	puts("error test4");
+		 }else if(validarArchivo(rutablq)==0){
+			 puts("error test4");
+		 		}
+		 		else puts("piola test4");
+		 free(rutablq);
+		//test4
+
+		//test5 crear archivo con 35 bloques
+		 crearArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin");
+		 int i;
+		 int cont=0;
+		 for(i=0;i<34;i++){
+		 addbloque("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin");
+		 }
+		 bloqs=getbloques("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin");
+		 bloques = bloqs->bloques;
+		 if (validarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin")==0){
+			 int j;
+			 for(j=0;j<=34;j++){
+				char* rutablq = rutabloque(bloques[j]);
+				if (validarArchivo(rutablq)==0){
+					cont++;
+				}
+				free(rutablq);
+			}
+		 	if(cont==35){
+		 		puts("piola test5");
+		 	}
+		 	else puts("error test5");
+		 	}
+		 else puts("error test5");
+		free (bloqs);
+		free (bloques);
+		//test5
+
+		//test6 quitar un bloque
+		 quitarUltimoBloque("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin");
+		 bloqs=getbloques("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin");
+		 bloques = bloqs->bloques;
+		 if(bloqs->tamanio==34){
+			 puts("piola test6");
+		 }
+		 else puts("error test6");
+		 free (bloqs);
+		 free (bloques);
+		//test6
+
+		//test7 borrar archivo con muchos bloques
+		 cont=0;
+		 bloqs=getbloques("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin");
+		 bloques = bloqs->bloques;
+		 borrarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin");
+		 if (validarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin")==0){
+			puts("error test4");
+		 }
+		 else{
+			int i;
+			if (validarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/MeCreo.bin")==-1){
+				for(i=0;i<34;i++){
+					char* rutablq = rutabloque(bloques[0]);
+					if(validarArchivo(rutablq)==-1){
+						cont++;
+					}
+					free(rutablq);
+				}
+			if(cont==34){
+				puts("piola test7");
+			}
+			else	puts("error test7");
+		}
+		else puts("error test7");
+		free (bloques);
+		free(bloqs);
+	}
+		//test7
+
+		//test8 //Leer
+		char* buffer=leerArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/leeme.bin",0,4);
+		char *hola="hola";
+		if(*buffer==*hola){
+			puts("piola test8");
+		}
+		else puts("error test8");
+		free(buffer);
+		//test8
+
+		//test9 LEER con offset
+		buffer=leerArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/leeme2.bin",5,4);
+		if(*buffer==*hola){
+		 	puts("piola test9");
+		}
+		else puts("error test9");
+		free(buffer);
+		//test9
+
+		//test10 //Crea,escribe,lee(luego lo borra)
+		crearArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin");
+		escribirArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin",0,5,"piola");
+		buffer=leerArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin",0,5);
+		char *piola="piola";
+		if(*buffer==*piola){
+			puts("piola test10");
+		}
+		else puts("error test10");
+		free(buffer);
+		borrarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin");
+		//test10
+
+		//test11 //Crea,escribe,lee(luego lo borra) (gran size)
+		crearArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin");
+		escribirArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin",0,10,"piolaaaaaa");
+		buffer=leerArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin",0,10);
+		piola="piolaaaaaa";
+		if(*buffer==*piola){
+			puts("piola test11");
+		}
+		else puts("error test11");
+		free(buffer);
+		borrarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin");
+		//test11
+
+		//test12 //Crea,escribe,lee(luego lo borra) (gran size con offset)
+		crearArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin");
+		escribirArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin",0,10,"piolaaaaaa");
+		escribirArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin",10,2,"xd");
+		buffer=leerArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin",0,12);
+		piola="piolaaaaaaxd";
+		if(*buffer==*piola){
+			puts("piola test12");
+		}
+		else puts("error test12");
+		free(buffer);
+		borrarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin");
+		//test12
+
+		//test13 //Crea,escribe,lee(luego lo borra) (gran size con offset y sobreescritura)
+		crearArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin");
+		escribirArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin",0,10,"piolaaaaaa");
+		escribirArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin",7,2,"xd");
+		buffer=leerArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin",0,10);
+		piola="piolaaaxda";
+		if(*buffer==*piola){
+			puts("piola test13");
+		}
+		else puts("error test13");
+		free(buffer);
+		borrarArchivo("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/tests/ParaEscribir.bin");
+		//test13
 }

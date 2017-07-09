@@ -14,6 +14,7 @@
 #include "../../ConfigLibrary/src/Configuration.c"
 #include "../../SocketLibrary/src/SocketLibrary.c"
 
+
 int kernel;
 int conexion;
 int flagC;
@@ -24,25 +25,25 @@ int tamBloq;
 char* bitarray;
 t_bitarray* Ebitarray;
 #define CONFIG_FILE "filesystem.conf"
-#define ruta_Conf "/home/utnso/Escritorio/tp-2017-1c-The-Kernels/mnt/filesystem.conf"
-#define	ruta_Meta "/home/utnso/Escritorio/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Metadata/Metadata.bin"
-#define	ruta_BitM "/home/utnso/Escritorio/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Metadata/Bitmap.bin"
-#define	ruta_CMeta "/home/utnso/Escritorio/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Metadata/"
-#define	ruta_Blqs "/home/utnso/Escritorio/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Bloques/"
-#define	ruta_Arch "/home/utnso/Escritorio/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Archivos/"
-int tamRuta_Conf = strlen(ruta_Conf);
-int tamRuta_Meta = strlen(ruta_Meta);
-int tamRuta_BitM = strlen(ruta_BitM);
-int tamRuta_CMeta = strlen(ruta_CMeta);
-int tamRuta_Blqs = strlen(ruta_Blqs);
-int tamRuta_Arch = strlen(ruta_Arch);
+char* ruta_Conf;
+char* ruta_Meta;
+char* ruta_BitM;
+char* ruta_CMeta;
+char* ruta_Blqs;
+char* ruta_Arch;
+int tamRuta_Conf;
+int tamRuta_Meta;
+int tamRuta_BitM;
+int tamRuta_CMeta;
+int tamRuta_Blqs;
+int tamRuta_Arch;
 const char* keys[3] = {"PUERTO", "PUNTO_MONTAJE" , "NULL"};
 const char* metaKeys[4]={"TAMANIO_BLOQUES","CANTIDAD_BLOQUES","MAGIC_NUMBER","NULL"};
 const char* archKeys[3] = {"TAMANIO", "BLOQUES" , "NULL"};
 
 typedef struct {
-	char puerto[5];
-	char punto_montaje [15];
+	char* puerto;
+	char* punto_montaje;
 } configFile;
 
 typedef struct {

@@ -133,7 +133,7 @@ void mostrarTablaDeArchivosProceso(int pid)
 	if(tabla == NULL)
 		puts("NO TIENE ARCHIVOS");
 	else
-		list_iterate(tabla, mostrarEntradaTablaArchivoProceso);
+		list_iterate(tabla->entradasTablaProceo, mostrarEntradaTablaArchivoProceso);
 }
 
 void mostrarEntradaTablaArchivoProceso(entradaTablaFSProceso* entrada)

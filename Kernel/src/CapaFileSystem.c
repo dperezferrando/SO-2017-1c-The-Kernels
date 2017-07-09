@@ -30,21 +30,24 @@ serializado serializarRutaPermisos(char* ruta, char* permisos) {
 	return s;
 }
 
-void deserializarRutaPermisos(void* data, int* pid, char* ruta, char* permisos) {
-	memcpy(pid, data, sizeof(int));
-	int tamRuta;
-	memcpy(&tamRuta, data+sizeof(int) , sizeof(int));
-	memcpy(ruta, data+sizeof(int)*2 , tamRuta);
-	ruta[tamRuta] = '\0';
-	int tamPermiso;
-	memcpy(&tamPermiso, data+sizeof(int)*2+tamRuta , sizeof(int));
-	memcpy(permisos, data+sizeof(int)*2+tamRuta+sizeof(int) , tamPermiso);
-	permisos[tamPermiso] = '\0';
+rutayPermisos deserializarRutaPermisos(void* data) {
+	rutayPermisos rp;
+	memcpy(&rp.pid, data, sizeof(int));
+	int tamanioRuta;
+	memcpy(&tamanioRuta, data+sizeof(int), sizeof(int));
+	rp.ruta = malloc(tamanioRuta+1); // agrego 1 byte para \0
+	memcpy(rp.ruta, data+sizeof(int)+sizeof(int), tamanioRuta);
+	rp.ruta[tamanioRuta] = '\0';
+	int tamanioPermisos;
+	memcpy(&tamanioPermisos, data+sizeof(int)+sizeof(int)+tamanioRuta, sizeof(int));
+	rp.permisos = malloc(tamanioPermisos+1);
+	memcpy(rp.permisos, data+sizeof(int)+sizeof(int)+tamanioRuta+sizeof(int), tamanioPermisos);
+	rp.permisos[tamanioPermisos] = '\0';
+	return rp;
 }
 
 int abrirArchivo(int pid, char* ruta, char* permisos)
 {
-	int existe;
 	entradaTablaGlobalFS* entradaBuscada = buscarEnTablaGlobal(ruta);
 	if(entradaBuscada == NULL)
 	{
@@ -68,18 +71,23 @@ entradaTablaGlobalFS* buscarEnTablaGlobal(char* ruta)
 
 entradaTablaGlobalFS* agregarEntradaGlobal(char* ruta, char* permisos)
 {
-	if(!archivoValido(ruta) && !strstr(permisos, "c"))
-		return NULL;
-	else
+	if(!archivoValido(ruta))
 	{
-		if(strstr(permisos, "c"))
-			lSend(conexionFS, ruta, 4, strlen(ruta));
-		entradaTablaGlobalFS* entrada = malloc(sizeof(entradaTablaGlobalFS));
-		entrada->instancias = 0;
-		strcpy(entrada->ruta, ruta);
-		list_add(tablaGlobalFS, entrada);
-		return entrada;
+		if(!strstr(permisos, "c"))
+			return NULL;
+		else
+		{
+			if(strstr(permisos, "c"))
+				lSend(conexionFS, ruta, 4, strlen(ruta));
+		}
 	}
+	entradaTablaGlobalFS* entrada = malloc(sizeof(entradaTablaGlobalFS));
+	entrada->instancias = 0;
+	entrada->ruta = malloc(strlen(ruta)+1);
+	strcpy(entrada->ruta, ruta);
+	list_add(tablaGlobalFS, entrada);
+	return entrada;
+
 }
 
 bool archivoValido(char* ruta)
@@ -106,6 +114,8 @@ int agregarEntradaTablaProceso(entradaTablaGlobalFS* entradaGlobal, int pid, cha
 	entradaTablaFSProceso* entrada = malloc(sizeof(entradaTablaFSProceso));
 	entradaGlobal->instancias++;
 	entrada->entradaGlobal = entradaGlobal;
+	entrada->flags = malloc(strlen(permisos)+1);
+	entrada->cursor = 0;
 	strcpy(entrada->flags, permisos);
 	tablaDeProceso* tablaDelProceso = encontrarTablaDelProceso(pid);
 	if(tablaDelProceso == NULL)
@@ -168,8 +178,11 @@ bool cerrarArchivo(int pid, int fd)
 	entradaTablaFSProceso* entrada = buscarEnTablaDelProceso(pid, fd);
 	if(entrada == NULL)
 		return 0;
+
 	cerrarArchivoEnTablaGlobal(entrada->entradaGlobal);
 	list_remove_and_destroy_element(tabla->entradasTablaProceo, fd-3, destruirEntradaTablaProceso);
+
+
 	return 1;
 
 }
@@ -190,11 +203,14 @@ void cerrarArchivoEnTablaGlobal(entradaTablaGlobalFS* entrada)
 void destruirEntradaGlobal(entradaTablaGlobalFS* entrada)
 {
 	free(entrada->ruta);
+	free(entrada);
 }
 
 void destruirEntradaTablaProceso(entradaTablaFSProceso* entrada)
 {
-	free(entrada->entradaGlobal);
+	/*if(entrada->entradaGlobal->instancias == 1)
+		free(entrada->entradaGlobal);*/
+	free(entrada);
 }
 
 void imprimirPorPantalla(fileInfo info, char* data)
@@ -226,6 +242,12 @@ void eliminarEntradasTabla(int pid)
 		return tabla->pid == pid;
 	}
 	list_remove_and_destroy_by_condition(tablasDeProcesosFS, mismoPID, destruirTablaProceso);
+}
+
+void eliminarEntradasDelProceso(int pid)
+{
+	int fd = 3;
+	while(cerrarArchivo(pid, fd));
 }
 
 void destruirTablaProceso(tablaDeProceso* tabla)

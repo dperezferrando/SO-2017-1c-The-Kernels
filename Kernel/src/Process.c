@@ -68,7 +68,7 @@ void killProcess(int PID,int exitCode){
 	}
 	//Verifica si esta en alguna de cola de algun semaoforo
 	quitarDeColaDelSemaforoPorKill(PID);
-	eliminarEntradasTabla(PID);
+	eliminarEntradasDelProceso(PID);
 	_modifyExitCode(PID,exitCode);
 	if(checkMultiprog() && queue_size(colaNew) >0)
 		readyProcess();

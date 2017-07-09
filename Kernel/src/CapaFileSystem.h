@@ -4,6 +4,12 @@
 #include "globales.h"
 #include "commons/string.h"
 
+typedef struct rutaYPermisos {
+	int pid;
+	char* ruta;
+	char* permisos;
+} rutayPermisos;
+
 
 bool archivoValido(char* ruta);
 bool cerrarArchivo(int pid, int fd);
@@ -18,7 +24,7 @@ char* leerArchivo(fileInfo info);
 int abrirArchivo(int pid, char* ruta, char* permisos);
 int agregarEntradaTablaProceso(entradaTablaGlobalFS* entradaGlobal, int pid, char* permisos);
 
-
+rutayPermisos deserializarRutaPermisos(void* data);
 void crearEstructurasFSProceso(int pid);
 void destruirTablaProceso(tablaDeProceso* tabla);
 void imprimirPorPantalla(fileInfo info, char* data);

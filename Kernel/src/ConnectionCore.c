@@ -568,11 +568,9 @@ void recibirDeCPU(int socket, connHandle* master)
 		}
 		case 206: // ABRIR ARCHIVO
 		{
-			int pid;
-			char* ruta = malloc(100);
-			char* permisos = malloc(100);
-			deserializarRutaPermisos(mensaje->data, &pid, ruta, permisos);
-			int fd = abrirArchivo(pid,ruta, permisos);
+
+			rutayPermisos rp = deserializarRutaPermisos(mensaje->data);
+			int fd = abrirArchivo(rp.pid,rp.ruta, rp.permisos);
 			if(fd != -1)
 				lSend(socket, &fd, 104, sizeof(int));
 			else
@@ -598,7 +596,12 @@ void recibirDeCPU(int socket, connHandle* master)
 			memcpy(&pid, mensaje->data, sizeof(int));
 			memcpy(&fd, mensaje->data+sizeof(int), sizeof(int));
 			if(!cerrarArchivo(pid, fd))
+			{
 				puts("CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				lSend(socket, NULL, -3, 0);
+			}
+			else
+				lSend(socket, NULL, 104, 0);
 			break;
 		}
 
