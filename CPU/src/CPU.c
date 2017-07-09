@@ -10,7 +10,7 @@
 #include "CPU.h"
 
 int main(int argc, char** argsv) {
-	config = configurate("/home/dario/Escritorio/tp-2017-1c-The-Kernels/CPU/Debug/CPU.conf", leer_archivo_configuracion, keys);
+	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/CPU/Debug/CPU.conf", leer_archivo_configuracion, keys);
 	iniciarConexiones();
 	while(1) // EN UN FUTURO ESTO SE CAMBIA POR EL ENVIO DE LA SEÑAL SIGUSR1
 	{
