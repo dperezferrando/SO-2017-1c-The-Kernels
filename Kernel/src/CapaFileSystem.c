@@ -66,7 +66,7 @@ entradaTablaGlobalFS* buscarEnTablaGlobal(char* ruta)
 	{
 		return !strcmp(entrada->ruta, ruta);
 	}
-	return list_find(tablaGlobalFS, tieneLaMismaRuta);
+	return list_find(tablaGlobalFS, &(tieneLaMismaRuta));
 }
 
 entradaTablaGlobalFS* agregarEntradaGlobal(char* ruta, char* permisos)
@@ -106,7 +106,8 @@ tablaDeProceso* encontrarTablaDelProceso(int pid)
 	{
 		return tabla->pid == pid;
 	}
-	return list_find(tablasDeProcesosFS, tienenMismoPid);
+	tablaDeProceso* tp= list_find(tablasDeProcesosFS, &tienenMismoPid);
+	return tp;
 }
 
 int agregarEntradaTablaProceso(entradaTablaGlobalFS* entradaGlobal, int pid, char* permisos)
@@ -180,9 +181,7 @@ bool cerrarArchivo(int pid, int fd)
 		return 0;
 
 	cerrarArchivoEnTablaGlobal(entrada->entradaGlobal);
-	list_remove_and_destroy_element(tabla->entradasTablaProceo, fd-3, destruirEntradaTablaProceso);
-
-
+	list_remove_and_destroy_element(tabla->entradasTablaProceo, fd-3, &destruirEntradaTablaProceso);
 	return 1;
 
 }
@@ -241,14 +240,16 @@ void eliminarEntradasTabla(int pid)
 	{
 		return tabla->pid == pid;
 	}
-	list_remove_and_destroy_by_condition(tablasDeProcesosFS, mismoPID, destruirTablaProceso);
+	list_remove_and_destroy_by_condition(tablasDeProcesosFS, mismoPID, &destruirTablaProceso);
 }
+
 
 void eliminarEntradasDelProceso(int pid)
 {
 	int fd = 3;
 	while(cerrarArchivo(pid, fd));
 }
+
 
 void destruirTablaProceso(tablaDeProceso* tabla)
 {

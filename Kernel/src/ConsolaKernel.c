@@ -13,7 +13,9 @@ void recibir_comandos()
 			if(comando[1] == NULL)
 			{
 				puts("-------TODOS LOS PROCESOS (INCLUYE EXIT)------");
+				//MUTEX
 				list_iterate(process, mostrarPorConsola);
+				//MUTEX
 				puts("-------TODOS LOS PROCESOS (INCLUYE EXIT)------");
 			}
 			else if(!strcmp(comando[1], "new"))
@@ -25,25 +27,33 @@ void recibir_comandos()
 			else if(!strcmp(comando[1], "ready"))
 			{
 				puts("-------COLA READY------");
+				//MUTEX
 				list_iterate(colaReady->elements, mostrarPID);
+				//MUTEX
 				puts("-------COLA READY------");
 			}
 			else if(!strcmp(comando[1], "execute"))
 			{
 				puts("-------COLA EXECUTE------");
+				//MUTEX
 				list_iterate(executeList, mostrarPID);
+				//MUTEX
 				puts("-------COLA EXECUTE------");
 			}
 			else if(!strcmp(comando[1], "blocked"))
 			{
 				puts("-------COLA BLOCKED------");
+				//MUTEX
 				list_iterate(blockedList, mostrarPID);
+				//MUTEX
 				puts("-------COLA BLOCKED------");
 			}
 			else if(!strcmp(comando[1], "exit"))
 			{
 				puts("-------COLA EXIT------");
+				//MUTEX
 				list_iterate(colaFinished->elements, mostrarPID);
+				//MUTEX
 				puts("-------COLA EXIT------");
 			}
 		}
@@ -92,7 +102,7 @@ void recibir_comandos()
 		else if(!strcmp(comando[0], "kill"))
 		{
 			int pid = atoi(comando[1]);
-			matarCuandoCorresponda(pid);
+			matarCuandoCorresponda(pid,-7);
 			printf("SE ENVIO A AJUSTICIAR EL PROCESO PID: %i. SE AJUSTICIARA CUANDO CORRESPONDA.\n", pid);
 		}
 		else if(!strcmp(comando[0], "togglePlanif"))
@@ -133,7 +143,7 @@ void mostrarTablaDeArchivosProceso(int pid)
 	if(tabla == NULL)
 		puts("NO TIENE ARCHIVOS");
 	else
-		list_iterate(tabla->entradasTablaProceo, mostrarEntradaTablaArchivoProceso);
+		list_iterate(tabla->entradasTablaProceo, &mostrarEntradaTablaArchivoProceso);
 }
 
 void mostrarEntradaTablaArchivoProceso(entradaTablaFSProceso* entrada)
@@ -144,7 +154,9 @@ void mostrarEntradaTablaArchivoProceso(entradaTablaFSProceso* entrada)
 
 void mostrarTablaDeArchivosGlobal()
 {
+	//MUTEX
 	list_iterate(tablaGlobalFS,  mostrarEntradaTablaGlobalFS);
+	//MUTEX
 }
 
 void mostrarEntradaTablaGlobalFS(entradaTablaGlobalFS* entrada)
@@ -159,7 +171,9 @@ void mostrarProcesosEnEstado(int estado)
 	{
 		return estado == pc->state;
 	}
+	//MUTEX
 	t_list* filtrados = list_filter(process, mismoEstado);
+	//MUTEX
 	list_iterate(filtrados, mostrarPorConsola);
 }
 
