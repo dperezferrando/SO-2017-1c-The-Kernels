@@ -323,7 +323,7 @@ void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor)
 	if(posicion.pagina >= limiteStack)
 	{
 		log_info(logFile, "[ESCRIBIR EN MEMORIA]: STACK OVER FLOW PAPU - PROGRAMA ABORTADO");
-		estado = ABORTADO;
+		estado = STKOF;
 		return;
 	}
 
@@ -349,7 +349,7 @@ void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor)
 		if(posicion.pagina >= limiteStack)
 		{
 			log_info(logFile, "[ESCRIBIR EN MEMORIA]: STACK OVER FLOW PAPU - PROGRAMA ABORTADO");
-			estado = ABORTADO;
+			estado = STKOF;
 			return;
 		}
 
@@ -593,7 +593,7 @@ t_descriptor_archivo abrir(t_direccion_archivo ruta , t_banderas flags){
 	Mensaje* mensaje = lRecv(kernel);
 	if (mensaje->header.tipoOperacion == -3) {
 		log_info(logFile, "NO EXISTE ARCHIVO");
-		estado = ACCESO_ARCHIVO_INEXISTENTE;
+		estado = ABORTADO;
 		fileDescriptor = -1;
 	}
 	else {
@@ -613,7 +613,7 @@ void borrar(t_descriptor_archivo fileDescriptor){
 	lSend(kernel, &fi, BORRAR_ARCHIVO, sizeof(fileInfo));
 	Mensaje* m = lRecv(kernel);
 	if(m->header.tipoOperacion == -3)
-		estado = INTENTAR_BORRAR_ARCHIVO_EN_USO;
+		estado = ABORTADO;
 }
 
 void cerrar(t_descriptor_archivo fileDescriptor) {
@@ -623,7 +623,7 @@ void cerrar(t_descriptor_archivo fileDescriptor) {
 	lSend(kernel, &fi, CERRAR_ARCHIVO, sizeof(fileInfo));
 	Mensaje* m = lRecv(kernel);
 	if(m->header.tipoOperacion == -3)
-		estado = ARCHIVO_NULO;
+		estado = ABORTADO;
 }
 
 void moverCursor(t_descriptor_archivo fileDescriptor, t_valor_variable cursor){
@@ -634,7 +634,7 @@ void moverCursor(t_descriptor_archivo fileDescriptor, t_valor_variable cursor){
 	lSend(kernel, &fi, MOVER_CURSOR_ARCHIVO, sizeof(fileInfo));
 	Mensaje* m = lRecv(kernel);
 	if(m->header.tipoOperacion == -3)
-		estado = ARCHIVO_NULO;
+		estado = ABORTADO;
 }
 
 
@@ -649,7 +649,7 @@ void escribir(t_descriptor_archivo fileDescriptor, void* info, t_valor_variable 
  	 lSend(kernel, escrituraSerializada.data, ESCRIBIR_ARCHIVO, escrituraSerializada.size);
  	 Mensaje* m = lRecv(kernel);
  	if(m->header.tipoOperacion == -3)
- 		estado = ESCRITURA_ARCHIVO_SIN_PERMISO;
+ 		estado = ABORTADO;
 }
 
 void leer(t_descriptor_archivo fileDescriptor, t_puntero info, t_valor_variable tamanio){
@@ -660,7 +660,7 @@ void leer(t_descriptor_archivo fileDescriptor, t_puntero info, t_valor_variable 
 	lSend(kernel, &fi, LEER_ARCHIVO, sizeof(fileInfo));
 	Mensaje* m = lRecv(kernel);
 	if(m->header.tipoOperacion == -3)
-		estado = LECTURA_ARCHIVO_SIN_PERMISO;
+		estado = ABORTADO;
 }
 
 

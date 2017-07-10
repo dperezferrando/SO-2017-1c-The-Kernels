@@ -35,7 +35,7 @@ SocketLibrary: $(OBJS) $(USER_OBJS)
 
 # Other Targets
 clean:
-	-$(RM) $(EXECUTABLES)$(OBJS)$(C_DEPS) SocketLibrary
+	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) SocketLibrary
 	-@echo ' '
 
 .PHONY: all clean dependents

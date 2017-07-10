@@ -145,6 +145,8 @@ entradaTablaFSProceso* buscarEnTablaDelProceso(int pid, int fd)
 char* leerArchivo(fileInfo info)
 {
 	entradaTablaFSProceso* entrada = buscarEnTablaDelProceso(info.pid, info.fd);
+	if(entrada == NULL)
+		return -1;
 	if(!strstr(entrada->flags, "r"))
 		return NULL;
 	serializado pedidoLectura = serializarPedidoLectura(entrada->entradaGlobal->ruta, entrada->cursor, info.tamanio);
@@ -164,8 +166,10 @@ bool escribirArchivo(fileInfo info, char* data)
 	else
 	{
 		entradaTablaFSProceso* entrada = buscarEnTablaDelProceso(info.pid, info.fd);
-		if(!strstr(entrada->flags, "w"))
+		if(entrada == NULL)
 			return 0;
+		if(!strstr(entrada->flags, "w"))
+			return -1;
 		serializado pedidoEscritura = serializarPedidoEscritura(entrada->entradaGlobal->ruta, entrada->cursor, info.tamanio, data);
 		lSend(conexionFS, pedidoEscritura.data, 3, pedidoEscritura.size);
 		free(pedidoEscritura.data);

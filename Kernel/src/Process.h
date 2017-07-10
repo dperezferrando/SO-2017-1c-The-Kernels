@@ -14,6 +14,7 @@
 ProcessControl* PIDFind(int);
 ProcessControl* PIDFindAndRemove(int);
 
+void matarSiCorresponde(int pid);
 void newProcess(PCB*, int, char*, int);
 PCB* fromNewToReady();
 PCB* fromReadyToExecute();

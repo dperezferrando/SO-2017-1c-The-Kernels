@@ -101,6 +101,12 @@ void newProcess(PCB* pcb, int consola, char* script, int tamanioScript)
 	list_add(process,pc);
 }
 
+void matarSiCorresponde(int pid)
+{
+	ProcessControl* pc = PIDFind(pid);
+	if(pc->toBeKilled != 0)
+		killProcess(pid,pc->toBeKilled);
+}
 
 int readyProcess(){//-1 ==> no se pudo poner en ready
 	if(checkMultiprog()){

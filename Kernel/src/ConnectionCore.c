@@ -101,7 +101,7 @@ void matarCuandoCorresponda(int pid, int exitCode)
 {
 	ProcessControl* pc = PIDFind(pid);
 	if(pc->state == 2)
-		pc->toBeKilled = 1;
+		pc->toBeKilled = exitCode;
 	else
 		killProcess(pc->pid,exitCode);
 }
@@ -594,10 +594,19 @@ void recibirDeCPU(int socket, connHandle* master)
 			break;
 		case 4:
 			pcb = recibirPCB(mensaje);
-			puts("PROGRAMA ABORTADO");
+			puts("PROGRAMA ABORTADO POR STACK OVERFLOW");
 			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
 			cpuReturnsProcessTo(pcb, 9);
 			killProcess(pcb->pid, -5);
+			executeProcess();
+			pushearAColaCPUS(socket);
+			break;
+		case 5:
+			pcb = recibirPCB(mensaje);
+			puts("PROGRAMA ABORTADO POR PROBLEMAS EN SYSCALL");
+			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
+			cpuReturnsProcessTo(pcb, 9);
+			matarSiCorresponde(pcb->pid);
 			executeProcess();
 			pushearAColaCPUS(socket);
 			break;
@@ -688,7 +697,11 @@ void recibirDeCPU(int socket, connHandle* master)
 			if(fd != -1)
 				lSend(socket, &fd, 104, sizeof(int));
 			else
+			{
+				puts("EL PROGRAMA QUISO ABRIR UN ARCHIVO QUE NO EXISTE SIN FLAG 'C'");
 				lSend(socket, NULL, -3, 0);
+				matarCuandoCorresponda(rp.pid, -2);
+			}
 			break;
 		}
 
@@ -699,7 +712,10 @@ void recibirDeCPU(int socket, connHandle* master)
 			memcpy(&pid, mensaje->data, sizeof(int));
 			memcpy(&fd, mensaje->data+sizeof(int), sizeof(int));
 			if(!borrarArchivo(pid,fd))
+			{
 				puts("NO SE PUEDE BORRAR, HAY OTROS PROCESOS USANDOLO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				matarCuandoCorresponda(pid, -20);
+			}
 			break;
 		}
 
@@ -713,6 +729,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			{
 				puts("CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
 				lSend(socket, NULL, -3, 0);
+				matarCuandoCorresponda(pid, -2);
 			}
 			else
 				lSend(socket, NULL, 104, 0);
@@ -724,7 +741,11 @@ void recibirDeCPU(int socket, connHandle* master)
 			fileInfo info;
 			memcpy(&info, mensaje->data, sizeof(fileInfo));
 			if(!moverCursorArchivo(info))
+			{
 				puts("CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				lSend(socket, NULL, -3, 0);
+				matarCuandoCorresponda(info.pid, -2);
+			}
 			break;
 		}
 
@@ -734,10 +755,19 @@ void recibirDeCPU(int socket, connHandle* master)
 			fileInfo info;
 			char* data = deserializarPedidoEscritura(mensaje->data,&info);
 			printf("[ESCRITURA]: PID: %i | FD: %i | TAMANIO: %i\n", info.pid, info.fd, info.tamanio);
-			if(!escribirArchivo(info, data))
+			int estado = escribirArchivo(info, data);
+			if(estado == -1)
 			{
-				puts("CPU NO PUEDE ESCRIBIR DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				puts("CPU NO TIENE PERMISO DE ESCRITURA DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
 				lSend(socket, NULL, -3 ,0);
+				matarCuandoCorresponda(info.pid, -4);
+
+			}
+			else if(estado == 0)
+			{
+				puts("CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				lSend(socket, NULL, -3 ,0);
+				matarCuandoCorresponda(info.pid, -2);
 			}
 			else
 				lSend(socket, NULL, 104, 0);
@@ -751,9 +781,22 @@ void recibirDeCPU(int socket, connHandle* master)
 			memcpy(&info, mensaje->data, sizeof(fileInfo));
 			char* data = leerArchivo(info);
 			if(data == NULL)
+			{
 				puts("CPU NO PUEDE LEER, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				lSend(socket, NULL, -3 ,0);
+				matarCuandoCorresponda(info.pid, -3);
+			}
+			if(data == -1)
+			{
+				puts("CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				lSend(socket, NULL, -3 ,0);
+				matarCuandoCorresponda(info.pid, -2);
+			}
 			else
+			{
 				lSend(socket, data, 104, info.tamanio);
+				free(data);
+			}
 			break;
 		}
 	}
@@ -771,12 +814,7 @@ void pushearAColaCPUS(int cpu)
 
 }
 
-void matarSiCorresponde(int pid,int exitCode)
-{
-	ProcessControl* pc = PIDFind(pid);
-	if(pc->toBeKilled == 1)
-		killProcess(pid,exitCode);
-}
+
 char* deserializarPedidoEscritura(char* serializado, fileInfo* info)
 {
 
