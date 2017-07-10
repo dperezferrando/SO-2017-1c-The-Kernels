@@ -28,7 +28,7 @@ int offset(t_list*, int);
 int _usedFragments(t_list*);
 int enviarScriptAMemoria(PCB*,char*, int);
 int grabarPedido(PageOwnership*, MemoryRequest, HeapMetadata*,int*);
-int sendMemoryRequest(MemoryRequest, int, void*, PageOwnership*, int);
+int sendMemoryRequest(MemoryRequest, PageOwnership*, int);
 
 bool viableRequest(int);
 bool fragmented (t_list*);
