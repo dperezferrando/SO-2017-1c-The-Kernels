@@ -163,7 +163,7 @@ void cpuReturnsProcessTo(PCB* newPCB, int state){
 
 
 
-
+//aaaaaa
 PCB* fromNewToReady(){
 	PCB* pcb = _fromQueueToQueue(colaNew,colaReady,1);
 	if(pcb == NULL)
@@ -175,7 +175,7 @@ PCB* fromNewToReady(){
 		killProcess(pcb->pid, -1);
 	}
 	else
-		lSend(pc->consola, &pcb->pid, 2, sizeof(int));
+		if(!test)lSend(pc->consola, &pcb->pid, 2, sizeof(int));
 
 	return pcb;
 }

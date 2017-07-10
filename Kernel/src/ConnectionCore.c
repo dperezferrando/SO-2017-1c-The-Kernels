@@ -121,12 +121,14 @@ int enviarScriptAMemoria(PCB* pcb, char* script, int tamanioScript)
 	int tamanioScriptSerializado = 0;
 	int paginasTotales = pcb->cantPaginasCodigo + config->STACK_SIZE;
 	void* buffer = serializarScript(pcb->pid, tamanioScript, paginasTotales, &tamanioScriptSerializado, script);
-	lSend(conexionMemoria, buffer, 1, tamanioScriptSerializado);
-	Mensaje* respuesta = lRecv(conexionMemoria);
+	if(!test)lSend(conexionMemoria, buffer, 1, tamanioScriptSerializado);
+	if(!test){Mensaje* respuesta = lRecv(conexionMemoria);
+		int to= respuesta->header.tipoOperacion;
+		free(respuesta);
+		return to == 104;
+	}
 	free(buffer);
-	int to= respuesta->header.tipoOperacion;
-	free(respuesta);
-	return to == 104;
+	return 1;
 }
 
 MemoryRequest deserializeMemReq(void* mr){
@@ -136,26 +138,23 @@ MemoryRequest deserializeMemReq(void* mr){
 	return res;
 }
 
-void* serializeMemReq(MemoryRequest mr, int idPage, int offset, int msgSize, void* msg){
-	void* res= malloc(sizeof(int)*5+msgSize);
+void* serializeMemReq(MemoryRequest mr, int idPage, int offset){
+	void* res= malloc(sizeof(int)*3+sizeof(HeapMetadata));
 	memcpy(res,&mr.pid,sizeof(int));
 	memcpy(res+sizeof(int),&idPage,sizeof(int));
 	memcpy(res+sizeof(int)*2,&offset,sizeof(int));
-	memcpy(res+sizeof(int)*3,&mr.size,sizeof(int));
-	memcpy(res+sizeof(int)*4,msg,msgSize);
+	HeapMetadata hm;
+	hm.isFree=0;
+	hm.size= mr.size;
+	memcpy(res+sizeof(int)*3,&hm,sizeof(HeapMetadata));
 	return res;
 }
 
-int memoryRequest(MemoryRequest mr, int size, void* contenido){
-	PageOwnership* po= malloc(sizeof(PageOwnership));
+int memoryRequest(MemoryRequest mr, int* offset, PageOwnership* po){
 	HeapMetadata* hm= initializeHeapMetadata(mr.size);
-	int* offset= malloc(sizeof(int));
-	if(!test) res= lRecv(conexionMemoria);
-	if(res->header.tipoOperacion==-1) return -1;
 	int operation= grabarPedido(po,mr,hm,offset);
-	free(res);
 	int memreq;
-	if((memreq=sendMemoryRequest(mr,size,contenido,po,*offset))!=1) return memreq;
+	if((memreq=sendMemoryRequest(mr,po,*offset))!=1) return memreq;
 	return operation;
 }
 
@@ -179,11 +178,12 @@ int freeMemory(int pid, int page, int offset){
 
 void sendKillRequest(int pid, int page, int offset, HeapMetadata* hm){
 	int size= sizeof(int)*4+sizeof(HeapMetadata);
+	int sizeofhm= sizeof(HeapMetadata);
 	void* request= malloc(size);
 	memcpy(request,&pid,sizeof(int));
 	memcpy(request+sizeof(int),&page,sizeof(int));
 	memcpy(request+sizeof(int)*2,&offset,sizeof(int));
-	memcpy(request+sizeof(int)*3, sizeof(HeapMetadata), sizeof(int));
+	memcpy(request+sizeof(int)*3, &(sizeofhm), sizeof(int));
 	memcpy(request+sizeof(int)*4,hm,sizeof(HeapMetadata));
 
 	if(!test)lSend(conexionMemoria,request, 2, size);
@@ -223,15 +223,15 @@ int getNewPage(PageOwnership* po){
 	return 1;
 }
 
-int sendMemoryRequest(MemoryRequest mr, int size, void* msg, PageOwnership* po, int offset){
+int sendMemoryRequest(MemoryRequest mr, PageOwnership* po, int offset){
 	if(!viableRequest(mr.size)) return -1;
 	po->pid= mr.pid;
 	po->idpage= pageToStore(mr);//busco la pagina para guardarlo, si no hay -1
 
 	if(po->idpage==-1){if(!test)if(getNewPage(po)==-2)return -2;}//pido nueva pagina
 
-	void* serializedMSG= serializeMemReq(mr,po->idpage,offset,size,msg);
-	if(!test) lSend(conexionMemoria,serializedMSG,2,sizeof(mr)+size);//envío el pedido de grabacion
+	void* serializedMSG= serializeMemReq(mr,po->idpage,offset);
+	if(!test) lSend(conexionMemoria,serializedMSG,2,sizeof(int)*3+sizeof(HeapMetadata));//envío el pedido de grabacion
 
 	return 1;
 }
@@ -336,18 +336,32 @@ int offset(t_list* heap, int pos){
 
 //------------------------------------------------Defragmentación-----------------------------------------------------------//
 
-bool fragmented (t_list* page){
+/*bool fragmented (t_list* page){
 	int i,acc=0,cant=0;
 	for(i=0; i<list_size(page);i++){
 		HeapMetadata* hm= list_get(page,i);
 		if(hm->isFree){acc+=hm->size;cant++;}
 	}
 	return acc>= (config->PAG_SIZE/5) && cant >= 3;
+}*/
+
+bool fragmented (t_list* page){
+	int i;
+	bool hayDos= false;
+
+	for(i=0;i<list_size(page);i++){
+		HeapMetadata* hm1= list_get(page,i);
+		HeapMetadata* hm2= list_get(page,i+1);
+		if(hm1->isFree && hm2->isFree)return true;
+	}
+
+	return hayDos;
+
 }
 
-void _modifyMemoryPage(int base,int top,int offset,void* memoryPage){
+/*void _modifyMemoryPage(int base,int top,int offset,void* memoryPage){
 	memcpy(memoryPage+offset,memoryPage+base,top-base);
-}
+}*/
 
 void* getMemoryPage(int pid, int idPage){
 	int offset=0, size=sizeof(int)*4;
@@ -356,7 +370,7 @@ void* getMemoryPage(int pid, int idPage){
 	memcpy(msg+sizeof(int),&idPage,sizeof(int));
 	memcpy(msg+sizeof(int)*2,&offset,sizeof(int));
 	memcpy(msg+sizeof(int)*3,&config->PAG_SIZE,sizeof(int));
-	lSend(conexionMemoria,msg,5,size);
+	if(!test)lSend(conexionMemoria,msg,5,size);
 	if(test){//esto esta asi por el test
 		return res->data;
 	}
@@ -365,7 +379,7 @@ void* getMemoryPage(int pid, int idPage){
 
 }
 
-void* defragging(int pid, int idPage, t_list* page){
+/*void* defragging(int pid, int idPage, t_list* page){
 
 	if(!fragmented(page)) return 0;
 
@@ -409,8 +423,94 @@ void* defragging(int pid, int idPage, t_list* page){
 	}
 	calculateFreeSpace(page,_usedFragments(page),memPage);
 	return memPage;
+}*/
+
+
+void* defragging(int pid, int idPage, t_list* page){
+
+    if(!fragmented(page)) return 0;
+
+    HeapMetadata* hm;
+
+    void* memPage= getMemoryPage(pid,idPage);
+
+    int offset= 0,offsetList=0,cant=0,i=0,size;
+
+    size= list_size(page);
+
+    for(i=0;i<(size-1);i++){
+
+        offset= _unusedFragmentsOffset(page,offset,&offsetList,&cant);
+
+        if(offset!= -1){
+
+            hm = malloc(sizeof(HeapMetadata));
+
+            hm->isFree=1;
+            hm->size=0;
+
+            for(i=offsetList;i<cant+offsetList;i++){
+                HeapMetadata* free= list_get(page,i);
+                hm->size+= free->size;
+            }
+
+            hm->size+= sizeof(HeapMetadata) * (cant-1);
+
+            list_add_in_index(page,offsetList,hm);
+
+            for(i=offsetList+1;i<cant+offsetList+1;i++){
+
+                list_remove_and_destroy_element(page,i,&free);
+                i--;
+                cant--;
+
+            }
+
+            /*for(i=0;list_size(page)>i;i++){
+            		HeapMetadata* hm43= list_get(page,i);
+            		printf("%d HM: is free %d, size %d     -----    ",i,hm43->isFree,hm43->size);
+            	}*/
+
+            memcpy(memPage+offset,hm,sizeof(HeapMetadata));
+
+            size= list_size(page);
+
+            i=0; offsetList=0; offset=0;cant=0;
+
+        }
+
+    }
+
+
+    return memPage;
+
 }
 
+int _unusedFragmentsOffset(t_list* page,int offset,int* offsetList,int* cant){
+	int i,block=0;
+
+	for(i=0; i<(list_size(page)-1) && !block ; i++){
+		HeapMetadata* hm1= list_get(page,i);
+		HeapMetadata* hm2= list_get(page,i+1);
+		if(hm1->isFree && hm2->isFree){
+			block=1;
+			break;
+		}
+		offset+= (hm1->size+sizeof(HeapMetadata));
+		(*offsetList)= (*offsetList)+1;
+	}
+	if(!block)return -1;
+	HeapMetadata* hm1= list_get(page,i);
+	while(hm1->isFree && i<list_size(page)){
+		*cant= *cant + 1;
+		i++;
+		hm1= list_get(page,i);
+	}
+
+	return offset;
+}
+
+/*
 void defragPage(t_list* page, int baseList, int blockSize, int offsetList){
 	int i;
 	for(i= baseList; i < (baseList + blockSize) ; i++){//desde donde esta el primer bloque, hasta el ultimo
@@ -450,7 +550,7 @@ int _usedFragments(t_list* page){
 	t_list* aux= list_filter(page,&(_usedFragment));
 	return list_size(aux);
 }
-
+*/
 
 
 
@@ -505,21 +605,31 @@ void recibirDeCPU(int socket, connHandle* master)
 		{
 			// RESERVAR HEAP
 			MemoryRequest mr = deserializeMemReq(mensaje->data);
-			int res= memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr));
+			PageOwnership* po= malloc(sizeof(PageOwnership));
+			int* offset = malloc(sizeof(int));
+			int res= memoryRequest(mr,offset,po);
 			if( res== -1){
 				puts("PEDIDO MAYOR QUE EL TAMAÑO DE UNA PAGINA");
 				matarCuandoCorresponda(mr.pid,-8);
+				break;
 			}
-			else if (res == -2)
-			{
+			else if (res == -2){
 				puts("NO HAY ESPACIO DEBE FINALIZAR PROCESO");
 				matarCuandoCorresponda(mr.pid,-9);
+				break;
 			}
+			*offset = (*offset)+sizeof(HeapMetadata);
+			void* msg = malloc(sizeof(int)*2);
+			memcpy(msg,&po->idpage,sizeof(int));
+			memcpy(msg+sizeof(int),offset,sizeof(int));
+
+			if(!test)lSend(socket,msg,104,sizeof(int)*2);
+
 			break;
 		}
 		case 205:
 		{
-			// LIVERAR HEAP
+			// LIBERAR HEAP
 			int pid, page, offset;
 			memcpy(&pid,mensaje->data,sizeof(int));
 			memcpy(&page,mensaje->data+sizeof(int),sizeof(int));
