@@ -7,11 +7,13 @@
 #include <commons/config.h>
 #include <commons/collections/list.h>
 #include <commons/string.h>
+#include <commons/log.h>
 #include <pthread.h>
 #include <parser/parser.h>
 #include <parser/metadata_program.h>
 #include "../../ConfigLibrary/src/Configuration.c"
 #include "../../SocketLibrary/src/SocketLibrary.c"
+
 
 //DEFINES DE MEMORIA
 
@@ -54,6 +56,7 @@ typedef struct configFile{
 	char puerto_Kernel[5];
 	char ip_Memoria[16];
 	char puerto_Memoria[5];
+	char log[100];
 } configFile;
 
 typedef struct __attribute__ ((packed)) pedidoAperturaArchivo{
@@ -65,7 +68,7 @@ typedef struct __attribute__ ((packed)) pedidoAperturaArchivo{
 
 
 // GLOBALES
-const char* keys[5]={"IP_KERNEL", "PUERTO_KERNEL", "IP_MEMORIA", "PUERTO_MEMORIA", "NULL"};
+const char* keys[6]={"IP_KERNEL", "PUERTO_KERNEL", "IP_MEMORIA", "PUERTO_MEMORIA", "LOG", "NULL"};
 PCB* pcb;
 int kernel, memoria;
 int tamanioPagina;
@@ -73,7 +76,7 @@ configFile* config;
 int quantum; // si = 0 => ES FIFO
 int stackSize;
 int estado;
-
+t_log*  logFile;
 // ANSISOP
 t_puntero definirVariable(t_nombre_variable);
 t_puntero obtenerPosicionVariable(t_nombre_variable);
@@ -112,7 +115,7 @@ AnSISOP_funciones primitivas = {
 AnSISOP_kernel primitivas_kernel = {
 		.AnSISOP_wait = wait,
 		.AnSISOP_signal = signal,
-		//.AnSISOP_reservar = reservar,
+		.AnSISOP_reservar = reservar,
 		.AnSISOP_liberar = liberar,
 		.AnSISOP_abrir = abrir,
 		.AnSISOP_borrar = borrar,
@@ -148,4 +151,5 @@ posicionEnMemoria generarPosicionEnBaseAUltimaVariableDe(t_list*);
 char* leerEnMemoria(posicionEnMemoria);
 void enviarPedidoEscrituraMemoria(posicionEnMemoria, t_valor_variable);
 void recibirInformacion();
+serializado serializarPedido(int num);
 

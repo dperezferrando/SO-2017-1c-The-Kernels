@@ -481,8 +481,8 @@ void recibirDeCPU(int socket, connHandle* master)
 			puts("VUELVE PCB POR FIN DE Q");
 			cpuReturnsProcessTo(pcb,1);
 			matarSiCorresponde(pcb->pid);
-			executeProcess();
 			pushearAColaCPUS(socket);
+			executeProcess();
 			break;
 		case 3:
 			pcb = recibirPCB(mensaje);
@@ -503,19 +503,23 @@ void recibirDeCPU(int socket, connHandle* master)
 			break;
 		case 204:
 		{
+			// RESERVAR HEAP
 			MemoryRequest mr = deserializeMemReq(mensaje->data);
 			int res= memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr));
 			if( res== -1){
 				puts("PEDIDO MAYOR QUE EL TAMAÑO DE UNA PAGINA");
-				killProcess(mr.pid,-8);
+				matarCuandoCorresponda(mr.pid,-8);
 			}
 			else if (res == -2)
+			{
 				puts("NO HAY ESPACIO DEBE FINALIZAR PROCESO");
-			killProcess(mr.pid,-9);
+				matarCuandoCorresponda(mr.pid,-9);
+			}
 			break;
 		}
 		case 205:
 		{
+			// LIVERAR HEAP
 			int pid, page, offset;
 			memcpy(&pid,mensaje->data,sizeof(int));
 			memcpy(&page,mensaje->data+sizeof(int),sizeof(int));
@@ -685,7 +689,7 @@ void aceptarNuevoCPU(int unCPU)
 
 void enviarInformacion(int CPU){
 	int algoritmo=0;
-	if(strcmp(config->ALGORITMO, "RR")){algoritmo= config->QUANTUM;}
+	if(!strcmp(config->ALGORITMO, "RR")){algoritmo= config->QUANTUM;}
 	char* data = malloc(sizeof(int)*3);
 	memcpy(data, &config->STACK_SIZE, sizeof(int));
 	memcpy(data + sizeof(int), &config->PAG_SIZE, sizeof(int));

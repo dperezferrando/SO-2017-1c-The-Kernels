@@ -11,32 +11,43 @@
 
 int main(int argc, char** argsv) {
 	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/CPU/Debug/CPU.conf", leer_archivo_configuracion, keys);
+/*	if(fopen(config->log, "r") != NULL)
+		remove(config->log);*/
+	logFile = log_create(config->log, "CPU", 1, 1);
 	iniciarConexiones();
 	while(1) // EN UN FUTURO ESTO SE CAMBIA POR EL ENVIO DE LA SEÑAL SIGUSR1
 	{
 		if(esperarPCB() == -1)
 		{
-			puts("MURIO EL KERNEL");
+			log_info(logFile, "[MURIO EL KERNEL]");
 			break;
 		}
 		informarAMemoriaDelPIDActual();
 		estado = OK;
+		int rafagas = 0;
 		while(estado == OK)
 		{
+
 			char* linea = pedirInstruccionAMemoria(pcb, tamanioPagina);
-			printf("[PEDIR INSTRUCCION NRO %i]: %s\n", pcb->programCounter, linea);
+			log_info(logFile, "[PEDIR INSTRUCCION NRO %i | RAFAGA: %i]: %s\n",  pcb->programCounter, rafagas, linea);
 			analizadorLinea(linea, &primitivas, &primitivas_kernel);
 			free(linea);
 			pcb->programCounter++;
+			rafagas++;
+			if(quantum != 0 && rafagas == quantum && estado != TERMINO)
+				estado = EXPULSADO;
 		}
+		log_info(logFile, "[PCB EXPULSADO]: PID: %i | ESTADO: %i\n", pcb->pid, estado);
 		serializado pcbSerializado = serializarPCB(pcb);
 		lSend(kernel, pcbSerializado.data, estado, pcbSerializado.size);
 		free(pcbSerializado.data);
+
 		destruirPCB(pcb);
 	}
 	free(config);
 	close(kernel);
 	close(memoria);
+	log_destroy(logFile);
 	return EXIT_SUCCESS;
 
 }
@@ -45,7 +56,7 @@ void iniciarConexiones()
 {
 	kernel = getConnectedSocket(config->ip_Kernel, config->puerto_Kernel, CPU_ID);
 	memoria = getConnectedSocket(config->ip_Memoria, config->puerto_Memoria, CPU_ID);
-	puts("Esperando Informacion");
+	log_info(logFile, "[ESPERANDO INFORMACION]");
 	recibirInformacion();
 }
 void recibirInformacion()
@@ -54,17 +65,18 @@ void recibirInformacion()
 	memcpy(&stackSize, informacion->data, sizeof(int));
 	memcpy(&tamanioPagina, informacion->data+sizeof(int), sizeof(int));
 	memcpy(&quantum, informacion->data+sizeof(int)*2, sizeof(int));
+	log_info(logFile, "[RECIBIDO DE KERNEL]: STACK SIZE: %i | TAMANIO PAGINA: %i | QUANTUM: %i\n", stackSize, tamanioPagina, quantum);
 	destruirMensaje(informacion);
 }
 
 int esperarPCB()
 {
-	puts("Esperando PCB");
+	log_info(logFile, "[ESPERANDO PCB]");
 	Mensaje* mensaje = lRecv(kernel);
 	if(mensaje->header.tipoOperacion == -1)
 		return mensaje->header.tipoOperacion;
-	puts("PCB RECIBIDO");
 	pcb = deserializarPCB(mensaje->data);
+	log_info(logFile, "[PCB RECIBIDO]: PID: %i\n", pcb->pid);
 	int op = mensaje->header.tipoOperacion;
 	destruirMensaje(mensaje);
 	return op;
@@ -105,6 +117,7 @@ configFile* leer_archivo_configuracion(t_config* configHandler){
 	strcpy(config->puerto_Memoria, config_get_string_value(configHandler, "PUERTO_MEMORIA"));
 	strcpy(config->ip_Kernel, config_get_string_value(configHandler, "IP_KERNEL"));
 	strcpy(config->ip_Memoria, config_get_string_value(configHandler, "IP_MEMORIA"));
+	strcpy(config->log, config_get_string_value(configHandler, "LOG"));
 	config_destroy(configHandler);
 	imprimir(config);
 	return config;
@@ -122,7 +135,7 @@ void imprimir(configFile* c){
 
 // FUNCIONES ANSISOP PARSER
 t_puntero definirVariable(t_nombre_variable identificador){
-	printf("[DEFINIR VARIABLE - STACK LEVEL: %i]: '%c'\n", pcb->nivelDelStack, identificador);
+	log_info(logFile, "[DEFINIR VARIABLE - STACK LEVEL: %i]: '%c'\n", pcb->nivelDelStack, identificador);
 	posicionEnMemoria unaPosicion = calcularPosicion(pcb->nivelDelStack);
 	variable* unaVariable = malloc(sizeof(variable));
 	unaVariable->identificador = identificador;
@@ -132,13 +145,13 @@ t_puntero definirVariable(t_nombre_variable identificador){
 	else if(isalpha(unaVariable->identificador))
 		list_add(pcb->indiceStack[pcb->nivelDelStack].variables, unaVariable);
 	t_puntero direccionReal = convertirADireccionReal(unaVariable->posicion);
-	printf("[DEFINIR VARIABLE - STACK LEVEL: %i]: '%c' | PAG: %i | OFFSET: %i | Size: %i:\n", pcb->nivelDelStack, unaVariable->identificador, unaVariable->posicion.pagina, unaVariable->posicion.offset, unaVariable->posicion.size);
+	log_info(logFile, "[DEFINIR VARIABLE - STACK LEVEL: %i]: '%c' | PAG: %i | OFFSET: %i | Size: %i:\n", pcb->nivelDelStack, unaVariable->identificador, unaVariable->posicion.pagina, unaVariable->posicion.offset, unaVariable->posicion.size);
 	return direccionReal;
 
 }
 
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador){
-	printf("[OBTENER POSICION VARIABLE - STACK LEVEL: %i]: '%c'\n", pcb->nivelDelStack, identificador);
+	log_info(logFile, "[OBTENER POSICION VARIABLE - STACK LEVEL: %i]: '%c'\n", pcb->nivelDelStack, identificador);
 	t_list* lista;
 	if(isalpha(identificador))
 		lista = pcb->indiceStack[pcb->nivelDelStack].variables;
@@ -150,40 +163,41 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador){
 	}
 	variable* unaVariable = list_find(lista, elIdEsElMismo);
 	t_puntero direccionReal = convertirADireccionReal(unaVariable->posicion);
-	printf("[OBTENER POSICION VARIABLE - STACK LEVEL: %i]: '%c' -> %i\n", pcb->nivelDelStack, identificador, direccionReal);
+	log_info(logFile, "[OBTENER POSICION VARIABLE - STACK LEVEL: %i]: '%c' -> %i\n", pcb->nivelDelStack, identificador, direccionReal);
 	return direccionReal;
 }
 
-t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor){//falta ersolver
-	t_valor_variable valorAsignado=valor;
-	lSend(kernel, (t_valor_variable) &valorAsignado,ASIGNARCOMPARTIDA,sizeof(t_valor_variable));
+t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor){
+	int len = strlen(variable)+1;
+	char* data = malloc(len + sizeof(int));
+	memcpy(data, &len, sizeof(int));
+	memcpy(data +sizeof(int), variable, len);
+	memcpy(data + sizeof(int) + len, valor, sizeof(int));
+	lSend(kernel, data, ASIGNARCOMPARTIDA, len + sizeof(int));
+	Mensaje* respuesta = lRecv(kernel);
+	int valorAsignado;
+	memcpy(&valorAsignado, respuesta->data, sizeof(int));
+	destruirMensaje(respuesta);
 	return valorAsignado;
 
 }
 
 t_valor_variable obtenerValorCompartida(t_nombre_compartida nombre){
-	int tamanio = strlen(nombre)+1;
-	char * nombreVariable = malloc(tamanio);
-	char* bCero= "/0";
 
-	memcpy(nombreVariable, nombre, strlen(nombre));
-	memcpy(nombreVariable+(strlen(nombre)), bCero,strlen(bCero));
-
-
-	lSend(kernel, (char*) nombreVariable, OBTENERCOMPARTIDA,tamanio);
-
-	Mensaje *m = lRecv(kernel);
-	t_valor_variable valor = (t_valor_variable) m->data;
-
+	lSend(kernel, nombre, OBTENERCOMPARTIDA, strlen(nombre)+1);
+	Mensaje* respuesta = lRecv(kernel);
+	int valor;
+	memcpy(&valor, respuesta->data, sizeof(int));
+	destruirMensaje(respuesta);
 	return valor;
 }
 
 void asignar(t_puntero direccionReal, t_valor_variable valor)
 {
-	printf("[ASIGNAR VARIABLE - STACK LEVEL: %i]\n", pcb->nivelDelStack);
+	log_info(logFile, "[ASIGNAR VARIABLE - STACK LEVEL: %i]\n", pcb->nivelDelStack);
 	posicionEnMemoria posicion = convertirADireccionLogica(direccionReal);
 	escribirEnMemoria(posicion, valor);
-	printf("[ASIGNAR VARIABLE - STACK LEVEL: %i]: PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %i\n", pcb->nivelDelStack, posicion.pagina, posicion.offset, posicion.size, valor);
+	log_info(logFile, "[ASIGNAR VARIABLE - STACK LEVEL: %i]: PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %i\n", pcb->nivelDelStack, posicion.pagina, posicion.offset, posicion.size, valor);
 
 
 }
@@ -270,7 +284,7 @@ char* leerEnMemoria(posicionEnMemoria posicion)
 	int total = posicion.offset + posicion.size;
 	int segundoSize;
 	char* instruccion;
-	printf("[LEER EN MEMORIA]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
+	log_info(logFile, "[LEER EN MEMORIA]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
 	if(total <= tamanioPagina)
 	{
 		instruccion = enviarPedidoLecturaMemoria(posicion);
@@ -282,7 +296,7 @@ char* leerEnMemoria(posicionEnMemoria posicion)
 		char* puntero = instruccion;
 		segundoSize = total-tamanioPagina;
 		posicion.size -= segundoSize;
-		printf("[LEER EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
+		log_info(logFile, "[LEER EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
 		char* primeraParte = enviarPedidoLecturaMemoria(posicion);
 		memcpy(puntero, primeraParte, posicion.size);
 		puntero+= posicion.size;
@@ -294,7 +308,7 @@ char* leerEnMemoria(posicionEnMemoria posicion)
 		segundaParteInstruccion[posicion.size-1] = '\0';
 		memcpy(puntero, segundaParteInstruccion, posicion.size);
 		free(segundaParteInstruccion);
-		printf("[LEER EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
+		log_info(logFile, "[LEER EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
 	}
 
 	return instruccion;
@@ -303,12 +317,12 @@ char* leerEnMemoria(posicionEnMemoria posicion)
 
 void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor)
 {
-	printf("[ESCRIBIR EN MEMORIA]: PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %i\n", posicion.pagina, posicion.offset, posicion.size, valor);
+	log_info(logFile, "[ESCRIBIR EN MEMORIA]: PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %i\n", posicion.pagina, posicion.offset, posicion.size, valor);
 	int limiteStack = pcb->cantPaginasCodigo+stackSize;
 	int total = posicion.offset + posicion.size;
 	if(posicion.pagina >= limiteStack)
 	{
-		puts("[ESCRIBIR EN MEMORIA]: STACK OVER FLOW PAPU - PROGRAMA ABORTADO");
+		log_info(logFile, "[ESCRIBIR EN MEMORIA]: STACK OVER FLOW PAPU - PROGRAMA ABORTADO");
 		estado = ABORTADO;
 		return;
 	}
@@ -325,16 +339,16 @@ void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor)
 		char* puntero = (char*)a;
 		memcpy(&valorAEnviar, puntero, posicion.size);
 		puntero += posicion.size;
-		printf("[ESCRIBIR EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
+		log_info(logFile, "[ESCRIBIR EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
 		enviarPedidoEscrituraMemoria(posicion, valorAEnviar);
 		posicion.pagina++;
 		posicion.offset = 0;
 		posicion.size = segundoSize;
 		memcpy(&valorAEnviar, puntero, posicion.size);
-		printf("[ESCRIBIR EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
+		log_info(logFile, "[ESCRIBIR EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
 		if(posicion.pagina >= limiteStack)
 		{
-			puts("[ESCRIBIR EN MEMORIA]: STACK OVER FLOW PAPU - PROGRAMA ABORTADO");
+			log_info(logFile, "[ESCRIBIR EN MEMORIA]: STACK OVER FLOW PAPU - PROGRAMA ABORTADO");
 			estado = ABORTADO;
 			return;
 		}
@@ -366,7 +380,7 @@ char* enviarPedidoLecturaMemoria(posicionEnMemoria posicion)
 
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero dondeRetornar)
 {
-	printf("[LLAMAR CON RETORNO - STACK LEVEL: %i]\n", pcb->nivelDelStack);
+	log_info(logFile, "[LLAMAR CON RETORNO - STACK LEVEL: %i]\n", pcb->nivelDelStack);
 	pcb->nivelDelStack++;
 	pcb->indiceStack = realloc(pcb->indiceStack, sizeof(indStk)*(pcb->nivelDelStack+1));
 	int returnpos = pcb->programCounter;
@@ -377,32 +391,32 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero dondeRetornar)
 	pcb->indiceStack[pcb->nivelDelStack].variableDeRetorno = var;
 	pcb->indiceStack[pcb->nivelDelStack].variables = list_create();
 	pcb->indiceStack[pcb->nivelDelStack].argumentos = list_create();
-	printf("[LLAMAR CON RETORNO - STACK LEVEL: %i a %i]: LLAMA A '%s' - RETURN POS: %i | RETURN VAR: [PAG: %i | OFFSET: %i | SIZE: %i]\n",pcb->nivelDelStack-1, pcb->nivelDelStack, etiqueta, returnpos, var.posicion.pagina, var.posicion.offset, var.posicion.size);
+	log_info(logFile, "[LLAMAR CON RETORNO - STACK LEVEL: %i a %i]: LLAMA A '%s' - RETURN POS: %i | RETURN VAR: [PAG: %i | OFFSET: %i | SIZE: %i]\n",pcb->nivelDelStack-1, pcb->nivelDelStack, etiqueta, returnpos, var.posicion.pagina, var.posicion.offset, var.posicion.size);
 	irAlLabel(etiqueta);
 }
 
 void llamarSinRetorno(t_nombre_etiqueta etiqueta)
 {
 
-	printf("[LLAMAR SIN RETORNO - STACK LEVEL: %i]\n", pcb->nivelDelStack);
+	log_info(logFile, "[LLAMAR SIN RETORNO - STACK LEVEL: %i]\n", pcb->nivelDelStack);
 	pcb->nivelDelStack++;
 	pcb->indiceStack = realloc(pcb->indiceStack, sizeof(indStk)*(pcb->nivelDelStack+1));
 	int returnpos = pcb->programCounter;
 	pcb->indiceStack[pcb->nivelDelStack].posicionDeRetorno = returnpos;
 	pcb->indiceStack[pcb->nivelDelStack].variables = list_create();
 	pcb->indiceStack[pcb->nivelDelStack].argumentos = list_create();
-	printf("[LLAMAR SIN RETORNO - STACK LEVEL: %i a %i]: LLAMA A '%s' - RETURN POS: %i\n",pcb->nivelDelStack-1, pcb->nivelDelStack, etiqueta, returnpos);
+	log_info(logFile, "[LLAMAR SIN RETORNO - STACK LEVEL: %i a %i]: LLAMA A '%s' - RETURN POS: %i\n",pcb->nivelDelStack-1, pcb->nivelDelStack, etiqueta, returnpos);
 	irAlLabel(etiqueta);
 }
 
 t_valor_variable dereferenciar(t_puntero posicion)
 {
-	printf("[DEREFERENCIAR - STACK LEVEL: %i]\n", pcb->nivelDelStack);
+	log_info(logFile, "[DEREFERENCIAR - STACK LEVEL: %i]\n", pcb->nivelDelStack);
 	posicionEnMemoria direccionLogica = convertirADireccionLogica(posicion);
 	char* info = leerEnMemoria(direccionLogica);
 	t_valor_variable valor;
 	memcpy(&valor, info, sizeof(int));
-	printf("[DEREFERENCIAR - STACK LEVEL: %i]: OBTENGO DE MEMORIA EL SIGUIENTE VALOR: %i\n", pcb->nivelDelStack, valor);
+	log_info(logFile, "[DEREFERENCIAR - STACK LEVEL: %i]: OBTENGO DE MEMORIA EL SIGUIENTE VALOR: %i\n", pcb->nivelDelStack, valor);
 	free(info);
 	return valor;
 
@@ -410,7 +424,7 @@ t_valor_variable dereferenciar(t_puntero posicion)
 
 void finalizar(void)
 {
-	printf("[FINALIZAR - STACK LEVEL: %i]\n", pcb->nivelDelStack);
+	log_info(logFile, "[FINALIZAR - STACK LEVEL: %i]\n", pcb->nivelDelStack);
 	if(pcb->nivelDelStack == 0)
 		estado = TERMINO;
 	else
@@ -419,24 +433,24 @@ void finalizar(void)
 		list_destroy_and_destroy_elements(pcb->indiceStack[pcb->nivelDelStack].argumentos, free);
 		list_destroy_and_destroy_elements(pcb->indiceStack[pcb->nivelDelStack].variables, free);
 		pcb->nivelDelStack--;
-		printf("[FINALIZAR - STACK LEVEL: %i A %i]\n", pcb->nivelDelStack+1, pcb->nivelDelStack);
+		log_info(logFile, "[FINALIZAR - STACK LEVEL: %i A %i]\n", pcb->nivelDelStack+1, pcb->nivelDelStack);
 		pcb->indiceStack = realloc(pcb->indiceStack, sizeof(indStk)*(pcb->nivelDelStack+1));
 	}
 
 }
 void irAlLabel(t_nombre_etiqueta nombre){
-	printf("[IR A LABEL - STACK LEVEL: %i]\n", pcb->nivelDelStack);
+	log_info(logFile, "[IR A LABEL - STACK LEVEL: %i]\n", pcb->nivelDelStack);
 	t_puntero_instruccion instruccionParaPCB;
 	instruccionParaPCB = metadata_buscar_etiqueta(nombre, pcb->indiceEtiqueta, pcb->sizeIndiceEtiquetas);
 	pcb->programCounter = instruccionParaPCB-1;
-	printf("[IR A LABEL - STACK LEVEL: %i]: '%s' | PC: %i\n", pcb->nivelDelStack, nombre, pcb->programCounter);
+	log_info(logFile, "[IR A LABEL - STACK LEVEL: %i]: '%s' | PC: %i\n", pcb->nivelDelStack, nombre, pcb->programCounter);
 }
 
 void retornar(t_valor_variable valorDeRetorno){
-	printf("[RETORNAR - STACK LEVEL: %i]\n", pcb->nivelDelStack);
+	log_info(logFile, "[RETORNAR - STACK LEVEL: %i]\n", pcb->nivelDelStack);
 	t_puntero dirReal = convertirADireccionReal(pcb->indiceStack[pcb->nivelDelStack].variableDeRetorno.posicion);
 	asignar(dirReal,valorDeRetorno);
-	printf("[RETORNAR - STACK LEVEL: %i]: RETORNO VALOR: %i\n", pcb->nivelDelStack, valorDeRetorno);
+	log_info(logFile, "[RETORNAR - STACK LEVEL: %i]: RETORNO VALOR: %i\n", pcb->nivelDelStack, valorDeRetorno);
 
 }
 	//PRIMITIVAS ANSISOP KERNEL
@@ -450,7 +464,7 @@ void wait(t_nombre_semaforo nombre){
 	//Bloqueado = 3, No bloqueado = 0
 	int bloqueado = m->header.tipoOperacion;
 	if(bloqueado == BLOQUEADO){
-		puts("[WAIT - PROCESO BLOQUEADO POR SEMAFORO]");
+		log_info(logFile, "[WAIT - PROCESO BLOQUEADO POR SEMAFORO]");
 		//Envio el pid al kernel para que lo guarde en la cola del semaforo
 		lSend(kernel, &pcb->pid, WAIT, sizeof(int));
 		//Para salir del while
@@ -465,23 +479,41 @@ void signal(t_nombre_semaforo nombre){
 }
 
 t_puntero reservar(t_valor_variable nroBytes){
-	int tamanioAReservar = nroBytes;
-	lSend(kernel, &tamanioAReservar, RESERVAR_MEMORIA_HEAP, sizeof(tamanioAReservar));
 
-	Mensaje *m =lRecv(kernel);
-	t_puntero puntero= (t_puntero) m->data;
-	if(puntero<0){
-		puts("No se pudo reservar memoria en el heap");
-	}
-
+	serializado pedido = serializarPedido(nroBytes);
+	lSend(kernel, pedido.data, RESERVAR_MEMORIA_HEAP, pedido.size);
+	Mensaje* respuesta = lRecv(kernel);
+	posicionEnMemoria posicion;
+	posicion.size = 0;
+	memcpy(&posicion.pagina, respuesta->data, sizeof(int));
+	memcpy(&posicion.offset, respuesta->data+sizeof(int), sizeof(int));
+	t_puntero puntero = convertirADireccionReal(posicion);
+	destruirMensaje(respuesta);
 	return puntero;
+
+}
+
+serializado serializarPedido(int num)
+{
+	serializado pedido;
+	pedido.size = sizeof(int)*2;
+	pedido.data = malloc(pedido.size);
+	memcpy(pedido.data, &pcb->pid, sizeof(int));
+	memcpy(pedido.data+sizeof(int), &num, sizeof(int));
+	return pedido;
 
 }
 
 
 void liberar(t_puntero puntero ){
-	lSend(kernel, &puntero, LIBERAR_PUNTERO, sizeof(t_puntero));
-	return;
+
+	posicionEnMemoria posicion = convertirADireccionLogica(puntero);
+	int size = sizeof(int)*2;
+	char* data = malloc(size);
+	memcpy(data, posicion.pagina, sizeof(int));
+	memcpy(data+sizeof(int), posicion.offset, sizeof(int));
+	lSend(kernel, data, LIBERAR_PUNTERO, size);
+
 }
 
 serializado serializarRutaYPermisos(char* ruta, char* permisos)
@@ -547,8 +579,8 @@ void deserializarRutaPermisos(void* data, int* pid, char* ruta, char* permisos) 
 	memcpy(&tamPermiso, data+sizeof(int)*2+tamRuta , sizeof(int));
 	memcpy(permisos, data+sizeof(int)*2+tamRuta+sizeof(int) , tamPermiso);
 	permisos[tamPermiso] = '\0';
-	printf("TAM RUTA ES: %i\n", tamRuta);
-	printf("TAM PERMISO ES: %i\n", tamPermiso);
+	log_info(logFile, "TAM RUTA ES: %i\n", tamRuta);
+	log_info(logFile, "TAM PERMISO ES: %i\n", tamPermiso);
 }
 
 t_descriptor_archivo abrir(t_direccion_archivo ruta , t_banderas flags){
@@ -556,17 +588,17 @@ t_descriptor_archivo abrir(t_direccion_archivo ruta , t_banderas flags){
 	serializado rutaYFlagsSerializados;
 	char* cadenaFlags = flagsDecentes(flags);
 	rutaYFlagsSerializados = serializarRutaPermisos(ruta,cadenaFlags);
-	printf("EL SIZE ES: %i\n", rutaYFlagsSerializados.size);
+	log_info(logFile, "EL SIZE ES: %i\n", rutaYFlagsSerializados.size);
 	lSend(kernel, rutaYFlagsSerializados.data, ABRIR_ARCHIVO, rutaYFlagsSerializados.size);
 	Mensaje* mensaje = lRecv(kernel);
 	if (mensaje->header.tipoOperacion == -3) {
-		puts("NO EXISTE ARCHIVO");
+		log_info(logFile, "NO EXISTE ARCHIVO");
 		estado = ACCESO_ARCHIVO_INEXISTENTE;
 		fileDescriptor = -1;
 	}
 	else {
 		fileDescriptor = *(int*)mensaje->data;
-		printf("EL FD ES %i\n", fileDescriptor);
+		log_info(logFile, "EL FD ES %i\n", fileDescriptor);
 	}
 	free(cadenaFlags);
 	free(rutaYFlagsSerializados.data);
@@ -612,7 +644,7 @@ void escribir(t_descriptor_archivo fileDescriptor, void* info, t_valor_variable 
  	 fi.pid = pcb->pid;
  	 fi.tamanio = tamanio;
  	 fi.cursor = -1;
- 	 printf("[ESCRIBIR]: ESCRIBO '%s' | FD: %i | SIZE: %i\n", (char*)info, fileDescriptor, tamanio);
+ 	 log_info(logFile, "[ESCRIBIR]: ESCRIBO '%s' | FD: %i | SIZE: %i\n", (char*)info, fileDescriptor, tamanio);
  	 serializado escrituraSerializada = serializarPedidoEscrituraFS((char*)info, fi);
  	 lSend(kernel, escrituraSerializada.data, ESCRIBIR_ARCHIVO, escrituraSerializada.size);
  	 Mensaje* m = lRecv(kernel);
