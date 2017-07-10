@@ -34,7 +34,7 @@ int main(int argc, char** argsv) {
 			free(linea);
 			pcb->programCounter++;
 			rafagas++;
-			if(quantum != 0 && rafagas == quantum && estado != TERMINO)
+			if(quantum != 0 && rafagas == quantum && estado == OK)
 				estado = EXPULSADO;
 		}
 		log_info(logFile, "[PCB EXPULSADO]: PID: %i | ESTADO: %i\n", pcb->pid, estado);

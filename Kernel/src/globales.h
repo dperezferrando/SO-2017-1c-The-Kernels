@@ -69,6 +69,8 @@ bool morir;
 int maxPID;
 int conexionFS;
 int conexionMemoria;
+int conexionConsola;
+int conexionCPU;
 
 Mensaje* res;
 

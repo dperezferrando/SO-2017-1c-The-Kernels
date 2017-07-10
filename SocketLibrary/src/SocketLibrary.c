@@ -147,7 +147,7 @@ void handleData(char* data){
 socketHandler lSelect(socketHandler handler, int duration){
 	timeVal time= _setTimeVal(duration,0);
 	socketHandler result= copySocketHandler(handler);
-	int status= select(result.nfds,&result.readSockets,&result.writeSockets,NULL,&time);
+	int status= select(result.nfds,&result.readSockets, NULL,NULL,NULL);
 	//printf("STATUS: %i\n", status);
 	errorIfEqual(status,-1,"select");
 	return result;
