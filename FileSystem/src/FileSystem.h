@@ -11,6 +11,7 @@
 #include <commons/config.h>
 #include <commons/bitarray.h>
 #include <commons/collections/list.h>
+#include <math.h>
 #include "../../ConfigLibrary/src/Configuration.c"
 #include "../../SocketLibrary/src/SocketLibrary.c"
 

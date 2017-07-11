@@ -52,7 +52,6 @@ void esperarOperacion()
 	{
 		Mensaje* mensaje = lRecv(conexion);
 		puts("Operacion recibida");
-		int sizePath;
 		//char* path;
 		int offset;
 		int  size;
@@ -120,6 +119,7 @@ void esperarOperacion()
 			case 2:{
 				//Op.leer
 				char* path;
+				int sizePath;
 				memcpy(sizePath, mensaje->data, sizeof(int));
 				path = agregarBarraCero(mensaje->data + sizeof(int), sizePath);
 				memcpy(offset, mensaje->data+ sizeof(int) +sizePath, sizeof(int));
@@ -145,10 +145,12 @@ void esperarOperacion()
 			case 3:{
 				//Op.escribir
 				char* buffer;
-				memcpy(sizePath, mensaje->data, sizeof(int));
+				int sizePath;
+				memcpy(&sizePath, mensaje->data, sizeof(int));
 				char* path = agregarBarraCero(mensaje->data + sizeof(int), sizePath);
-				memcpy(offset, mensaje->data+ sizeof(int) +sizePath, sizeof(int));
-				memcpy(size, mensaje->data + sizeof(int)*2 +sizePath, sizeof(int));
+				memcpy(&offset, mensaje->data+ sizeof(int) +sizePath, sizeof(int));
+				memcpy(&size, mensaje->data + sizeof(int)*2 +sizePath, sizeof(int));
+				buffer = malloc(size);
 				memcpy(buffer, mensaje->data + sizeof(int)*3 + sizePath, size);
 				// IDEM LEER
 			/*	int retorno = validarArchivo(path);
@@ -164,10 +166,12 @@ void esperarOperacion()
 				}
 				// WHY? EL KERNEL YA CONOCE EL PATH
 				//retornoDePath(path);
+				free(buffer);
 				break;
 			}
 			case 5:{
 				//Op.borrar
+				int sizePath;
 				memcpy(sizePath, mensaje->data, sizeof(int));
 				char* path = agregarBarraCero(mensaje->data+sizeof(int), sizePath);
 				// IDEM
@@ -282,7 +286,8 @@ int crearArchivo(char* pathRelativa){
 	return 0;
 }
 
-char* leerArchivo(char* path, int offset, int size){
+char* leerArchivo(char* pathRelativa, int offset, int size){
+	char* path = string_from_format("%s%s.bin", ruta_Arch, pathRelativa);
 	char* buffer=NULL;
 	int tam = getTamanio(path);
 	if(tam < (offset+size)){
@@ -318,10 +323,31 @@ char* leerArchivo(char* path, int offset, int size){
 	free(bloques);
 	free(bloqs);
 	free(rutablq);
+	free(path);
 	return buffer;
 }
 
-int escribirArchivo(char* path, int offset, int size, char* buffer){
+int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
+
+	char* path = string_from_format("%s%s.bin", ruta_Arch, pathRelativa);
+	int bloqueLogico = floor((double)offset/(double)metad->tamanio_Bloques);
+	bloques* bloquesDelArchivo = getbloques(path);
+	int bloqueFisico = bloquesDelArchivo->bloques[bloqueLogico];
+	int principioDelArchivo = bloqueLogico * metad->tamanio_Bloques;
+	int offsetDentroDelBloque = offset-principioDelArchivo;
+	char* rutaBloqueFisico = rutabloque(bloqueFisico);
+	FILE* bloque = fopen(rutaBloqueFisico, "r+");
+	fseek(bloque, offsetDentroDelBloque,SEEK_SET);
+	fwrite(buffer, sizeof(char), size, bloque);
+	fclose(bloque);
+	free(rutaBloqueFisico);
+	free(bloquesDelArchivo->bloques);
+	free(path);
+	return 1;
+}
+/*
+int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
+	char* path = string_from_format("%s%s.bin", ruta_Arch, pathRelativa);
 	FILE* blq;
 	FILE* blqt;
 	int faltanbloques=0;
@@ -341,7 +367,7 @@ int escribirArchivo(char* path, int offset, int size, char* buffer){
 		int usadoBloque =tamBloq-(cantbloques*tamBloq - Tam) ;
 		/*if(usadoBloque<0){
 			usadoBloque=0;
-		}*/
+		}*//*
 		if (offset>usadoBloque){
 			return -1;
 		}
@@ -437,6 +463,7 @@ int escribirArchivo(char* path, int offset, int size, char* buffer){
 		if(offset+size>usadoBloque){//////////////anda solo para 1 bloque
 		cambiarTamanio(path,offset+size);
 		}
+		free(path);
 		return 0;
 	}
 }
@@ -533,10 +560,11 @@ int escribirArchivo(char* path, int offset, int size, char* buffer){
 	free(bloqs);
 	free(bloqsv);
 	return 0;
-}
+}*/
 											/////////////////////////////
 
-int borrarArchivo(char* path){
+int borrarArchivo(char* pathRelativa){
+	char* path = string_from_format("%s%s.bin", ruta_Arch, pathRelativa);
 	bloques* bloqs;
 	int* bloques;
 	bloqs= getbloques(path);
@@ -559,10 +587,11 @@ int borrarArchivo(char* path){
 	}
 	free(bloques);
 	free(bloqs);
+	free(path);
 	return 0;
 }
 
-char* rutabloque(bloque){
+char* rutabloque(int bloque){
 	char* resultado=NULL;
 	char* sbloque = string_itoa(bloque);
 	resultado = malloc(strlen(ruta_Blqs)+strlen(sbloque)+5);
@@ -781,27 +810,6 @@ int getTamanio(char * path){
 		int tamanio =config_get_int_value(Archconf,"TAMANIO");
 		config_destroy(Archconf);
 		return tamanio;
-	/*FILE* arch;
-	arch = fopen(path,"r");
-	int* buffer = NULL;
-	char c;
-	while(c!='='){
-		c = fgetc(arch);
-	}
-	int i=0;
-	while(c!='/n'){
-		i++;
-		buffer =realloc(buffer, sizeof(char)*i);
-		buffer[i]=c;
-		c = fgetc(arch);
-	}
-		//char* retorno;
-		//strcpy(retorno,buffer);
-		//free (buffer);
-	int retorno = string_itoa(buffer);
-	fclose(arch);
-	free(buffer);
-	return retorno;*/
 }
 
 int cambiarTamanio(char* path,int tam){

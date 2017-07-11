@@ -272,7 +272,7 @@ serializado serializarPedidoEscritura(char* ruta, int offset, int size, char* da
 	pedido.size = sizeRuta+(sizeof(int)*3) + size;
 	pedido.data = malloc(pedido.size);
 	memcpy(pedido.data, &sizeRuta, sizeof(int));
-	memcpy(pedido.data, ruta, sizeRuta);
+	memcpy(pedido.data+sizeof(int), ruta, sizeRuta);
 	memcpy(pedido.data+sizeRuta+sizeof(int), &offset, sizeof(int));
 	memcpy(pedido.data+sizeRuta+(sizeof(int)*2), &size, sizeof(int));
 	memcpy(pedido.data+sizeRuta+(sizeof(int))*3, data, size);
