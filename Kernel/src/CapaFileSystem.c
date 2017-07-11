@@ -228,12 +228,20 @@ void imprimirPorPantalla(fileInfo info, char* data)
 
 }
 
-bool borrarArchivo(int pid, int fd)
+int borrarArchivo(int pid, int fd)
 {
 	entradaTablaFSProceso* entrada = buscarEnTablaDelProceso(pid, fd);
-	if(entrada->entradaGlobal->instancias > 1)
+	if(entrada == NULL)
 		return 0;
-	lSend(conexionFS, entrada->entradaGlobal->ruta, 5, strlen(entrada->entradaGlobal->ruta));
+	if(entrada->entradaGlobal->instancias > 1)
+		return -1;
+	int sizeRuta = strlen(entrada->entradaGlobal->ruta);
+	int size = sizeRuta + sizeof(int);
+	char* data = malloc(size);
+	memcpy(data, &sizeRuta, sizeof(int));
+	memcpy(data+sizeof(int), entrada->entradaGlobal->ruta, sizeRuta);
+	lSend(conexionFS, data, 5, size);
+	free(data);
 	cerrarArchivo(pid, fd);
 	return 1;
 }

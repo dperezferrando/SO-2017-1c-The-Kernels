@@ -120,10 +120,10 @@ void esperarOperacion()
 				//Op.leer
 				char* path;
 				int sizePath;
-				memcpy(sizePath, mensaje->data, sizeof(int));
+				memcpy(&sizePath, mensaje->data, sizeof(int));
 				path = agregarBarraCero(mensaje->data + sizeof(int), sizePath);
-				memcpy(offset, mensaje->data+ sizeof(int) +sizePath, sizeof(int));
-				memcpy(size, mensaje->data + sizeof(int)*2 + sizePath, sizeof(int));
+				memcpy(&offset, mensaje->data+ sizeof(int) +sizePath, sizeof(int));
+				memcpy(&size, mensaje->data + sizeof(int)*2 + sizePath, sizeof(int));
 				// NO SE VALIDA, SE VALIDO CUANDO SE ABRIO EL ARCHIVO, SI EL PEDIDO ES INCORRECTO YA LO CHEQUEO EL KERNEL
 			/*	int retorno = validarArchivo(path);
 				if(retorno==-1){
@@ -171,8 +171,9 @@ void esperarOperacion()
 			}
 			case 5:{
 				//Op.borrar
+				puts("BORRAR");
 				int sizePath;
-				memcpy(sizePath, mensaje->data, sizeof(int));
+				memcpy(&sizePath, mensaje->data, sizeof(int));
 				char* path = agregarBarraCero(mensaje->data+sizeof(int), sizePath);
 				// IDEM
 			/*	int retorno = validarArchivo(path);
@@ -188,6 +189,7 @@ void esperarOperacion()
 				}
 				// CREO QUE NO LO NECESITA
 				//lSend(kernel, 1, 1, sizeof(int));
+				free(path);
 				break;
 			}
 			case 4:

@@ -751,11 +751,21 @@ void recibirDeCPU(int socket, connHandle* master)
 			int pid;
 			memcpy(&pid, mensaje->data, sizeof(int));
 			memcpy(&fd, mensaje->data+sizeof(int), sizeof(int));
-			if(!borrarArchivo(pid,fd))
+			int estado = borrarArchivo(pid,fd);
+			if(estado == -1)
 			{
 				puts("NO SE PUEDE BORRAR, HAY OTROS PROCESOS USANDOLO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
 				matarCuandoCorresponda(pid, -20);
+				lSend(socket, NULL, -3, 0);
 			}
+			else if(estado == 0)
+			{
+				puts("CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				lSend(socket, NULL, -3, 0);
+				matarCuandoCorresponda(pid, -2);
+			}
+			else
+				lSend(socket,NULL, 104, 0);
 			break;
 		}
 
@@ -786,6 +796,8 @@ void recibirDeCPU(int socket, connHandle* master)
 				lSend(socket, NULL, -3, 0);
 				matarCuandoCorresponda(info.pid, -2);
 			}
+			else
+				lSend(socket, NULL, 104, 0);
 			break;
 		}
 
@@ -817,6 +829,7 @@ void recibirDeCPU(int socket, connHandle* master)
 
 		case 211: // LEER ARCHIVO
 		{
+			puts("CPU QUIERE LEER");
 			fileInfo info;
 			memcpy(&info, mensaje->data, sizeof(fileInfo));
 			char* data = leerArchivo(info);

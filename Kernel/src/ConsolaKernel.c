@@ -148,8 +148,8 @@ void mostrarTablaDeArchivosProceso(int pid)
 
 void mostrarEntradaTablaArchivoProceso(entradaTablaFSProceso* entrada)
 {
-	puts("| CURSOR | FLAGS | APUNTA A (RUTA) |");
-	printf("| %i | %s | %s |\n", entrada->cursor, entrada->flags, entrada->entradaGlobal->ruta);
+	puts("|\tCURSOR\t|\tFLAGS\t|APUNTA A (RUTA)\t|");
+	printf("|\t %i\t|\t%s\t|\t%s\t|\n", entrada->cursor, entrada->flags, entrada->entradaGlobal->ruta);
 }
 
 void mostrarTablaDeArchivosGlobal()
@@ -161,8 +161,8 @@ void mostrarTablaDeArchivosGlobal()
 
 void mostrarEntradaTablaGlobalFS(entradaTablaGlobalFS* entrada)
 {
-	puts("| RUTA | INSTANCIAS |");
-	printf("| %s | %i |\n",entrada->ruta, entrada->instancias);
+	puts("|\tRUTA\t|\tINSTANCIAS\t|");
+	printf("|\t%s\t|\t%i\t|\n",entrada->ruta, entrada->instancias);
 }
 
 void mostrarProcesosEnEstado(int estado)

@@ -13,7 +13,7 @@ typedef struct rutaYPermisos {
 
 bool archivoValido(char* ruta);
 bool cerrarArchivo(int pid, int fd);
-bool borrarArchivo(int pid, int fd);
+int borrarArchivo(int pid, int fd);
 bool moverCursorArchivo(fileInfo info);
 bool escribirArchivo(fileInfo info, char* data);
 

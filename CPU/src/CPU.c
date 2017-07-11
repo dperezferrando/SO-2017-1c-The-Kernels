@@ -599,17 +599,16 @@ t_descriptor_archivo abrir(t_direccion_archivo ruta , t_banderas flags){
 	serializado rutaYFlagsSerializados;
 	char* cadenaFlags = flagsDecentes(flags);
 	rutaYFlagsSerializados = serializarRutaPermisos(ruta,cadenaFlags);
-	log_info(logFile, "EL SIZE ES: %i\n", rutaYFlagsSerializados.size);
 	lSend(kernel, rutaYFlagsSerializados.data, ABRIR_ARCHIVO, rutaYFlagsSerializados.size);
 	Mensaje* mensaje = lRecv(kernel);
 	if (mensaje->header.tipoOperacion == -3) {
-		log_info(logFile, "NO EXISTE ARCHIVO");
+		log_error(logFile, "[ABRIR ARCHIVO]: NO EXISTE ARCHIVO");
 		estado = ABORTADO;
 		fileDescriptor = -1;
 	}
 	else {
 		fileDescriptor = *(int*)mensaje->data;
-		log_info(logFile, "EL FD ES %i\n", fileDescriptor);
+		log_info(logFile, "[ABRIR ARCHIVO] FD: %i", fileDescriptor);
 	}
 	free(cadenaFlags);
 	free(rutaYFlagsSerializados.data);
@@ -622,9 +621,14 @@ void borrar(t_descriptor_archivo fileDescriptor){
 	fi.fd = fileDescriptor;
 	fi.pid = pcb->pid;
 	lSend(kernel, &fi, BORRAR_ARCHIVO, sizeof(fileInfo));
+	log_info(logFile, "[BORRAR ARCHIVO]: FD: %i", fileDescriptor);
 	Mensaje* m = lRecv(kernel);
 	if(m->header.tipoOperacion == -3)
+	{
+		log_error(logFile, "[BORRAR ARCHIVO]: NO EXISTE ARCHIVO O ALGUIEN MAS LO ESTA USANDO");
 		estado = ABORTADO;
+	}
+	destruirMensaje(m);
 }
 
 void cerrar(t_descriptor_archivo fileDescriptor) {
@@ -632,9 +636,14 @@ void cerrar(t_descriptor_archivo fileDescriptor) {
 	fi.fd = fileDescriptor;
 	fi.pid = pcb->pid;
 	lSend(kernel, &fi, CERRAR_ARCHIVO, sizeof(fileInfo));
+	log_info(logFile, "[CERRAR ARCHIVO] FD: %i", fileDescriptor);
 	Mensaje* m = lRecv(kernel);
 	if(m->header.tipoOperacion == -3)
+	{
 		estado = ABORTADO;
+		log_error(logFile, "[CERRAR ARCHIVO]: NO EXISTE ARCHIVO");
+	}
+	destruirMensaje(m);
 }
 
 void moverCursor(t_descriptor_archivo fileDescriptor, t_valor_variable cursor){
@@ -643,27 +652,33 @@ void moverCursor(t_descriptor_archivo fileDescriptor, t_valor_variable cursor){
 	fi.pid = pcb->pid;
 	fi.cursor = cursor;
 	lSend(kernel, &fi, MOVER_CURSOR_ARCHIVO, sizeof(fileInfo));
+	log_info(logFile, "[MOVER CURSOR]: FD: %i | OFFSET: %i\n", fileDescriptor, cursor);
 	Mensaje* m = lRecv(kernel);
 	if(m->header.tipoOperacion == -3)
+	{
 		estado = ABORTADO;
+		log_error(logFile, "[MOVER CURSOR]: NO EXISTE ARCHIVO");
+	}
+	destruirMensaje(m);
 }
 
 
 void escribir(t_descriptor_archivo fileDescriptor, void* info, t_valor_variable tamanio){
-	if(tamanio == 0)
-		tamanio = 4;
- 	tamanio = tamanio*4;
 	fileInfo fi;
  	 fi.fd = fileDescriptor;
  	 fi.pid = pcb->pid;
  	 fi.tamanio = tamanio;
  	 fi.cursor = -1;
- 	 log_info(logFile, "[ESCRIBIR]: ESCRIBO '%s' | FD: %i | SIZE: %i\n", (char*)info, fileDescriptor, tamanio);
+ 	 log_info(logFile, "[ESCRIBIR ARCHIVO]: ESCRIBO '%s' | FD: %i | SIZE: %i\n", (char*)info, fileDescriptor, tamanio);
  	 serializado escrituraSerializada = serializarPedidoEscrituraFS((char*)info, fi);
  	 lSend(kernel, escrituraSerializada.data, ESCRIBIR_ARCHIVO, escrituraSerializada.size);
  	 Mensaje* m = lRecv(kernel);
  	if(m->header.tipoOperacion == -3)
+ 	{
  		estado = ABORTADO;
+ 		log_error(logFile, "[ESCRIBIR ARCHIVO]: NO EXISTE ARCHIVO O PERMISOS INVALIDOS");
+ 	}
+ 	destruirMensaje(m);
 }
 
 void leer(t_descriptor_archivo fileDescriptor, t_puntero info, t_valor_variable tamanio){
@@ -674,30 +689,12 @@ void leer(t_descriptor_archivo fileDescriptor, t_puntero info, t_valor_variable 
 	lSend(kernel, &fi, LEER_ARCHIVO, sizeof(fileInfo));
 	Mensaje* m = lRecv(kernel);
 	if(m->header.tipoOperacion == -3)
+	{
 		estado = ABORTADO;
+		log_error(logFile, "[LEER ARCHIVO]: NO EXISTE ARCHIVO O PERMISOS INVALIDOS");
+	}
+	t_valor_variable valor = atoi(m->data);
+	log_info(logFile, "[LEER ARCHIVO]: LEO %i | FD: %i | SIZE: %i\n", valor, fileDescriptor, tamanio);
+	asignar(info, valor);
+	destruirMensaje(m);
 }
-
-
-/*t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas banderas){
-+	pedidoAperturaArchivo pedido;
-+	pedido.dir=direccion;
-+	pedido.flags = banderas;
-+	int sizePedido= strlen(direccion)+sizeof(banderas);
-+	pedidoAperturaArchivo* enviarPedido = serializarPedidoApertura(pedido);
-+
-+	lSend(kernel, enviarPedido, ABRIR_ARCHIVO, sizePedido);
-+
-+	Mensaje *m = lRecv(kernel);
-+	t_descriptor_archivo fd= (t_descriptor_archivo) m->data;
-+
-+	return fd;
-+}
-+
-+pedidoAperturaArchivo* serializarPedidoApertura(pedidoAperturaArchivo request){
-+	pedidoAperturaArchivo* ret = malloc(sizeof(pedidoAperturaArchivo));
-+	memcpy(&ret,&request.dir, strlen(request.dir));//no se si agregar el barra cero
-+	memcpy(&ret+strlen(request.dir),&request.flags, sizeof(t_banderas));
-+	return ret;
-+	free(ret);
-+}
-+*/
