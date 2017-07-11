@@ -38,7 +38,7 @@ bool cpuSock(int, connHandle*);
 bool consSock(int, connHandle*);
 bool isListener(int, connHandle);
 bool _usedFragment(HeapMetadata*);
-
+PageOwnership* pageToStore(MemoryRequest mr);
 
 
 void enviarInformacion(int);
@@ -50,7 +50,7 @@ void recibirDeConsola(int, connHandle*);
 void defragPage(t_list*, int, int, int);
 void _modifyMemoryPage(int,int,int,void*);
 void calculateFreeSpace(t_list*,int,void*);
-void initializePageOwnership(PageOwnership*);
+void initializePageOwnership(PageOwnership* po);
 void storeVariable(PageOwnership*, char*, int);
 void handleSockets(connHandle*, socketHandler);
 

@@ -134,6 +134,7 @@ void conexion_kernel(int conexion)
 			case 2:
 			{
 				// ESCRIBIR EN MEMORIA
+				puts("[HEAP]: KERNEL PIDE ESCRIBIR");
 				int pid;
 				pedidoEscrituraDelKernel* pedido = malloc(sizeof(pedidoEscrituraMemoria));
 				memcpy(&pid,mensaje->data,sizeof(int));
@@ -142,22 +143,27 @@ void conexion_kernel(int conexion)
 				memcpy(&pedido->posicion.size,mensaje->data+(sizeof(int)*3),sizeof(int));
 				pedido->data = malloc(pedido->posicion.size);
 				memcpy(pedido->data, mensaje->data+(sizeof(int)*4),pedido->posicion.size);
+				printf("[HEAP]: KERNEL PIDE ESCRIBIR PID: %i | PAG: %i | OFFSET: %i | SIZE: %i\n", pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
 				escribirDondeCorrespondaKernel(pid, pedido);
+
 				free(pedido);
 				break;
 			}
 			case 3:
 			{
 				//OTORGAR PAGINAS HEAP
+
 				int pid;
 				memcpy(&pid, mensaje->data, sizeof(int));
+				printf("[HEAP]: KERNEL PIDE PAGINA PARA PID: %i\n", pid);
 				if(!sePuedenAsignarPaginas(pid, 1))
 				{
 					lSend(conexion, NULL,-2,0);
 					break;
 				}
 				int paginaAsignada = tamanioProceso(pid);
-				lSend(conexion, paginaAsignada, 104,sizeof(int));
+				printf("[HEAP]: PAGINA ASIGNADA: %i\n", paginaAsignada);
+				lSend(conexion, &paginaAsignada, 104,sizeof(int));
 				crearEntradas(pid, 1, paginaAsignada);
 				printf("[OTORGAR PAGINAS HEAP]: PID: %i | Paginas: %i\n", pid, 1);
 				//https://github.com/sisoputnfrba/foro/issues/652
@@ -566,7 +572,7 @@ void escribirDondeCorrespondaKernel(int pid, pedidoEscrituraDelKernel* pedido)
 	{
 		puts("[CACHE]: EXISTE EN CACHE");
 		escribirBytesCache(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->data);
-		linea = solicitarBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
+	//	linea = solicitarBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
 	}
 	else
 	{
@@ -581,7 +587,7 @@ void escribirDondeCorrespondaKernel(int pid, pedidoEscrituraDelKernel* pedido)
 			if(config->entradas_cache != 0)
 			{
 				agregarACache(pid, pedido->posicion.pagina);
-				linea = solicitarBytesACache(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
+		//		linea = solicitarBytesACache(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
 			}
 		}
 	}
@@ -591,12 +597,12 @@ void escribirDondeCorrespondaKernel(int pid, pedidoEscrituraDelKernel* pedido)
 void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
 {
 	int* valorPuntero = &pedido->valor;
-	char* linea;
+//	char* linea;
 	if(config->entradas_cache > 0 && existeEnCache(pid, pedido->posicion.pagina))
 	{
 		puts("[CACHE]: EXISTE EN CACHE");
 		escribirBytesCache(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, valorPuntero);
-		linea = solicitarBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
+//		linea = solicitarBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
 	}
 	else
 	{
@@ -611,7 +617,7 @@ void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
 			if(config->entradas_cache != 0)
 			{
 				agregarACache(pid, pedido->posicion.pagina);
-				linea = solicitarBytesACache(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
+//				linea = solicitarBytesACache(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
 			}
 		}
 	}
@@ -627,6 +633,14 @@ entradaTabla* obtenerEntradaAproximada(int pid, int pagina)
 	pthread_mutex_unlock(&memoriaSem);
 	return pointer;
 }
+
+/*entradaTabla* obtenerEntradaDe(int pid, int pagina)
+{
+	entradaTabla* pointer = obtenerEntradaAproximada(pid, pagina);
+	while(pointer->pid != pid && pointer->pagina != pagina && pointer->frame != (config->marcos-1))
+		pointer++;
+	return pointer;
+}*/
 
 entradaTabla* obtenerEntradaDe(int pid, int pagina)
 {
@@ -725,13 +739,15 @@ int sePuedenAsignarPaginas(int pid, int cantidadDePaginas)
 void crearEntradas(int pid, int cantidadPaginas, int paginaInicial)
 {
 	entradaTabla* pointer = obtenerEntradaAproximada(pid, 0);
-	int i = paginaInicial;
+	int j = paginaInicial;
+	int i = 0;
 	while(i<cantidadPaginas)
 	{
 		if(pointer->pid == -1)
 		{
 			pointer->pid = pid;
-			pointer->pagina = i;
+			pointer->pagina = j;
+			j++;
 			i++;
 		}
 		pointer++;

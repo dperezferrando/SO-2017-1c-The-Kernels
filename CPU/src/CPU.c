@@ -480,15 +480,23 @@ void signal(t_nombre_semaforo nombre){
 
 t_puntero reservar(t_valor_variable nroBytes){
 
+	log_info(logFile, "[HEAP]: SE QUIEREN RESERVAR %i BYTES", nroBytes);
 	serializado pedido = serializarPedido(nroBytes);
 	lSend(kernel, pedido.data, RESERVAR_MEMORIA_HEAP, pedido.size);
 	Mensaje* respuesta = lRecv(kernel);
+	if(respuesta->header.tipoOperacion == -2)
+	{
+		log_error(logFile, "[HEAP]: NO HAY ESPACIO DISPONIBLE O SE SUPERO EL TAMANIO MAXIMO");
+		estado = ABORTADO;
+		return 0;
+	}
 	posicionEnMemoria posicion;
 	posicion.size = 0;
 	memcpy(&posicion.pagina, respuesta->data, sizeof(int));
 	memcpy(&posicion.offset, respuesta->data+sizeof(int), sizeof(int));
 	t_puntero puntero = convertirADireccionReal(posicion);
 	destruirMensaje(respuesta);
+	log_info(logFile, "[HEAP]: KERNEL DEVUELVE PUNTERO. DIR FISICA: %i | DIR LOGICA: PAG: %i | OFFSET: %i", puntero, posicion.pagina, posicion.offset);
 	return puntero;
 
 }
@@ -507,12 +515,15 @@ serializado serializarPedido(int num)
 
 void liberar(t_puntero puntero ){
 
+	log_info(logFile, "[HEAP]: SE LIBERA UN PUNTERO");
 	posicionEnMemoria posicion = convertirADireccionLogica(puntero);
-	int size = sizeof(int)*2;
+	int size = sizeof(int)*3;
 	char* data = malloc(size);
-	memcpy(data, posicion.pagina, sizeof(int));
-	memcpy(data+sizeof(int), posicion.offset, sizeof(int));
+	memcpy(data, &pcb->pid, sizeof(int));
+	memcpy(data+sizeof(int), &posicion.pagina, sizeof(int));
+	memcpy(data+sizeof(int)*2, &posicion.offset, sizeof(int));
 	lSend(kernel, data, LIBERAR_PUNTERO, size);
+	log_info(logFile, "[HEAP]: SE LIBERA PUNTERO DIR FISICA: %i | DIR LOGICA: PAG: %i | OFFSET: %i", puntero, posicion.pagina, posicion.offset);
 
 }
 

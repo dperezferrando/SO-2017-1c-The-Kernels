@@ -42,6 +42,7 @@ int main(int argc, char** argsv) {
 	colaFinished=queue_create();
 	tablaGlobalFS = list_create();
 	tablasDeProcesosFS = list_create();
+	ownedPages = list_create();
 	crearListaDeColasSemaforos();
 	pthread_create(&consolaKernel, NULL, (void*) recibir_comandos, NULL);
 	handler();
