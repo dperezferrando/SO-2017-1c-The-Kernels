@@ -1,0 +1,16 @@
+begin
+variables a, b
+b = 3
+a <- f b
+end
+
+function f
+variables c
+c <- g $0
+end
+
+function g
+variables d
+d <- f $0
+end
+
