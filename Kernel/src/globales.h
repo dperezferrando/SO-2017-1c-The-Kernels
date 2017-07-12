@@ -109,10 +109,14 @@ pthread_t consolaKernel;
 pthread_mutex_t mColaNew;
 pthread_mutex_t mColaReady;
 pthread_mutex_t mColaCPUS;
+pthread_mutex_t mListaExec;
+pthread_mutex_t mListaBlocked;
+pthread_mutex_t mColaFinished;
 pthread_mutex_t mtablasDeProcesosFS;
 pthread_mutex_t mtablaGlobalFS;
 pthread_mutex_t mMultiprog;
 pthread_mutex_t mProcess;
+pthread_mutex_t mMaxPID;
 
 /*
  * en caso de ver que sea necesario *

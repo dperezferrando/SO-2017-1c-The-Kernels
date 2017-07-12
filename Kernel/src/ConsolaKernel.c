@@ -13,8 +13,9 @@ void recibir_comandos()
 			if(comando[1] == NULL)
 			{
 				puts("-------TODOS LOS PROCESOS (INCLUYE EXIT)------");
-				//MUTEX
+				pthread_mutex_lock(&mProcess);
 				list_iterate(process, mostrarPorConsola);
+				pthread_mutex_unlock(&mProcess);
 				//MUTEX
 				puts("-------TODOS LOS PROCESOS (INCLUYE EXIT)------");
 			}
@@ -27,33 +28,35 @@ void recibir_comandos()
 			else if(!strcmp(comando[1], "ready"))
 			{
 				puts("-------COLA READY------");
-				//MUTEX
+				pthread_mutex_lock(&mColaReady);
 				list_iterate(colaReady->elements, mostrarPID);
-				//MUTEX
+				pthread_mutex_unlock(&mColaReady);
 				puts("-------COLA READY------");
 			}
 			else if(!strcmp(comando[1], "execute"))
 			{
 				puts("-------COLA EXECUTE------");
-				//MUTEX
+				pthread_mutex_lock(&mListaExec);
 				list_iterate(executeList, mostrarPID);
-				//MUTEX
+				pthread_mutex_unlock(&mListaExec);
+
 				puts("-------COLA EXECUTE------");
 			}
 			else if(!strcmp(comando[1], "blocked"))
 			{
 				puts("-------COLA BLOCKED------");
-				//MUTEX
+				pthread_mutex_lock(&mListaBlocked);
 				list_iterate(blockedList, mostrarPID);
-				//MUTEX
+				pthread_mutex_unlock(&mListaBlocked);
+
 				puts("-------COLA BLOCKED------");
 			}
 			else if(!strcmp(comando[1], "exit"))
 			{
 				puts("-------COLA EXIT------");
-				//MUTEX
+				pthread_mutex_lock(&mColaFinished);
 				list_iterate(colaFinished->elements, mostrarPID);
-				//MUTEX
+				pthread_mutex_unlock(&mColaFinished);
 				puts("-------COLA EXIT------");
 			}
 		}
@@ -69,6 +72,7 @@ void recibir_comandos()
 			else
 			{
 				int pid = atoi(comando[1]);
+				pthread_mutex_lock(&mMaxPID);
 				if(pid > maxPID | pid < 0)
 					puts("PID INVALIDO");
 				else
@@ -77,6 +81,7 @@ void recibir_comandos()
 					mostrarTablaDeArchivosProceso(pid);
 					printf("-------TABLA DE ARCHIVOS PID: %i-------\n", pid);
 				}
+				pthread_mutex_unlock(&mMaxPID);
 			}
 		}
 		else if(!strcmp(comando[0], "multiprog"))
@@ -171,10 +176,11 @@ void mostrarProcesosEnEstado(int estado)
 	{
 		return estado == pc->state;
 	}
-	//MUTEX
-	t_list* filtrados = list_filter(process, mismoEstado);
-	//MUTEX
-	list_iterate(filtrados, mostrarPorConsola);
+	pthread_mutex_lock(&mProcess);
+	t_list* filtrados = list_filter(process, &mismoEstado);
+	pthread_mutex_unlock(&mProcess);
+	list_iterate(filtrados, &mostrarPorConsola);
+
 }
 
 void mostrarPorConsola(ProcessControl* pc)

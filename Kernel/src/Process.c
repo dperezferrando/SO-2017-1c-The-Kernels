@@ -10,7 +10,9 @@
 
 PCB* createProcess(char* script, int tamanioScript){
 	PCB* pcb = malloc(sizeof(PCB));
+	pthread_mutex_lock(&mMaxPID);
 	pcb->pid = (maxPID++);
+	pthread_mutex_unlock(&mMaxPID);
 	t_metadata_program* metadata = metadata_desde_literal(script);
 	pcb->cantPaginasCodigo = ceil((double)tamanioScript/(double)config->PAG_SIZE);
 	pcb->sizeIndiceCodigo = metadata->instrucciones_size*sizeof(indCod);
@@ -299,8 +301,8 @@ ProcessControl* PIDFind(int PID){
 
 void modifyProcessState(int PID, int newState){
 	ProcessControl* pc = PIDFindAndRemove(PID);
-	pc->state= newState;
 	pthread_mutex_lock(&mProcess);
+	pc->state= newState;
 	list_add(process, pc);
 	pthread_mutex_unlock(&mProcess);
 }
