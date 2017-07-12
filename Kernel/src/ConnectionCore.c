@@ -364,10 +364,6 @@ int offset(t_list* heap, int pos){
 	list_add(po->control,hc);
 }*/
 
-
-
-
-
 //------------------------------------------------Defragmentación-----------------------------------------------------------//
 
 /*bool fragmented (t_list* page){
@@ -390,7 +386,6 @@ bool fragmented (t_list* page){
 	}
 
 	return hayDos;
-
 
 }
 
@@ -460,10 +455,35 @@ void* getMemoryPage(int pid, int idPage){
 	return memPage;
 }*/
 
+bool isEmpty(t_list* page){
+	int i;
+	for(i=0;i<list_size(page);i++){
+		HeapMetadata* hm = list_get(page,i);
+		if(!hm->isFree){
+			return 0;
+		}
+	}
+	return 1;
+}
+
 
 void* defragging(int pid, int idPage, t_list* page){
 
-    if(!fragmented(page)) return 0;
+    if(!fragmented(page)) return NULL;
+
+    if(isEmpty(page)){
+    	int findIndex(int pid, int idPage){
+    		int i;
+    		for(i=0;i<list_size(ownedPages);i++){
+    			PageOwnership* po= list_get(ownedPages,i);
+    			if(po->pid==pid && po->idpage==idPage)break;
+    		}
+    		return i;
+    	}
+    	int index= findIndex(pid,idPage);
+    	PageOwnership* po= findPage(pid,idPage);
+    	freePage(po,index);
+    }
 
     HeapMetadata* hm;
 

@@ -175,7 +175,7 @@ void conexion_kernel(int conexion)
 				// LIBERAR PAGINA HEAP
 				int pid, pagina;
 				memcpy(&pid, mensaje->data, sizeof(int));
-				memcpy(&pagina, mensaje->data, sizeof(int));
+				memcpy(&pagina, mensaje->data+sizeof(int), sizeof(int));
 				entradaTabla* pointer;
 				pointer = obtenerEntradaDe(pid, pagina);
 				pointer->pagina = -1;

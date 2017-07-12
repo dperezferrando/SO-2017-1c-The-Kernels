@@ -70,6 +70,7 @@ void killProcess(int PID,int exitCode){
 	quitarDeColaDelSemaforoPorKill(PID);
 	eliminarEntradasDelProceso(PID);
 	_modifyExitCode(PID,exitCode);
+	freeProcessPages(PID);
 	if(checkMultiprog() && queue_size(colaNew) >0)
 		readyProcess();
 
@@ -320,4 +321,42 @@ void destruirProcessControl(ProcessControl* pc)
 {
 	free(pc->script);
 	free(pc);
+}
+
+
+//---------------------------------------------------------Destruccion de paginas de heap del proceso que muere----------------------------------------------------//
+
+
+
+void freeProcessPages(int pid){
+	int i;
+	bool PIDFind(PageOwnership* po){
+		return po->pid= pid;
+	}
+	t_list* paginas= list_filter(ownedPages, &PIDFind);
+	int size= list_size(paginas);
+	for(i=0;i<size;i++){
+		PageOwnership* po= list_get(paginas,0);
+		freePage(po,0);
+	}
+}
+
+void freePage(PageOwnership* po, int index){
+	void* msg= malloc(sizeof(int)*2);
+	memcpy(msg,&po->pid,sizeof(int));
+	memcpy(msg+sizeof(int),&po->idpage,sizeof(int));
+	lSend(conexionMemoria,msg,4,sizeof(int)*2);
+	list_remove_and_destroy_element(ownedPages,index,&destroyPageOwnership);
+}
+
+
+void destroyPageOwnership(PageOwnership* po){
+	int i;
+	list_destroy(po->control);
+	int size= list_size(po->occSpaces);
+	for (i=0;i<size;i++){
+		list_remove_and_destroy_element(po->occSpaces,0,&free);
+	}
+	list_destroy(po->occSpaces);
+	free(po);
 }

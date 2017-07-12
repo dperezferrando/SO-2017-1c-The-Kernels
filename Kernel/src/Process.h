@@ -14,8 +14,6 @@
 ProcessControl* PIDFind(int);
 ProcessControl* PIDFindAndRemove(int);
 
-void matarSiCorresponde(int pid);
-void newProcess(PCB*, int, char*, int);
 PCB* fromNewToReady();
 PCB* fromReadyToExecute();
 PCB* fromReadyToFinished();
@@ -32,12 +30,19 @@ PCB* _fromQueueToQueue(t_queue*, t_queue*, int);
 PCB* _fromListToList(t_list*, t_list*, int, int);
 PCB* _fromListToQueue(t_list*, t_queue*, int PID, int);
 
-void destruirProcessControl(ProcessControl* pc);
+
 void killProcess(int,int);
+void freeProcessPages(int);
+void matarSiCorresponde(int pid);
 void modifyProcessState(int, int);
+void freePage(PageOwnership*, int);
+void newProcess(PCB*, int, char*, int);
+void destroyPageOwnership(PageOwnership*);
+void destruirProcessControl(ProcessControl* pc);
 void _processChangeStateToList(t_list*, PCB*, int);
 void _processChangeStateToQueue(t_queue*, PCB*, int);
 
 int replacePCBinQueue(PCB*,t_queue*);
+
 #endif
 
