@@ -1,6 +1,6 @@
 #ifndef __PROC_TEST__
 #define __PROC_TEST__
-#include "../Process.h"
+#include "Process.h"
 #include "CUnit/Basic.h"
 
 PCB* pcb;
