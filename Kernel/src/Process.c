@@ -331,7 +331,7 @@ void destruirProcessControl(ProcessControl* pc)
 void freeProcessPages(int pid){
 	int i;
 	bool PIDFind(PageOwnership* po){
-		return po->pid= pid;
+		return po->pid== pid;
 	}
 	t_list* paginas= list_filter(ownedPages, &PIDFind);
 	int size= list_size(paginas);
@@ -345,8 +345,9 @@ void freePage(PageOwnership* po, int index){
 	void* msg= malloc(sizeof(int)*2);
 	memcpy(msg,&po->pid,sizeof(int));
 	memcpy(msg+sizeof(int),&po->idpage,sizeof(int));
-	lSend(conexionMemoria,msg,4,sizeof(int)*2);
+	if(!test)lSend(conexionMemoria,msg,4,sizeof(int)*2);
 	list_remove_and_destroy_element(ownedPages,index,&destroyPageOwnership);
+	free(msg);
 }
 
 

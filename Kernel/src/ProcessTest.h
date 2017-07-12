@@ -28,6 +28,7 @@ int initializePCBinQueue(t_queue* queue);
 void testPIDFind();
 void testNewProcess();
 void testReadyProcess(int);
+void freProcessPagesTest();
 void testModifyProcessState();
 void testExecuteProcessCPUOk();
 void testExecuteProcessCPUNotOk();

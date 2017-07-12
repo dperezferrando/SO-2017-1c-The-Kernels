@@ -174,6 +174,40 @@ void testModifyProcessState() {
 	free(pc1);
 }
 
+void freProcessPagesTest(){
+	ownedPages= list_create();
+	PageOwnership* po1 = malloc(sizeof(PageOwnership));
+	PageOwnership* po2 = malloc(sizeof(PageOwnership));
+	po1->pid=0;
+	po1->idpage=1;
+	po2->pid=0;
+	po2->idpage=2;
+	initializePageOwnership(po1);
+	HeapMetadata* hm1= malloc(sizeof(HeapMetadata));
+	hm1->isFree= 1;
+	hm1->size=100;
+	list_add_in_index(po1->occSpaces,0,hm1);
+	HeapMetadata* hmaux = list_get(po1->occSpaces,1);
+	hmaux->size= hmaux->size-hm1->size;
+	initializePageOwnership(po2);
+	HeapMetadata* hm2= malloc(sizeof(HeapMetadata));
+	hm2->isFree= 1;
+	hm2->size=100;
+	list_add_in_index(po2->occSpaces,0,hm2);
+	hmaux = list_get(po2->occSpaces,1);
+	hmaux->size= hmaux->size-hm1->size;
+
+	list_add(ownedPages,po1);
+	list_add(ownedPages,po2);
+
+	freeProcessPages(0);
+
+	CU_ASSERT_EQUAL(0,list_size(ownedPages));
+
+	list_destroy(ownedPages);
+
+}
+
 
 //-----------------------------------------Funciones de Inicializacion-----------------------------------------------------//
 
