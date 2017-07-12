@@ -14,7 +14,9 @@ void handleSockets(connHandle* master, socketHandler result){
 			}
 			else if(p==master->listenCPU)
 			{
+				puts("ENTRA CPU");
 				int unCPU = lAccept(p, CPU_ID);
+				printf("CPU LISTO: SOCKET: %i", unCPU);
 				addReadSocket(unCPU,&(master->cpu));
 				aceptarNuevoCPU(unCPU);
 			}
