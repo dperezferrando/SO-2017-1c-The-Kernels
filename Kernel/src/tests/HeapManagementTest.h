@@ -7,6 +7,7 @@
 void freeMemoryTest();
 void defraggingTest();
 void occupyPageSizeTest();
+void globalVariableTest();
 void grabarPedidoTestNewPage();
 void grabarPedidoTestNotNewPage();
 void pageToStoreTestPageAvailable();

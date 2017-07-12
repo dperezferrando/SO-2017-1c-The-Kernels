@@ -65,6 +65,7 @@ t_list* findProcessPages(int);
 PageOwnership* findPage(int, int);
 MemoryRequest deserializeMemReq(void*);
 HeapMetadata* initializeHeapMetadata(int);
+GlobalVariable* findGlobalVariable(char* );
 
 //Para semaforos
 int sonIguales(char* s1, char* s2);

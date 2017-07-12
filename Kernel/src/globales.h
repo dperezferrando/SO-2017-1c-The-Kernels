@@ -56,6 +56,11 @@ struct entradaTablaFSProceso
 
 } typedef entradaTablaFSProceso;
 
+struct GlobalVariable{
+	char* name;
+	int value;
+} typedef GlobalVariable;
+
 struct tablaDeProceso // Lista de tablas de proceso (que a su vez son una lista)
 {
 	int pid;
@@ -87,6 +92,7 @@ t_list* blockedList;
 t_list* listaDeColasSemaforos;
 t_list* tablaGlobalFS;
 t_list* tablasDeProcesosFS;
+t_list* globalVariables;
 
 configFile* config;
 

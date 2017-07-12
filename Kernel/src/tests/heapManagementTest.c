@@ -557,3 +557,20 @@ void defraggingTest(){
 
 }
 
+void globalVariableTest(){
+	GlobalVariable* gb= findGlobalVariable(config->SHARED_VARS[0]+1);
+	CU_ASSERT_EQUAL(0,strcmp(config->SHARED_VARS[0]+1,gb->name));
+	//puts("\n---------------------------------------------------------");
+	//printf("\nEl nombre es: %s, y debería ser: %s\n",gb->name,"Global");
+	//puts("---------------------------------------------------------");
+	gb= findGlobalVariable(config->SHARED_VARS[1]+1);
+	CU_ASSERT_EQUAL(0,strcmp(config->SHARED_VARS[1]+1,gb->name));
+	//puts("---------------------------------------------------------");
+	//printf("\nEl nombre es: %s, y debería ser: %s\n",gb->name,"UnaVar");
+	//puts("---------------------------------------------------------");
+	gb= findGlobalVariable(config->SHARED_VARS[2]+1);
+	CU_ASSERT_EQUAL(0,strcmp(config->SHARED_VARS[2]+1,gb->name));
+	//puts("---------------------------------------------------------");
+	//printf("\nEl nombre es: %s, y debería ser: %s\n",gb->name,"tiempo3");
+	//puts("---------------------------------------------------------\n");
+}
