@@ -12,7 +12,10 @@ C_SRCS += \
 ../src/KernelConfiguration.c \
 ../src/Listen.c \
 ../src/Process.c \
-../src/SocketLibrary.c 
+../src/ProcessTest.c \
+../src/SocketLibrary.c \
+../src/heapManagementTest.c \
+../src/kernelTest.c 
 
 OBJS += \
 ./src/CapaFileSystem.o \
@@ -23,7 +26,10 @@ OBJS += \
 ./src/KernelConfiguration.o \
 ./src/Listen.o \
 ./src/Process.o \
-./src/SocketLibrary.o 
+./src/ProcessTest.o \
+./src/SocketLibrary.o \
+./src/heapManagementTest.o \
+./src/kernelTest.o 
 
 C_DEPS += \
 ./src/CapaFileSystem.d \
@@ -34,7 +40,10 @@ C_DEPS += \
 ./src/KernelConfiguration.d \
 ./src/Listen.d \
 ./src/Process.d \
-./src/SocketLibrary.d 
+./src/ProcessTest.d \
+./src/SocketLibrary.d \
+./src/heapManagementTest.d \
+./src/kernelTest.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
