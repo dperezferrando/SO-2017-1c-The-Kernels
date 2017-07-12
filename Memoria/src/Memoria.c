@@ -20,6 +20,7 @@ configFile* config;
 pthread_t conexionKernel, esperarCPUS, consolaMemoria;
 pthread_mutex_t memoriaSem;
 pthread_mutex_t cacheSem;
+#define LOCALHOST 192.168.3.12
 
 
 
@@ -95,8 +96,8 @@ void mostrarTablaPaginas()
 
 void levantarSockets()
 {
-	kernel = getBindedSocket("127.0.0.1", config->puerto_kernel);
-	cpu = getBindedSocket("127.0.0.1", config->puerto_cpu);
+	kernel = getBindedSocket(LOCALHOST, config->puerto_kernel);
+	cpu = getBindedSocket(LOCALHOST, config->puerto_cpu);
 	lListen(kernel, 5);
 	lListen(cpu, 5);
 }
