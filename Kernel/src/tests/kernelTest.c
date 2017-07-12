@@ -17,6 +17,7 @@ int kernelTest(int flag){
 	CU_add_test(heapTest, "grabarPedidoTestNotNewPage", grabarPedidoTestNotNewPage);
 	//CU_add_test(heapTest, "freeMemoryTest", freeMemoryTest);
 	CU_add_test(heapTest, "defraggingTest", defraggingTest);
+	CU_add_test(heapTest, "globalVariableTest", globalVariableTest);
 
 
 	CU_pSuite processTest = CU_add_suite("process",initializeProcessQueuesAndLists,destroyProcessQueuesAndLists);

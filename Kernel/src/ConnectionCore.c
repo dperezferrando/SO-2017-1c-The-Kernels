@@ -654,6 +654,28 @@ void recibirDeCPU(int socket, connHandle* master)
 			matarSiCorresponde(pcb->pid);
 			executeProcess();
 			break;
+		case 200:
+		{
+			//obtener valor variable compartida
+			char* nombre= malloc(mensaje->header.tamanio);
+			memcpy(nombre,mensaje->data,mensaje->header.tamanio);
+			GlobalVariable * gb= findGlobalVariable(nombre);
+			lSend(conexionMemoria,&gb->value,104,sizeof(int));
+			break;
+		}
+		case 201:
+		{
+			//asignar valor variable compartida
+			int len=0;
+			memcpy(&len,mensaje->data,sizeof(int));
+			char* nombre= malloc(len);
+			memcpy(nombre,mensaje->data+sizeof(int),len);
+			int newValue= 0;
+			memcpy(&newValue,mensaje->data+sizeof(int)*2,sizeof(int));
+			GlobalVariable * gb= findGlobalVariable(nombre);
+			gb->value= newValue;
+			break;
+		}
 		case 204:
 		{
 			// RESERVAR HEAP
@@ -971,6 +993,13 @@ int PIDFindPO(int PID){
 		return po->pid== PID;
 	}
 	return *((int*)list_find(ownedPages,&(_PIDFind)));
+}
+
+GlobalVariable* findGlobalVariable(char* nombre){
+	bool isNamed(GlobalVariable* gb){
+		return !strcmp(gb->name,nombre);
+	}
+	return list_find(globalVariables,&isNamed);
 }
 
 //---------------------------------------------------Para semaforos----------------------------------------------------//

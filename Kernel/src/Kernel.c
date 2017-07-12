@@ -22,7 +22,7 @@ int main(int argc, char** argsv) {
 
 	puts("!!!Hello Kernel!!!\n"); /* prints !!!Hello World!!! */
 	config = configurate(RUTA, readConfigFile, keys);
-	//config = configurate("/home/utnso/workspace/tp-2017-1c-The-Kernels/Kernel/Debug/config.conf", readConfigFile, keys);
+	initializeGlobalVariables();
 	if(argc > 1 && strcmp(argsv[1],"-test")==0){
 		test=1;
 		kernelTest(1);
@@ -92,4 +92,15 @@ void destruirListaDeColasSemaforos()
 	list_destroy_and_destroy_elements(listaDeColasSemaforos, destruirColaSemaforo);
 }
 
-
+void initializeGlobalVariables(){
+	int i;
+	globalVariables= list_create();
+	GlobalVariable* gb;
+	for(i=0;config->SHARED_VARS[i]!= NULL;i++){
+		gb = malloc(sizeof(GlobalVariable));
+		gb->name = malloc(strlen(config->SHARED_VARS[i]));
+		memcpy(gb->name,config->SHARED_VARS[i]+1,strlen(config->SHARED_VARS[i]));
+		gb->value=0;
+		list_add(globalVariables,gb);
+	}
+}
