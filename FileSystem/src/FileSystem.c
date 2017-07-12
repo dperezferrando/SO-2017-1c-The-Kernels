@@ -1,5 +1,6 @@
 #include "FileSystem.h"
 
+#define LOCALHOST "192.168.3.12"
 configFile* config;
 metadata* metad;
 
@@ -13,7 +14,7 @@ int main(int argc, char** argsv) {
 	puts("bitmap al dia");
 	//testsmuycabezitas();
 	//while(1){puts("listo");}
-	kernel = getBindedSocket("127.0.0.1", config->puerto);
+	kernel = getBindedSocket(LOCALHOST, config->puerto);
 	lListen(kernel, 5);
 	puts("ESPERANDO AL KERNEL");
 	conexion = lAccept(kernel, KERNEL_ID);
