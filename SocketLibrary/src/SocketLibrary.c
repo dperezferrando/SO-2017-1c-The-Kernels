@@ -52,6 +52,7 @@ int getBindedSocket(char* ip, char* port){
 
 int getConnectedSocket(char* ip, char* port, int idPropia){
 	int(*action)(int,const struct sockaddr*,socklen_t)=&connect;
+	puts("GET CON SOCKET");
 	int socket = internalSocket(ip,port,action);
 	if(!enviarHandShake(socket, idPropia))
 		errorIfEqual(0,0,"El servidor no admite conexiones para este proceso");
@@ -238,6 +239,7 @@ addrInfo* getaddrinfocall(char* ip, char* port) {
 
 int internalSocket(char* ip, char* port,int (*action)(int,const struct sockaddr *,socklen_t)){
 	addrInfo* addr= getaddrinfocall(ip,port);
+	puts("INTERNAL SOCKET");
 	int s= _getFirstSocket(addr,action);
 	errorIfEqual(s,NULL,"socket");
 	freeaddrinfo(addr);
@@ -247,7 +249,7 @@ int internalSocket(char* ip, char* port,int (*action)(int,const struct sockaddr 
 int _getFirstSocket(addrInfo* addr, int (*action)(int,const struct sockaddr *,socklen_t)){
 	int s=NULL;
 	addrInfo* p;
-
+	puts("GET FIRST");
 	for	(p=addr; (p != NULL) ; p= p->ai_next){
 
 		if((s=socket(p->ai_family,p->ai_socktype,p->ai_protocol))<0)continue;
@@ -260,6 +262,7 @@ int _getFirstSocket(addrInfo* addr, int (*action)(int,const struct sockaddr *,so
 	}
 
 	if(p==NULL){
+		puts("AY");
 		fprintf(stderr, "selectserver: failed to bind or connect");
 		close(s);
 		exit(2);
