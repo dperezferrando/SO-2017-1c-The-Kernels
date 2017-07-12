@@ -9,7 +9,15 @@
 #include <stdint.h>
 #include "KernelConfiguration.h"
 #include "SocketLibrary.h"
+#include <sys/types.h>
+#include <sys/inotify.h>
 
+#define RUTA "/home/utnso/Escritorio/tp-2017-1c-The-Kernels/Kernel/Debug/config.conf"
+//#define RUTA "/home/utnso/workspace/tp-2017-1c-The-Kernels/Kernel/Debug/config.conf"
+
+// inotify sida
+#define EVENT_SIZE  ( sizeof (struct inotify_event) + 24 )
+#define BUF_LEN     ( 1024 * EVENT_SIZE )
 
 struct ProcessControl{
 	int pid;

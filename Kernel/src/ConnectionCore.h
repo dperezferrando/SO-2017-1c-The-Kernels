@@ -15,6 +15,7 @@ typedef struct connectionHandler{
 	socketHandler consola;
 	int listenCPU;
 	int listenConsola;
+	int inotify;
 }connHandle;
 
 

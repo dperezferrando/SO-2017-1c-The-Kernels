@@ -30,7 +30,7 @@ connHandle initializeConnectionHandler(){
 socketHandler updateSockets(connHandle master){
 	fd_set aux;
 	FD_ZERO(&aux);
-	int maxSocket= max(max(master.consola.nfds,master.cpu.nfds),max(master.listenCPU+1,master.listenConsola+1));
+	int maxSocket= max(max(max(master.consola.nfds,master.cpu.nfds),max(master.listenCPU+1,master.listenConsola+1)),master.inotify+1);
 	int p;
 	//printf("max: %i\nSockets:", maxSocket);
 	for(p=0;p<maxSocket;p++){
@@ -62,6 +62,9 @@ void initialize(configFile* config,connHandle* handleMaster){
 	lListen(conexionCPU, BACKLOG);
 	handleMaster->listenConsola= conexionConsola;
 	handleMaster->listenCPU= conexionCPU;
+	int inotify = inotify_init();
+	int watch_inotify = inotify_add_watch(inotify, "/home/utnso/Escritorio/tp-2017-1c-The-Kernels/Kernel/Debug/", IN_CLOSE_WRITE);
+	handleMaster->inotify = inotify;
 
 }
 
