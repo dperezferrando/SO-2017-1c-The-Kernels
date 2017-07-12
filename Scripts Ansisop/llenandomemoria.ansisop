@@ -1,0 +1,6 @@
+begin
+variables a
+:ready
+alocar a 247
+goto ready
+end

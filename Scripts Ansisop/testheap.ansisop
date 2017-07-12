@@ -1,0 +1,11 @@
+begin
+prints l HOLA
+variables a, b, c
+alocar a 130
+alocar b 70
+liberar b
+alocar c 111
+liberar a
+liberar c
+wait SEM1
+end

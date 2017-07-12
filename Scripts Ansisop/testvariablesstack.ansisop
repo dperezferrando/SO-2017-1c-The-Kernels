@@ -1,0 +1,24 @@
+#script para testear division de datos en paginas stack con paginas de 37 bytes
+begin
+variables a,b,c,d,e,f,g,h,i,j,k,l
+a = 1
+b = 2
+c = 3
+d = 4
+e = 5
+f = 6
+g = 7
+h = 8
+i = 1334
+j = 1337
+k = 11
+l <- humito j
+variables n
+n = 12
+end
+
+function humito
+variables m
+m = $0 + $0
+return m
+end

@@ -1,0 +1,6 @@
+begin
+wait SEM1
+variables a
+a = 5
+signal SEM2
+end

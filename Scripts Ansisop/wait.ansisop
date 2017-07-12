@@ -1,0 +1,8 @@
+begin
+variables a, b, c
+a = 5
+b = 3
+signal SEM1
+wait SEM2
+c = a + b
+end

@@ -1,0 +1,6 @@
+begin
+variables f
+abrir f L /lol
+wait SEM1
+cerrar f
+end

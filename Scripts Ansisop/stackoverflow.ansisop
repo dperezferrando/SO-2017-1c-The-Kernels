@@ -1,0 +1,15 @@
+begin
+f
+end
+
+function f
+variables a
+a=1
+g
+end
+
+function g
+variables a
+a=0
+f
+end

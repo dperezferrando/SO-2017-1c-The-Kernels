@@ -1,0 +1,11 @@
+begin
+variables a, f
+alocar a 4
+abrir f L /test
+buscar f 66
+leer f a 1
+prints n *a
+liberar a
+wait SEM1
+cerrar f
+end
