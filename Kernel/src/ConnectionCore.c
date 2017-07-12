@@ -729,6 +729,8 @@ void recibirDeCPU(int socket, connHandle* master)
 
 			if(!test)lSend(socket,msg,104,sizeof(int)*2);
 
+			free(msg);
+
 			break;
 		}
 		case 205:
