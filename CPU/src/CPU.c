@@ -11,11 +11,11 @@
 
 int main(int argc, char** argsv) {
 	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/CPU/Debug/CPU.conf", leer_archivo_configuracion, keys);
-/*	if(fopen(config->log, "r") != NULL)
-		remove(config->log);*/
-	logFile = log_create(config->log, "CPU", 1, 1);
+	levantarLog();
+	toBeKilled = 0;
+	signal(SIGUSR1, sig_handler);
 	iniciarConexiones();
-	while(1) // EN UN FUTURO ESTO SE CAMBIA POR EL ENVIO DE LA SEÑAL SIGUSR1
+	while(toBeKilled == 0) // EN UN FUTURO ESTO SE CAMBIA POR EL ENVIO DE LA SEÑAL SIGUSR1
 	{
 		if(esperarPCB() == -1)
 		{
@@ -35,7 +35,12 @@ int main(int argc, char** argsv) {
 			pcb->programCounter++;
 			rafagas++;
 			if(quantum != 0 && rafagas == quantum && estado == OK)
-				estado = EXPULSADO;
+			{
+				if(toBeKilled == 0)
+					estado = EXPULSADO;
+				else
+					estado = KILLED;
+			}
 		}
 		log_info(logFile, "[PCB EXPULSADO]: PID: %i | ESTADO: %i\n", pcb->pid, estado);
 		serializado pcbSerializado = serializarPCB(pcb);
@@ -45,13 +50,28 @@ int main(int argc, char** argsv) {
 		destruirPCB(pcb);
 	}
 	free(config);
-	close(kernel);
+//	close(kernel);
 	close(memoria);
 	log_destroy(logFile);
 	return EXIT_SUCCESS;
 
 }
 
+void sig_handler(int signo)
+{
+  if (signo == SIGUSR1)
+  {
+	  log_warning(logFile, "[SEÑAL DE DESCONEXION] NOS VIMOS PAPUS");
+	  toBeKilled = 1;
+  }
+}
+
+void levantarLog()
+{
+	if(fopen(config->log, "r") != NULL)
+		remove(config->log);
+	logFile = log_create(config->log, "CPU", 1, 1);
+}
 void iniciarConexiones()
 {
 	kernel = getConnectedSocket(config->ip_Kernel, config->puerto_Kernel, CPU_ID);
@@ -320,12 +340,12 @@ void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor)
 	log_info(logFile, "[ESCRIBIR EN MEMORIA]: PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %i\n", posicion.pagina, posicion.offset, posicion.size, valor);
 	int limiteStack = pcb->cantPaginasCodigo+stackSize;
 	int total = posicion.offset + posicion.size;
-	/*if(posicion.pagina >= limiteStack)
+	if(posicion.pagina >= limiteStack)
 	{
-		log_info(logFile, "[ESCRIBIR EN MEMORIA]: STACK OVER FLOW PAPU - PROGRAMA ABORTADO");
+		log_error(logFile, "[ESCRIBIR EN MEMORIA]: STACK OVER FLOW PAPU - PROGRAMA ABORTADO");
 		estado = STKOF;
 		return;
-	}*/
+	}
 
 	if(total <= tamanioPagina)
 		enviarPedidoEscrituraMemoria(posicion, valor);
@@ -346,12 +366,12 @@ void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor)
 		posicion.size = segundoSize;
 		memcpy(&valorAEnviar, puntero, posicion.size);
 		log_info(logFile, "[ESCRIBIR EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
-		/*if(posicion.pagina >= limiteStack)
+		if(posicion.pagina >= limiteStack)
 		{
-			log_info(logFile, "[ESCRIBIR EN MEMORIA]: STACK OVER FLOW PAPU - PROGRAMA ABORTADO");
+			log_error(logFile, "[ESCRIBIR EN MEMORIA]: STACK OVER FLOW PAPU - PROGRAMA ABORTADO");
 			estado = STKOF;
 			return;
-		}*/
+		}
 
 		enviarPedidoEscrituraMemoria(posicion, valorAEnviar);
 
@@ -473,7 +493,7 @@ void wait(t_nombre_semaforo nombre){
 	destruirMensaje(m);
 }
 
-void signal(t_nombre_semaforo nombre){
+void signalSem(t_nombre_semaforo nombre){
 	int tamanio = strlen(nombre);
 	lSend(kernel, nombre, SIGNAL, tamanio);
 }

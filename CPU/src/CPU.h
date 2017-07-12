@@ -13,6 +13,7 @@
 #include <parser/metadata_program.h>
 #include "../../ConfigLibrary/src/Configuration.c"
 #include "../../SocketLibrary/src/SocketLibrary.c"
+#include <signal.h>
 
 
 //DEFINES DE MEMORIA
@@ -28,6 +29,7 @@
 #define BLOQUEADO 3 // SE BLOQUEO
 #define STKOF 4 // HIZO ALGO QUE NO DEBIA (EJ: STACK OVERFLOW)
 #define ABORTADO 5
+#define KILLED 6
 
 //DEFINES DE KERNEL
 
@@ -78,6 +80,7 @@ int quantum; // si = 0 => ES FIFO
 int stackSize;
 int estado;
 t_log*  logFile;
+int toBeKilled;
 // ANSISOP
 t_puntero definirVariable(t_nombre_variable);
 t_puntero obtenerPosicionVariable(t_nombre_variable);
@@ -89,7 +92,7 @@ t_valor_variable dereferenciar(t_puntero posicion);
 void finalizar(void);
 void irAlLabel(t_nombre_etiqueta nombre);
 void retornar(t_valor_variable valorDeRetorno);
-void signal(char*);
+void signalSem(char*);
 void wait(char*);
 t_puntero reservar(t_valor_variable);
 void liberar (t_puntero);
@@ -99,6 +102,7 @@ void cerrar(t_descriptor_archivo);
 void moverCursor(t_descriptor_archivo, t_valor_variable);
 void escribir(t_descriptor_archivo, void*, t_valor_variable);
 void leer(t_descriptor_archivo, t_puntero, t_valor_variable);
+
 
 AnSISOP_funciones primitivas = {
 		.AnSISOP_definirVariable = definirVariable,
@@ -115,7 +119,7 @@ AnSISOP_funciones primitivas = {
 
 AnSISOP_kernel primitivas_kernel = {
 		.AnSISOP_wait = wait,
-		.AnSISOP_signal = signal,
+		.AnSISOP_signal = signalSem,
 		.AnSISOP_reservar = reservar,
 		.AnSISOP_liberar = liberar,
 		.AnSISOP_abrir = abrir,
@@ -153,4 +157,5 @@ char* leerEnMemoria(posicionEnMemoria);
 void enviarPedidoEscrituraMemoria(posicionEnMemoria, t_valor_variable);
 void recibirInformacion();
 serializado serializarPedido(int num);
-
+void sig_handler(int signo);
+void levantarLog();

@@ -601,7 +601,9 @@ void recibirDeCPU(int socket, connHandle* master)
 	switch(mensaje->header.tipoOperacion)
 	{
 		case -1:
+			printf("SE DESCONECTA CPU SOCKET: %i\n", socket);
 			closeHandle(socket, master);
+			removerCPUDeCola(socket);
 			break;
 		case 1:
 			pcb = recibirPCB(mensaje);
@@ -645,6 +647,13 @@ void recibirDeCPU(int socket, connHandle* master)
 			matarSiCorresponde(pcb->pid);
 			executeProcess();
 			pushearAColaCPUS(socket);
+			break;
+		case 6: // EL CPU DEVUELVE PCB POR FIN DE Q PERO A SU VEZ SE DESCONECTA EL CPU (SIGUSR1)
+			pcb = recibirPCB(mensaje);
+			puts("VUELVE PCB POR FIN DE Q [SIGUSR1]");
+			cpuReturnsProcessTo(pcb,1);
+			matarSiCorresponde(pcb->pid);
+			executeProcess();
 			break;
 		case 200:
 		{
@@ -879,10 +888,17 @@ void recibirDeCPU(int socket, connHandle* master)
 
 }
 
+void removerCPUDeCola(int cpu)
+{
+	bool mismoSocket(int unSocket)
+	{
+		return unSocket == cpu;
+	}
+	list_remove_by_condition(colaCPUS->elements, mismoSocket);
+}
+
 void pushearAColaCPUS(int cpu)
 {
-/*	int* pCpu = malloc(sizeof(int));
-	memcpy(pCpu, &cpu, sizeof(int));*/
 	pthread_mutex_lock(&mColaCPUS);
 	queue_push(colaCPUS, cpu);
 	pthread_mutex_unlock(&mColaCPUS);
