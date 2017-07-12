@@ -12,7 +12,7 @@
 #define PUERTO2 "7172"
 #define LOCALHOST "192.168.3.30"
 //#define LOCALHOST "127.0.0.1"
-#define BACKLOG 10
+#define BACKLOG 10 //aa
 
 void handler();
 void destroyConnHandler(connHandle*);
