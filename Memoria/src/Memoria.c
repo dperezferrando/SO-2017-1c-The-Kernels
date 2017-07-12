@@ -20,7 +20,7 @@ configFile* config;
 pthread_t conexionKernel, esperarCPUS, consolaMemoria;
 pthread_mutex_t memoriaSem;
 pthread_mutex_t cacheSem;
-#define LOCALHOST 192.168.3.12
+#define LOCALHOST "192.168.3.12"
 
 
 
