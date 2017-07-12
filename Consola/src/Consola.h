@@ -150,7 +150,7 @@ void crearHiloPrograma();
 void mensajeInicioPrograma(int pid);
 void iniciarSemaforo(sem_t* semaforo, unsigned int valor);
 void cerrarPrograma(Programa*);
-void imprimirMensaje(char*);
+void imprimirMensaje(int pid, char* data);
 int getConnectedSocket2(char* ip, char* port, int idPropia);
 void finalizarPorDesconexion();
 int archivoValido(FILE* archivo);

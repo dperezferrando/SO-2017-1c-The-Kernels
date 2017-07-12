@@ -102,12 +102,14 @@ void cerrar(t_descriptor_archivo);
 void moverCursor(t_descriptor_archivo, t_valor_variable);
 void escribir(t_descriptor_archivo, void*, t_valor_variable);
 void leer(t_descriptor_archivo, t_puntero, t_valor_variable);
+t_valor_variable obtenerValorCompartida(t_nombre_compartida nombre);
 
 
 AnSISOP_funciones primitivas = {
 		.AnSISOP_definirVariable = definirVariable,
 		.AnSISOP_obtenerPosicionVariable= obtenerPosicionVariable,
 		.AnSISOP_asignarValorCompartida	= asignarValorCompartida,
+		.AnSISOP_obtenerValorCompartida = obtenerValorCompartida,
 		.AnSISOP_asignar = asignar,
 		.AnSISOP_llamarConRetorno = llamarConRetorno,
 		.AnSISOP_llamarSinRetorno = llamarSinRetorno,

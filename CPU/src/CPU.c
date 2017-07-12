@@ -188,26 +188,31 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador){
 }
 
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor){
+	log_info(logFile, "[ASIGNAR COMPARTIDA]: VAR: %s | VALOR: %i\n", variable, valor);
 	int len = strlen(variable)+1;
-	char* data = malloc(len + sizeof(int));
+	int size = len + sizeof(int)*2;
+	char* data = malloc(size);
 	memcpy(data, &len, sizeof(int));
 	memcpy(data +sizeof(int), variable, len);
-	memcpy(data + sizeof(int) + len, valor, sizeof(int));
-	lSend(kernel, data, ASIGNARCOMPARTIDA, len + sizeof(int));
-	Mensaje* respuesta = lRecv(kernel);
+	memcpy(data + sizeof(int) + len, &valor, sizeof(int));
+	lSend(kernel, data, ASIGNARCOMPARTIDA, size);
+	free(data);
+/*	Mensaje* respuesta = lRecv(kernel);
 	int valorAsignado;
-	memcpy(&valorAsignado, respuesta->data, sizeof(int));
-	destruirMensaje(respuesta);
-	return valorAsignado;
+	memcpy(&valorAsignado, respuesta->data, sizeof(int));*/
+//	destruirMensaje(respuesta);
+	return valor;
 
 }
 
 t_valor_variable obtenerValorCompartida(t_nombre_compartida nombre){
 
+	log_info(logFile, "[VALOR COMPARTIDA]: SE PIDE EL VALOR DE: %s\n", nombre);
 	lSend(kernel, nombre, OBTENERCOMPARTIDA, strlen(nombre)+1);
 	Mensaje* respuesta = lRecv(kernel);
 	int valor;
 	memcpy(&valor, respuesta->data, sizeof(int));
+	log_info(logFile, "[VALOR COMPARTIDA]: EL VALOR DE %s es: %i\n", nombre, valor);
 	destruirMensaje(respuesta);
 	return valor;
 }

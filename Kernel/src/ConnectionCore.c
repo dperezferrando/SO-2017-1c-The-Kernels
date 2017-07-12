@@ -657,23 +657,27 @@ void recibirDeCPU(int socket, connHandle* master)
 		case 200:
 		{
 			//obtener valor variable compartida
+			puts("CPU PIDE VALOR DE VARIABLE");
 			char* nombre= malloc(mensaje->header.tamanio);
 			memcpy(nombre,mensaje->data,mensaje->header.tamanio);
 			GlobalVariable * gb= findGlobalVariable(nombre);
-			lSend(conexionMemoria,&gb->value,104,sizeof(int));
+			lSend(socket,&gb->value,104,sizeof(int));
+			free(nombre);
 			break;
 		}
 		case 201:
 		{
 			//asignar valor variable compartida
+			puts("CPU QUIERE ASIGNAR VARIABLE");
 			int len=0;
 			memcpy(&len,mensaje->data,sizeof(int));
 			char* nombre= malloc(len);
 			memcpy(nombre,mensaje->data+sizeof(int),len);
 			int newValue= 0;
-			memcpy(&newValue,mensaje->data+sizeof(int)*2,sizeof(int));
+			memcpy(&newValue,mensaje->data+sizeof(int) + len,sizeof(int));
 			GlobalVariable * gb= findGlobalVariable(nombre);
 			gb->value= newValue;
+			free(nombre);
 			break;
 		}
 		case 204:
@@ -981,7 +985,7 @@ int checkMultiprog(){
 
 
 bool isListener(int p, connHandle master){
-	return ( p==master.listenCPU || p== master.listenConsola || p == master.inotify);
+	return ( p==master.listenCPU || p== master.listenConsola);// || p == master.inotify);
 }
 
 bool viableRequest(int requestSize){

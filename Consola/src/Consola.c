@@ -158,7 +158,7 @@ void esperarMensajes(Programa* programa) {
 		sem_wait(&mutexMensaje);
 		switch(tipoOperacion()) {
 			case NUEVO_MENSAJE:
-				imprimirMensaje(mensaje->data); programa->impresiones++; sem_post(&mutexMensaje);
+				imprimirMensaje(programa->pid, mensaje->data); programa->impresiones++; sem_post(&mutexMensaje); sem_post(&destruccionMensaje);
 				break;
 			case CERRAR_PROCESO: sem_post(&mutexMensaje);cerrarPrograma(programa); estado = DESACTIVADO; break;
 			case ABORTAR_PROCESO: sem_post(&mutexMensaje); desconectarPrograma(programa); estado = DESACTIVADO; break;
@@ -198,7 +198,23 @@ void escuchandoKernel() {
 		Programa* programa = NULL;
 		sem_wait(&mutexMensaje);
 		switch(tipoOperacion()) {
-		case NUEVO_MENSAJE: imprimirMensaje((char*)mensaje->data); sem_post(&destruccionMensaje);break;
+		case NUEVO_MENSAJE:
+		{
+			int pid, len;
+			memcpy(&pid, mensaje->data,sizeof(int));
+			memcpy(&len, mensaje->data+sizeof(int), sizeof(int));
+			char* msg = malloc(len);
+			memcpy(msg, mensaje->data+sizeof(int)*2, len);
+			mensaje->data = realloc(mensaje->data, len);
+			memcpy(mensaje->data, msg, len);
+			free(msg);
+			//imprimirMensaje((char*)mensaje->data);
+			//			sem_post(&destruccionMensaje);
+			programa = buscarProgramaPorPidNumerico(pid);
+			sem_post(&programa->semaforo);
+
+			break;
+		}
 		case NUEVO_PID: sem_post(&nuevoMensaje); break;
 		case CERRAR_PROCESO:
 			sem_wait(&mutexLista);
@@ -419,9 +435,9 @@ int sonIguales(char* s1, char* s2) {
 		return 0;
 }
 
-void imprimirMensaje(char* data) {
+void imprimirMensaje(int pid, char* data) {
 	sem_wait(&mutexOutput);
-	printf("Mensaje: %s\n", data);
+	printf("[PID: %i]: MENSAJE: %s\n", pid, data);
 	sem_post(&mutexOutput);
 }
 
