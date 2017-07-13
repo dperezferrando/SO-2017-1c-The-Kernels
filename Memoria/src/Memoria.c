@@ -146,7 +146,7 @@ void conexion_kernel(int conexion)
 				pedido->data = malloc(pedido->posicion.size);
 				memcpy(pedido->data, mensaje->data+(sizeof(int)*4),pedido->posicion.size);
 				printf("[HEAP]: KERNEL PIDE ESCRIBIR PID: %i | PAG: %i | OFFSET: %i | SIZE: %i\n", pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
-				escribirDondeCorrespondaKernel(pid, pedido);
+				escribirDondeCorresponda(pid, pedido);
 
 				free(pedido);
 				break;
@@ -550,9 +550,13 @@ void conexion_cpu(int conexion)
 			{
 				// ESCRIBIR EN MEMORIA
 				pedidoEscrituraMemoria* pedido = malloc(sizeof(pedidoEscrituraMemoria));
-				memcpy(pedido, mensaje->data, sizeof(pedidoEscrituraMemoria));
-				printf("[CPU %i]: GUARDAR INFO EN PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %i\n", conexion, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor);
+				memcpy(&pedido->posicion, mensaje->data, sizeof(posicionEnMemoria));
+				pedido->valor = malloc(pedido->posicion.size);
+				memcpy(pedido->valor, mensaje->data+sizeof(posicionEnMemoria),pedido->posicion.size);
+				printf("[CPU %i]: GUARDAR INFO EN PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %s\n", conexion, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor);
+
 				escribirDondeCorresponda(pidActual, pedido);
+				free(pedido->valor);
 				free(pedido);
 				break;
 			}
@@ -595,14 +599,14 @@ char* leerDondeCorresponda(int pid, posicionEnMemoria* posicion)
 	return linea;
 }
 
-void escribirDondeCorrespondaKernel(int pid, pedidoEscrituraDelKernel* pedido)
+void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
 {
 	pthread_mutex_lock(&cacheSem);
 	char* linea;
 	if(config->entradas_cache > 0 && existeEnCache(pid, pedido->posicion.pagina))
 	{
 		printf("[CACHE]: EXISTE EN CACHE PAGINA: %i\n", pedido->posicion.pagina);
-		escribirBytesCache(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->data);
+		escribirBytesCache(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor);
 	//	linea = solicitarBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
 	}
 	else
@@ -612,7 +616,7 @@ void escribirDondeCorrespondaKernel(int pid, pedidoEscrituraDelKernel* pedido)
 		usleep(1000*config->retardo_memoria);
 		pthread_mutex_unlock(&retardoSem);
 		puts("[CACHE]: SLEEP LISTO, SOLICITO Y AGREGO A CACHE");
-		if(!escribirBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->data))
+		if(!escribirBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor))
 			puts("[CACHE]: ERROR (ESTO DEBERIA SER UNREACHABLE, SI LO VES SE ROMPIO TODO)");
 		else
 		{
@@ -627,7 +631,7 @@ void escribirDondeCorrespondaKernel(int pid, pedidoEscrituraDelKernel* pedido)
 	pthread_mutex_unlock(&cacheSem);
 
 }
-
+/*
 void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
 {
 	pthread_mutex_lock(&cacheSem);
@@ -660,7 +664,7 @@ void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
 	}
 	pthread_mutex_unlock(&cacheSem);
 
-}
+}*/
 
 
 entradaTabla* obtenerEntradaAproximada(int pid, int pagina)

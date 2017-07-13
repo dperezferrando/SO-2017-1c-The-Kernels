@@ -60,7 +60,7 @@ typedef struct __attribute__((packed)) PCB{
 
 typedef struct __attribute__ ((packed)) pedidoEscrituraMemoria {
 	posicionEnMemoria posicion;
-	int valor;
+	char* valor;
 } pedidoEscrituraMemoria;
 
 typedef struct __attribute__ ((packed)) fileInfo {
