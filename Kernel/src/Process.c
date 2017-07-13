@@ -72,7 +72,7 @@ void killProcess(int PID,int exitCode){
 	quitarDeColaDelSemaforoPorKill(PID);
 	eliminarEntradasDelProceso(PID);
 	_modifyExitCode(PID,exitCode);
-	freeProcessPages(PID);
+	//freeProcessPages(PID); ya lo hace memoria
 	if(checkMultiprog() && queue_size(colaNew) >0)
 		readyProcess();
 

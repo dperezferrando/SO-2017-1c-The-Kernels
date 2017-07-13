@@ -6,124 +6,142 @@ void recibir_comandos()
 	{
 		//0-> new, 1->ready, 2->execute, 3-> blocked, 4-> suspended, 9-> killed,
 		char* entrada = leerCaracteresEntrantes();
-		char** comando = string_split(entrada, " ");
-		printf("COMANDO: %s ARG: %s\n", comando[0], comando[1]);
-		if(!strcmp(comando[0], "cola"))
-		{
-			if(comando[1] == NULL)
+		if (*entrada!=NULL){
+			char** comando = string_split(entrada, " ");
+			printf("COMANDO: %s ARG: %s\n", comando[0], comando[1]);
+			if(!strcmp(comando[0], "cola"))
 			{
-				puts("-------TODOS LOS PROCESOS (INCLUYE EXIT)------");
-				pthread_mutex_lock(&mProcess);
-				list_iterate(process, mostrarPorConsola);
-				pthread_mutex_unlock(&mProcess);
-				//MUTEX
-				puts("-------TODOS LOS PROCESOS (INCLUYE EXIT)------");
-			}
-			else if(!strcmp(comando[1], "new"))
-			{
-				puts("-------COLA NEW------");
-				mostrarProcesosEnEstado(0);
-				puts("-------COLA NEW------");
-			}
-			else if(!strcmp(comando[1], "ready"))
-			{
-				puts("-------COLA READY------");
-				pthread_mutex_lock(&mColaReady);
-				list_iterate(colaReady->elements, mostrarPID);
-				pthread_mutex_unlock(&mColaReady);
-				puts("-------COLA READY------");
-			}
-			else if(!strcmp(comando[1], "execute"))
-			{
-				puts("-------COLA EXECUTE------");
-				pthread_mutex_lock(&mListaExec);
-				list_iterate(executeList, mostrarPID);
-				pthread_mutex_unlock(&mListaExec);
-
-				puts("-------COLA EXECUTE------");
-			}
-			else if(!strcmp(comando[1], "blocked"))
-			{
-				puts("-------COLA BLOCKED------");
-				pthread_mutex_lock(&mListaBlocked);
-				list_iterate(blockedList, mostrarPID);
-				pthread_mutex_unlock(&mListaBlocked);
-
-				puts("-------COLA BLOCKED------");
-			}
-			else if(!strcmp(comando[1], "exit"))
-			{
-				puts("-------COLA EXIT------");
-				pthread_mutex_lock(&mColaFinished);
-				list_iterate(colaFinished->elements, mostrarPID);
-				pthread_mutex_unlock(&mColaFinished);
-				puts("-------COLA EXIT------");
-			}
-		}
-		// FALTAN VARIOS CMDS QUE TODAVIA NO ESTA IMPLEMENTADO DONDE SE GUARDA ESA INFO
-		else if(!strcmp(comando[0], "tablaArchivos"))
-		{
-			if(!strcmp(comando[1], "global"))
-			{
-				puts("-------TABLA DE ARCHIVOS GLOBAL-------");
-				mostrarTablaDeArchivosGlobal();
-				puts("-------TABLA DE ARCHIVOS GLOBAL-------");
-			}
-			else
-			{
-				int pid = atoi(comando[1]);
-				pthread_mutex_lock(&mMaxPID);
-				if(pid > maxPID | pid < 0)
-					puts("PID INVALIDO");
-				else
+				if(comando[1] == NULL)
 				{
-					printf("-------TABLA DE ARCHIVOS PID: %i-------\n", pid);
-					mostrarTablaDeArchivosProceso(pid);
-					printf("-------TABLA DE ARCHIVOS PID: %i-------\n", pid);
+					puts("-------TODOS LOS PROCESOS (INCLUYE EXIT)------");
+					pthread_mutex_lock(&mProcess);
+					list_iterate(process, mostrarPorConsola);
+					pthread_mutex_unlock(&mProcess);
+					//MUTEX
+					puts("-------TODOS LOS PROCESOS (INCLUYE EXIT)------");
 				}
-				pthread_mutex_unlock(&mMaxPID);
-			}
-		}
-		else if(!strcmp(comando[0], "multiprog"))
-		{
-			int multiprog = atoi(comando[1]);
-			if(multiprog <= 0)
-				puts("NO ES NU NUMERO VALIDO");
-			else
-			{
-				pthread_mutex_lock(&mMultiprog);
-				config->GRADO_MULTIPROG = multiprog;
-				pthread_mutex_unlock(&mMultiprog);
-				printf("NUEVO GRADO DE MULTIPROGRAMACION: %i\n", config->GRADO_MULTIPROG);
-				int i;
-				pthread_mutex_lock(&mColaNew);
-				int new = queue_size(colaNew);
-				pthread_mutex_unlock(&mColaNew);
-				for(i = 0;i<new;i++)
-					readyProcess();
+				else if(!strcmp(comando[1], "new"))
+				{
+					puts("-------COLA NEW------");
+					mostrarProcesosEnEstado(0);
+					puts("-------COLA NEW------");
+				}
+				else if(!strcmp(comando[1], "ready"))
+				{
+					puts("-------COLA READY------");
+					pthread_mutex_lock(&mColaReady);
+					list_iterate(colaReady->elements, mostrarPID);
+					pthread_mutex_unlock(&mColaReady);
+					puts("-------COLA READY------");
+				}
+				else if(!strcmp(comando[1], "execute"))
+				{
+					puts("-------COLA EXECUTE------");
+					pthread_mutex_lock(&mListaExec);
+					list_iterate(executeList, mostrarPID);
+					pthread_mutex_unlock(&mListaExec);
 
+					puts("-------COLA EXECUTE------");
+				}
+				else if(!strcmp(comando[1], "blocked"))
+				{
+					puts("-------COLA BLOCKED------");
+					pthread_mutex_lock(&mListaBlocked);
+					list_iterate(blockedList, mostrarPID);
+					pthread_mutex_unlock(&mListaBlocked);
+
+					puts("-------COLA BLOCKED------");
+				}
+				else if(!strcmp(comando[1], "exit"))
+				{
+					puts("-------COLA EXIT------");
+					pthread_mutex_lock(&mColaFinished);
+					list_iterate(colaFinished->elements, mostrarPID);
+					pthread_mutex_unlock(&mColaFinished);
+					puts("-------COLA EXIT------");
+				}
 			}
+			// FALTAN VARIOS CMDS QUE TODAVIA NO ESTA IMPLEMENTADO DONDE SE GUARDA ESA INFO
+			else if(!strcmp(comando[0], "tablaArchivos"))
+			{
+				if(comando[1]!=NULL){
+					if(!strcmp(comando[1], "global"))
+					{
+						puts("-------TABLA DE ARCHIVOS GLOBAL-------");
+						mostrarTablaDeArchivosGlobal();
+						puts("-------TABLA DE ARCHIVOS GLOBAL-------");
+					}
+					else
+					{
+						int pid = atoi(comando[1]);
+						pthread_mutex_lock(&mMaxPID);
+						if(pid > maxPID | pid < 0)
+							puts("PID INVALIDO");
+						else
+						{
+							printf("-------TABLA DE ARCHIVOS PID: %i-------\n", pid);
+							mostrarTablaDeArchivosProceso(pid);
+							printf("-------TABLA DE ARCHIVOS PID: %i-------\n", pid);
+						}
+						pthread_mutex_unlock(&mMaxPID);
+					}
+				}
+				else{
+					puts("Argumento no puede ser null\n");
+				}
+			}
+			else if(!strcmp(comando[0], "multiprog"))
+			{
+				if(comando[1]!=NULL)
+				{
+					int multiprog = atoi(comando[1]);
+					if(multiprog <= 0)
+						puts("NO ES NU NUMERO VALIDO");
+					else
+					{
+						pthread_mutex_lock(&mMultiprog);
+						config->GRADO_MULTIPROG = multiprog;
+						pthread_mutex_unlock(&mMultiprog);
+						printf("NUEVO GRADO DE MULTIPROGRAMACION: %i\n", config->GRADO_MULTIPROG);
+						int i;
+						pthread_mutex_lock(&mColaNew);
+						int new = queue_size(colaNew);
+						pthread_mutex_unlock(&mColaNew);
+						for(i = 0;i<new;i++)
+							readyProcess();
+
+					}
+				}
+				else{
+					puts("Argumento no puede ser null\n");
+				}
+			}
+			else if(!strcmp(comando[0], "kill"))
+			{
+				if(comando[1]!=NULL){
+					int pid = atoi(comando[1]);
+					matarCuandoCorresponda(pid,-7);
+					printf("SE ENVIO A AJUSTICIAR EL PROCESO PID: %i. SE AJUSTICIARA CUANDO CORRESPONDA.\n", pid);
+				}
+				else{
+					puts("Argumento no puede ser null\n");
+				}
+			}
+			else if(!strcmp(comando[0], "togglePlanif"))
+			{
+				// NI PUTA IDEA YET
+			}
+			else if(!strcmp(comando[0], "exit"))
+			{
+				morir = 1;
+			}
+			else
+				puts("COMANDO INVALIDO");
+			free(comando[0]);
+			free(comando[1]);
+			free(comando);
+			free(entrada);
 		}
-		else if(!strcmp(comando[0], "kill"))
-		{
-			int pid = atoi(comando[1]);
-			matarCuandoCorresponda(pid,-7);
-			printf("SE ENVIO A AJUSTICIAR EL PROCESO PID: %i. SE AJUSTICIARA CUANDO CORRESPONDA.\n", pid);
-		}
-		else if(!strcmp(comando[0], "togglePlanif"))
-		{
-			// NI PUTA IDEA YET
-		}
-		else if(!strcmp(comando[0], "exit"))
-		{
-			morir = 1;
-		}
-		else
-			puts("COMANDO INVALIDO");
-		free(comando[0]);
-		free(comando[1]);
-		free(comando);
-		free(entrada);
 	}
 
 }
