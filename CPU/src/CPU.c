@@ -221,7 +221,10 @@ void asignar(t_puntero direccionReal, t_valor_variable valor)
 {
 	log_info(logFile, "[ASIGNAR VARIABLE - STACK LEVEL: %i]\n", pcb->nivelDelStack);
 	posicionEnMemoria posicion = convertirADireccionLogica(direccionReal);
-	escribirEnMemoria(posicion, valor);
+	char* aux = malloc(posicion.size);
+	memcpy(aux, &valor, posicion.size);
+	escribirEnMemoria(posicion, aux);
+	free(aux);
 	log_info(logFile, "[ASIGNAR VARIABLE - STACK LEVEL: %i]: PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %i\n", pcb->nivelDelStack, posicion.pagina, posicion.offset, posicion.size, valor);
 
 
@@ -340,9 +343,9 @@ char* leerEnMemoria(posicionEnMemoria posicion)
 }
 
 
-void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor)
+void escribirEnMemoria(posicionEnMemoria posicion, char* valor)
 {
-	log_info(logFile, "[ESCRIBIR EN MEMORIA]: PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %i\n", posicion.pagina, posicion.offset, posicion.size, valor);
+	log_info(logFile, "[ESCRIBIR EN MEMORIA]: PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %s\n", posicion.pagina, posicion.offset, posicion.size, valor);
 	int limiteStack = pcb->cantPaginasCodigo+stackSize;
 	int total = posicion.offset + posicion.size;
 	/*if(posicion.pagina >= limiteStack)
@@ -383,12 +386,16 @@ void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor)
 	}
 }
 
-void enviarPedidoEscrituraMemoria(posicionEnMemoria posicion, t_valor_variable valor)
+void enviarPedidoEscrituraMemoria(posicionEnMemoria posicion, char* valor)
 {
-	pedidoEscrituraMemoria* pedido = malloc(sizeof(pedidoEscrituraMemoria));
-	pedido->posicion = posicion;
-	pedido->valor = valor;
-	lSend(memoria, pedido, 3,sizeof(pedidoEscrituraMemoria));
+	/*pedidoEscrituraMemoria* pedido = malloc(sizeof(pedidoEscrituraMemoria));
+	pedido->posicion = posicion;/
+	pedido->valor = valor;*/
+	int size = posicion.size+sizeof(posicion);
+	char* pedido = malloc(size);
+	memcpy(pedido, &posicion, sizeof(posicionEnMemoria));
+	memcpy(pedido+sizeof(posicionEnMemoria), valor, posicion.size);
+	lSend(memoria, pedido, 3,size);
 	free(pedido);
 }
 
@@ -721,8 +728,11 @@ void leer(t_descriptor_archivo fileDescriptor, t_puntero info, t_valor_variable 
 		destruirMensaje(m);
 		return;
 	}
-	t_valor_variable valor = atoi(m->data);
-	log_info(logFile, "[LEER ARCHIVO]: LEO %i | FD: %i | SIZE: %i\n", valor, fileDescriptor, tamanio);
-	asignar(info, valor);
+	char* ay = (char*)m->data;
+
+	log_info(logFile, "[LEER ARCHIVO]: LEO %s | FD: %i | SIZE: %i\n", ay, fileDescriptor, tamanio);
+	posicionEnMemoria pos = convertirADireccionLogica(info);
+	pos.size = tamanio;
+	escribirEnMemoria(pos, ay);
 	destruirMensaje(m);
 }

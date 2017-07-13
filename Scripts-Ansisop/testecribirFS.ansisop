@@ -1,10 +1,9 @@
 begin
 variables f, a, b
-abrir f CE /test.bin
+abrir f CLE /test.bin
 alocar a 30
-*a = 10
+*a = 65
 escribir f a 1
-prints n *a
 liberar a
 alocar b 10
 leer f b 1
