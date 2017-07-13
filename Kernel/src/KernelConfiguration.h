@@ -18,6 +18,7 @@ typedef struct {
 	char** SEM_IDS;
 	char** SEM_INIT;
 	char** SHARED_VARS;
+	char IP_PROPIA[16];
 
 } configFile;
 

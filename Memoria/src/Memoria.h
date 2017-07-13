@@ -10,7 +10,7 @@
 #include "../../SocketLibrary/src/SocketLibrary.c"
 
 #define CONFIG_FILE "memoria.conf"
-const char* keys[9] = {"PUERTO_KERNEL", "PUERTO_CPU", "MARCOS", "MARCO_SIZE", "ENTRADAS_CACHE", "CACHE_X_PROC", "REEMPLAZO_CACHE", "RETARDO_MEMORIA", "NULL"};
+const char* keys[10] = {"PUERTO_KERNEL", "PUERTO_CPU", "MARCOS", "MARCO_SIZE", "ENTRADAS_CACHE", "CACHE_X_PROC", "REEMPLAZO_CACHE", "RETARDO_MEMORIA","IP_PROPIA" ,"NULL"};
 
 typedef struct {
 	char puerto_kernel[5];
@@ -21,6 +21,7 @@ typedef struct {
 	int cache_x_proc;
 	char reemplazo_cache[4];
 	int retardo_memoria;
+	char ip_propia[16];
 } configFile;
 
 typedef struct entradaTabla {

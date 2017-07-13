@@ -96,8 +96,8 @@ void mostrarTablaPaginas()
 
 void levantarSockets()
 {
-	kernel = getBindedSocket(LOCALHOST, config->puerto_kernel);
-	cpu = getBindedSocket(LOCALHOST, config->puerto_cpu);
+	kernel = getBindedSocket(config->ip_propia, config->puerto_kernel);
+	cpu = getBindedSocket(config->ip_propia, config->puerto_cpu);
 	lListen(kernel, 5);
 	lListen(cpu, 5);
 }
@@ -776,7 +776,7 @@ void imprimirConfig(configFile* config)
 	printf("ESCUCHANDO EN PUERTO KERNEL: %s | ESCUCHANDO EN PUERTO CPU: %s \n", config->puerto_kernel, config->puerto_cpu);
 	printf("CANTIDAD DE MARCOS: %i | TAMAÑO DE MARCOS: %i\n", config->marcos, config->marco_size);
 	printf("ENTRADAS CACHE: %i | CACHE X PROC: %i | ALGORITMO REEMPLAZO: %s\n", config->entradas_cache, config->cache_x_proc, config->reemplazo_cache);
-	printf("RETARDO DE MEMORIA: %i\n", config->retardo_memoria);
+	printf("RETARDO DE MEMORIA: %i | IP PROPIA: %s\n", config->retardo_memoria, config->ip_propia);
 	puts("--------PROCESO MEMORIA--------");
 }
 
@@ -791,6 +791,7 @@ configFile* leerArchivoConfig(t_config* configHandler)
 	config->cache_x_proc = config_get_int_value(configHandler, "CACHE_X_PROC");
 	strcpy(config->reemplazo_cache,config_get_string_value(configHandler, "REEMPLAZO_CACHE"));
 	config->retardo_memoria = config_get_int_value(configHandler, "RETARDO_MEMORIA");
+	strcpy(config->ip_propia, config_get_string_value(configHandler, "IP_PROPIA"));
 	config_destroy(configHandler);
 	imprimirConfig(config);
 	if(config->entradas_cache > 0 && config->cache_x_proc == 0)

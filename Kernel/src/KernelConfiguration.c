@@ -14,6 +14,7 @@ void imprimirConfig(configFile* config)
 	printf("QUANTUM: %i | QUANTUM SLEEP: %i | ALGORITMO: %s \n", config->QUANTUM, config->QUANTUM_SLEEP,config->ALGORITMO);
 	printf("GRADO MULTIPGROG: %i | SEM IDS: %i | SEM INIT: %i \n", config->GRADO_MULTIPROG, config->SEM_IDS,config->SEM_INIT);
 	printf("SHARED VARS: %i | STACK_SIZE: %i | PAG_SIZE: %i\n", config->SHARED_VARS, config->STACK_SIZE);
+	printf("IP PROPIA: %s\n", config->IP_PROPIA);
 	puts("--------PROCESO KERNEL--------");
 }
 
@@ -61,6 +62,7 @@ configFile* readConfigFile(t_config* configHandler)//la unica manera de generali
 	config->SEM_INIT= config_get_array_value(configHandler, "SEM_INIT");
 	config->SHARED_VARS= config_get_array_value(configHandler, "SHARED_VARS");
 	config->STACK_SIZE=config_get_int_value(configHandler, "STACK_SIZE");
+	strcpy(config->IP_PROPIA, config_get_string_value(configHandler, "IP_PROPIA"));
 	config_destroy(configHandler);
 	imprimirConfig(config);
 	return config;

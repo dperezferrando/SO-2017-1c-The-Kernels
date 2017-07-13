@@ -75,9 +75,7 @@ void levantarLog()
 void iniciarConexiones()
 {
 	memoria = getConnectedSocket(config->ip_Memoria, config->puerto_Memoria, CPU_ID);
-	puts("MEMORIA OK");
 	kernel = getConnectedSocket(config->ip_Kernel, config->puerto_Kernel, CPU_ID);
-	puts("KERNEL OK");
 	log_info(logFile, "[ESPERANDO INFORMACION]");
 	recibirInformacion();
 }

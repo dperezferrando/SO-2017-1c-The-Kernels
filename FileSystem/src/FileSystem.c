@@ -1,6 +1,6 @@
 #include "FileSystem.h"
 
-#define LOCALHOST "192.168.3.12"
+#define LOCALHOST "127.0.0.1"
 configFile* config;
 metadata* metad;
 
@@ -14,7 +14,7 @@ int main(int argc, char** argsv) {
 	puts("bitmap al dia");
 	//testsmuycabezitas();
 	//while(1){puts("listo");}
-	kernel = getBindedSocket(LOCALHOST, config->puerto);
+	kernel = getBindedSocket(config->ip_propia, config->puerto);
 	lListen(kernel, 5);
 	puts("ESPERANDO AL KERNEL");
 	conexion = lAccept(kernel, KERNEL_ID);
@@ -1064,6 +1064,7 @@ configFile* leerArchivoConfig(t_config* configHandler){
 	config->puerto = config_get_string_value(configHandler, "PUERTO");
 	printf("FFSFASFAS: %s\n", config->puerto);
 	config->punto_montaje = config_get_string_value(configHandler, "PUNTO_MONTAJE");
+	strcpy(config->ip_propia, config_get_string_value(configHandler, "IP_PROPIA"));
 	//config_destroy(configHandler);
 	imprimirConfig(config);
 	return config;
@@ -1089,7 +1090,7 @@ archivo* leerArch(t_config* configHandler){
 
 void imprimirConfig(configFile* config){
 	puts("--------PROCESO FILESYSTEM--------");
-	printf("ESCUCHANDO EN PUERTO: %s | PUNTO_MONTAJE %s\n", config->puerto, config->punto_montaje);
+	printf("ESCUCHANDO EN PUERTO: %s |  IP PROPIA: %s | PUNTO_MONTAJE %s\n", config->puerto, config->ip_propia, config->punto_montaje);
 	puts("--------PROCESO FILESYSTEM--------\n");
 }
 

@@ -38,13 +38,14 @@ int tamRuta_BitM;
 int tamRuta_CMeta;
 int tamRuta_Blqs;
 int tamRuta_Arch;
-const char* keys[3] = {"PUERTO", "PUNTO_MONTAJE" , "NULL"};
+const char* keys[4] = {"PUERTO", "PUNTO_MONTAJE" ,"IP_PROPIA", "NULL"};
 const char* metaKeys[4]={"TAMANIO_BLOQUES","CANTIDAD_BLOQUES","MAGIC_NUMBER","NULL"};
 const char* archKeys[3] = {"TAMANIO", "BLOQUES" , "NULL"};
 
 typedef struct {
 	char* puerto;
 	char* punto_montaje;
+	char ip_propia[16];
 } configFile;
 
 typedef struct {

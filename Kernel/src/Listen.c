@@ -50,8 +50,8 @@ socketHandler updateSockets(connHandle master){
 }
 
 void initialize(configFile* config,connHandle* handleMaster){
-	conexionConsola= getBindedSocket(LOCALHOST,config->PUERTO_PROG);
-	conexionCPU = getBindedSocket(LOCALHOST, config->PUERTO_CPU);
+	conexionConsola= getBindedSocket(config->IP_PROPIA,config->PUERTO_PROG);
+	conexionCPU = getBindedSocket(config->IP_PROPIA, config->PUERTO_CPU);
 	conexionMemoria = getConnectedSocket(config->IP_MEMORIA, config->PUERTO_MEMORIA, KERNEL_ID);
 	Mensaje* pagSize = lRecv(conexionMemoria);
 	memcpy(&config->PAG_SIZE,pagSize->data, pagSize->header.tamanio);
