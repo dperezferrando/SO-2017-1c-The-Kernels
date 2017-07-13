@@ -373,7 +373,7 @@ int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
 	int bloqueLogico = floor((double)offset/(double)metad->tamanio_Bloques);
 	int bloquesAnteriores = floor((double)offset/(double)metad->tamanio_Bloques);
 	bloques* bloquesDelArchivo = getbloques(path);
-	int cantBloquesSig= bloquesDelArchivo->tamanio - bloqueLogico+1;
+	int cantBloquesSig= bloquesDelArchivo->tamanio - (bloqueLogico+1);
 	if (bloquesDelArchivo->tamanio < bloqueLogico + 1){
 		free(bloquesDelArchivo->bloques);
 		addbloque(path);
