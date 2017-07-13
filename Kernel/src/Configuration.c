@@ -139,13 +139,13 @@ void mostrarVariable(variable* var)
 serializado serializarIndiceDeStack(indStk* indiceStack, int ultimoNivel)
 {
 	serializado indiceStackSerializado;
-	indiceStackSerializado.size = sizeof(variable)+sizeof(int)*3;
+	indiceStackSerializado.size = 0;
 	int i;
 	for(i = 0;i<=ultimoNivel;i++)
 	{
 		int cantVars = list_size(indiceStack[i].variables);
 		int cantArgs = list_size(indiceStack[i].argumentos);
-		indiceStackSerializado.size += (cantVars+cantArgs)*sizeof(variable);
+		indiceStackSerializado.size += (cantVars+cantArgs)*sizeof(variable) +sizeof(variable)+sizeof(int)*3;
 	}
 	indiceStackSerializado.data = malloc(indiceStackSerializado.size);
 	char* puntero = indiceStackSerializado.data;
