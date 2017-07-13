@@ -3,11 +3,8 @@ variables f, a, b
 abrir f CE /test
 alocar a 4
 *a = 65
-b = a+4
-*b = 66
-#escribir f a 4
+escribir f a 4
 prints n *a
-prints n *b
 liberar a
 wait SEM1
 end

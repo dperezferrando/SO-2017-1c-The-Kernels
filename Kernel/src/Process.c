@@ -341,6 +341,7 @@ void freeProcessPages(int pid){
 		PageOwnership* po= list_get(paginas,0);
 		freePage(po,0);
 	}
+	list_destroy(paginas);
 }
 
 void freePage(PageOwnership* po, int index){

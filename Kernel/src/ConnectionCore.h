@@ -28,7 +28,7 @@ int checkMultiprog();
 int offset(t_list*, int);
 int _usedFragments(t_list*);
 int enviarScriptAMemoria(PCB*,char*, int);
-int grabarPedido(PageOwnership*, MemoryRequest, HeapMetadata*,int*);
+int grabarPedido(PageOwnership*, MemoryRequest, int*);
 int sendMemoryRequest(MemoryRequest, PageOwnership*, int);
 
 bool viableRequest(int);
@@ -41,7 +41,7 @@ bool isListener(int, connHandle);
 bool _usedFragment(HeapMetadata*);
 PageOwnership* pageToStore(MemoryRequest mr);
 
-
+void matarDesdeProcessControl(ProcessControl*);
 void aceptarNuevoCPU(int);
 void enviarInformacion(int);
 void closeHandle(int, connHandle*);

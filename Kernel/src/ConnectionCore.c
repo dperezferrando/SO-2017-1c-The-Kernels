@@ -76,8 +76,9 @@ void recibirDeConsola(int socket, connHandle* master)
 				return pc->consola == socket && pc->state != 9;
 			}
 			t_list* procesosDeLaConsola = list_filter(process, mismaConsola);
-			list_iterate(procesosDeLaConsola, matarCuandoCorresponda);
+			list_iterate(procesosDeLaConsola, matarDesdeProcessControl);
 			lSend(socket, mensaje->data, 3, sizeof(int));
+			list_destroy(procesosDeLaConsola);
 			break;
 		}
 
@@ -96,6 +97,11 @@ void recibirDeConsola(int socket, connHandle* master)
 
 	destruirMensaje(mensaje);
 
+}
+
+void matarDesdeProcessControl(ProcessControl* pc)
+{
+	matarCuandoCorresponda(pc->pid, -6);
 }
 
 void matarCuandoCorresponda(int pid, int exitCode)
@@ -125,7 +131,8 @@ int enviarScriptAMemoria(PCB* pcb, char* script, int tamanioScript)
 	if(!test)lSend(conexionMemoria, buffer, 1, tamanioScriptSerializado);
 	if(!test){Mensaje* respuesta = lRecv(conexionMemoria);
 		int to= respuesta->header.tipoOperacion;
-		free(respuesta);
+		destruirMensaje(respuesta);
+		free(buffer);
 		return to == 104;
 	}
 	free(buffer);
@@ -157,13 +164,15 @@ void mostrarMetadata(HeapMetadata* hm)
 	printf("ISFREE: %i SIZE:%i\n", hm->isFree, hm->size);
 }
 int memoryRequest(MemoryRequest mr, int* offset, PageOwnership* po){
-	HeapMetadata* hm= initializeHeapMetadata(mr.size);
 	int operation;
-	if((operation = grabarPedido(po,mr,hm,offset)) == -1)
+	if((operation = grabarPedido(po,mr,offset)) == -1)
 		return operation;
 	int memreq;
-	if((memreq=sendMemoryRequest(mr,po,*offset))!=1) return memreq;
-	list_iterate(po->occSpaces, mostrarMetadata);
+	if((memreq=sendMemoryRequest(mr,po,*offset))!=1)
+	{
+		list_iterate(po->occSpaces, mostrarMetadata); // debug
+		return memreq;
+	}
 	return operation;
 }
 
@@ -195,6 +204,8 @@ int freeMemory(int pid, int page, int offset){
 	memcpy(message+sizeof(int)*3, &config->PAG_SIZE, sizeof(int));
 	memcpy(message+sizeof(int)*4, memPage, config->PAG_SIZE);
 	lSend(conexionMemoria, message, 2, sizeMsg);
+	free(memPage);
+	free(message);
 	return 1;
 }
 
@@ -209,6 +220,7 @@ void sendKillRequest(int pid, int page, int offset, HeapMetadata* hm){
 	memcpy(request+sizeof(int)*4,hm,sizeof(HeapMetadata));
 
 	if(!test)lSend(conexionMemoria,request, 2, size);
+	free(request);
 
 }
 
@@ -219,9 +231,10 @@ HeapMetadata* initializeHeapMetadata(int size){
 	return hm;
 }
 
-int grabarPedido(PageOwnership* po, MemoryRequest mr, HeapMetadata* hm, int* offset){
+int grabarPedido(PageOwnership* po, MemoryRequest mr, int* offset){
 
 	if(!viableRequest(mr.size)) return -1;
+	HeapMetadata* hm= initializeHeapMetadata(mr.size);
 	PageOwnership* paginaExistente = pageToStore(mr);//busco la pagina para guardarlo, si no hay -1
 	if (paginaExistente == NULL){//el pedido se grabo en pagina nueva
 		po->pid = mr.pid;
@@ -250,18 +263,16 @@ int grabarPedido(PageOwnership* po, MemoryRequest mr, HeapMetadata* hm, int* off
 
 }
 
-void destruirPageOwnership(PageOwnership* po)
-{
-	list_destroy_and_destroy_elements(po->control, free);
-	list_destroy_and_destroy_elements(po->occSpaces, free);
-	free(po);
-}
-
 int getNewPage(PageOwnership* po){
 	lSend(conexionMemoria,&po->pid,3,sizeof(int));
 	Mensaje* msg= lRecv(conexionMemoria);
-	if(msg->header.tipoOperacion==-2)return -2;
+	if(msg->header.tipoOperacion==-2)
+	{
+		destruirMensaje(msg);
+		return -2;
+	}
 	memcpy(&po->idpage,msg->data,sizeof(int));
+	destruirMensaje(msg);
 	return 1;
 }
 
@@ -269,7 +280,7 @@ int sendMemoryRequest(MemoryRequest mr, PageOwnership* po, int offset){
 
 	void* serializedMSG= serializeMemReq(mr,po->idpage,offset);
 	if(!test) lSend(conexionMemoria,serializedMSG,2,sizeof(int)*4+sizeof(HeapMetadata));//envío el pedido de grabacion
-
+	free(serializedMSG);
 	return 1;
 }
 
@@ -285,6 +296,7 @@ PageOwnership* pageToStore(MemoryRequest mr){
 		return acc >= mr.size+sizeof(HeapMetadata);
 	}
 	PageOwnership* po = list_find(processPages,&(pageHasEnoughSpace));
+	list_destroy(processPages);
 	return po;
 }
 
@@ -295,18 +307,15 @@ t_list* findProcessPages(int pid){
 	return list_filter(ownedPages,&(_PIDFind));
 }
 
-void* pageOwnershipDestroyer(PageOwnership* po){
-	free(po->control);
-	free(po->occSpaces);
-	free(po);
-}
 
 PageOwnership* findPage(int pid, int page){
 	t_list* processPages = findProcessPages(pid);
 	bool _pageIdFind(PageOwnership* po){
 		return po->idpage== page;
 	}
-	return list_find(processPages,&(_pageIdFind));
+	PageOwnership* elemento = list_find(processPages,&(_pageIdFind));
+	list_destroy(processPages);
+	return elemento;
 }
 
 int replacePage(int pid, PageOwnership* po){
@@ -315,7 +324,7 @@ int replacePage(int pid, PageOwnership* po){
 	bool _pageIdFind(PageOwnership* po){
 		return po->idpage== po->idpage;
 	}
-	list_remove_and_destroy_by_condition(ownedPages,&(_pageIdFind),&(pageOwnershipDestroyer));
+	list_remove_and_destroy_by_condition(ownedPages,&(_pageIdFind),&(destroyPageOwnership));
 	list_add(processPages, po);
 	return 1;
 }
@@ -406,8 +415,12 @@ void* getMemoryPage(int pid, int idPage){
 	if(test){//esto esta asi por el test
 		return res->data;
 	}
+	free(msg);
 	Mensaje* mes= lRecv(conexionMemoria);
-	return mes->data;
+	char* mem = malloc(mes->header.tamanio);
+	memcpy(mem, mes->data, mes->header.tamanio);
+	destruirMensaje(mes);
+	return mem;
 
 }
 
@@ -437,7 +450,7 @@ void* getMemoryPage(int pid, int idPage){
 					cantOcupados--;//como considero que este bloque ya esta al principio, hay un bloque menos para ser movido
 					offsetList++;//aca si no esta libre y no estoy en bloque muevo el offset para que al principio si los primeros bloques estan ocupados no los pise
 					offset+= (hm->size + sizeof(HeapMetadata));
-				}
+				}destroyPageOwnership
 			}
 			else {//si esta libre
 				if(inBlock)stop=1;//si esta libre y yo estaba en un bloque, se termino el bloque y tengo que parar
@@ -484,7 +497,8 @@ void* defragging(int pid, int idPage, t_list* page){
     	}
     	int index= findIndex(pid,idPage);
     	PageOwnership* po= findPage(pid,idPage);
-    	freePage(po,index);
+    	freePage(po, index);
+    	return NULL;
     }
 
     HeapMetadata* hm;
@@ -657,8 +671,8 @@ void recibirDeCPU(int socket, connHandle* master)
 			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
 			cpuReturnsProcessTo(pcb, 9);
 			killProcess(pcb->pid, -5);
-			executeProcess();
 			pushearAColaCPUS(socket);
+			executeProcess();
 			break;
 		case 5:
 			pcb = recibirPCB(mensaje);
@@ -666,8 +680,8 @@ void recibirDeCPU(int socket, connHandle* master)
 			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
 			cpuReturnsProcessTo(pcb, 9);
 			matarSiCorresponde(pcb->pid);
-			executeProcess();
 			pushearAColaCPUS(socket);
+			executeProcess();
 			break;
 		case 6: // EL CPU DEVUELVE PCB POR FIN DE Q PERO A SU VEZ SE DESCONECTA EL CPU (SIGUSR1)
 			pcb = recibirPCB(mensaje);
@@ -730,6 +744,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			if(!test)lSend(socket,msg,104,sizeof(int)*2);
 
 			free(msg);
+			free(offset);
 
 			break;
 		}

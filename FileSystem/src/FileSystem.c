@@ -216,7 +216,7 @@ char* agregarBarraCero(char* data, int tamanio)
 }
 
 int validarArchivo(char* pathRelativa){
-	char* path = string_from_format("%s%s.bin", ruta_Arch, pathRelativa);
+	char* path = string_from_format("%s%s", ruta_Arch, pathRelativa);
 	FILE *arch;
 	arch = fopen (path,"r");
 	if (arch==NULL){
@@ -238,7 +238,7 @@ int validarArchivo(char* pathRelativa){
 }*/
 
 int crearArchivo(char* pathRelativa){
-	char* path = string_from_format("%s%s.bin", ruta_Arch, pathRelativa);
+	char* path = string_from_format("%s%s", ruta_Arch, pathRelativa);
 	FILE *arch;
 	arch = fopen (path,"w");
 	if (arch==NULL){
@@ -290,7 +290,7 @@ int crearArchivo(char* pathRelativa){
 }
 
 char* leerArchivo(char* pathRelativa, int offset, int size){
-	char* path = string_from_format("%s%s.bin", ruta_Arch, pathRelativa);
+	char* path = string_from_format("%s%s", ruta_Arch, pathRelativa);
 	char* buffer=NULL;
 	int tam = getTamanio(path);
 	if(tam < (offset+size)){
@@ -332,7 +332,7 @@ char* leerArchivo(char* pathRelativa, int offset, int size){
 
 int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
 
-	char* path = string_from_format("%s%s.bin", ruta_Arch, pathRelativa);
+	char* path = string_from_format("%s%s", ruta_Arch, pathRelativa);
 	int bloqueLogico = floor((double)offset/(double)metad->tamanio_Bloques);
 	bloques* bloquesDelArchivo = getbloques(path);
 	int bloqueFisico = bloquesDelArchivo->bloques[bloqueLogico];
@@ -567,7 +567,7 @@ int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
 											/////////////////////////////
 
 int borrarArchivo(char* pathRelativa){
-	char* path = string_from_format("%s%s.bin", ruta_Arch, pathRelativa);
+	char* path = string_from_format("%s%s", ruta_Arch, pathRelativa);
 	bloques* bloqs;
 	int* bloques;
 	bloqs= getbloques(path);

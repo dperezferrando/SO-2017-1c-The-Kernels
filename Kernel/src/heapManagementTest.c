@@ -170,18 +170,18 @@ void grabarPedidoTest(int newPage){
 	res->data= malloc(sizeof(int));
 	int a= 10;
 	memcpy(res->data,&a,sizeof(int));
-	HeapMetadata* hm= initializeHeapMetadata(mr->size);
+	//HeapMetadata* hm= initializeHeapMetadata(mr->size);
 	//sendMemoryRequest(*mr,4,"hola",po); no compila, to be fixed
 	int* offset= malloc(sizeof(int));
-	int resp= grabarPedido(po,*mr,hm,offset);
-	if(!newPage) resp= grabarPedido(po,*mr,hm,offset);
+	int resp= grabarPedido(po,*mr,offset);
+	if(!newPage) resp= grabarPedido(po,*mr,offset);
 
 	list_destroy(ownedPages);
 	free(po);
 	free(pp);
 	free(mr);
 	free(res);
-	free(hm);
+	//free(hm);
 
 	int offs= *offset;
 
@@ -224,7 +224,7 @@ void freeMemoryTest(){
 	memcpy(res->data,&a,sizeof(int));
 	HeapMetadata* hm= initializeHeapMetadata(mr->size);
 	int* offset= malloc(sizeof(int));
-	grabarPedido(pp,*mr,hm,offset);
+	grabarPedido(pp,*mr,offset);
 	list_size(pp->occSpaces);
 	freeMemory(pp->pid,pp->idpage,*offset);
 

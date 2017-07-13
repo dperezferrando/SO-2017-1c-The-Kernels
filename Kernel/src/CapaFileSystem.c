@@ -218,7 +218,7 @@ void destruirEntradaTablaProceso(entradaTablaFSProceso* entrada)
 
 void imprimirPorPantalla(fileInfo info, char* data)
 {
-	int len = info.tamanio+1;
+	int len = info.tamanio;
 	int size = len+sizeof(int)*2;
 	char* impresion = malloc(size);
 

@@ -345,12 +345,12 @@ void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor)
 	log_info(logFile, "[ESCRIBIR EN MEMORIA]: PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %i\n", posicion.pagina, posicion.offset, posicion.size, valor);
 	int limiteStack = pcb->cantPaginasCodigo+stackSize;
 	int total = posicion.offset + posicion.size;
-	if(posicion.pagina >= limiteStack)
+	/*if(posicion.pagina >= limiteStack)
 	{
 		log_error(logFile, "[ESCRIBIR EN MEMORIA]: STACK OVER FLOW PAPU - PROGRAMA ABORTADO");
 		estado = STKOF;
 		return;
-	}
+	}*/
 
 	if(total <= tamanioPagina)
 		enviarPedidoEscrituraMemoria(posicion, valor);
@@ -371,12 +371,12 @@ void escribirEnMemoria(posicionEnMemoria posicion, t_valor_variable valor)
 		posicion.size = segundoSize;
 		memcpy(&valorAEnviar, puntero, posicion.size);
 		log_info(logFile, "[ESCRIBIR EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
-		if(posicion.pagina >= limiteStack)
+	/*	if(posicion.pagina >= limiteStack)
 		{
 			log_error(logFile, "[ESCRIBIR EN MEMORIA]: STACK OVER FLOW PAPU - PROGRAMA ABORTADO");
 			estado = STKOF;
 			return;
-		}
+		}*/
 
 		enviarPedidoEscrituraMemoria(posicion, valorAEnviar);
 

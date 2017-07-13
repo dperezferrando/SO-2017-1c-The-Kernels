@@ -20,7 +20,8 @@ configFile* config;
 pthread_t conexionKernel, esperarCPUS, consolaMemoria;
 pthread_mutex_t memoriaSem;
 pthread_mutex_t cacheSem;
-#define LOCALHOST "192.168.3.12"
+pthread_mutex_t retardoSem;
+
 
 
 
@@ -181,7 +182,6 @@ void conexion_kernel(int conexion)
 				pointer = obtenerEntradaDe(pid, pagina);
 				pointer->pagina = -1;
 				pointer->pid = -1;
-				free(pointer);
 				break;
 			}
 			case 5:
@@ -217,7 +217,7 @@ void conexion_kernel(int conexion)
 
 bool frameValido(int frame)
 {
-	return frame > 0 && frame < config->marcos;
+	return frame >= 0 && frame < config->marcos;
 }
 void finalizarPrograma(int pid)
 {
@@ -236,10 +236,16 @@ void finalizarPrograma(int pid)
 	{
 		return entrada->pid != pid;
 	}
+	bool pidIgualA(entradaCache* entrada)
+	{
+		return entrada->pid == pid;
+	}
 	if(config->entradas_cache != 0)
 	{
 		pthread_mutex_lock(&cacheSem);
-		t_list* aux= list_filter(cache, pidDistintoA);
+		t_list* aux= list_filter(cache, &pidDistintoA);
+		t_list* losotros = list_filter(cache, &pidIgualA);
+		list_destroy_and_destroy_elements(losotros, &destruirEntradaCache);
 		list_destroy(cache);
 		cache = aux;
 		pthread_mutex_unlock(&cacheSem);
@@ -256,8 +262,15 @@ void agregarACache(int pid, int pagina)
 	entrada->data = malloc(config->marco_size);
 	memcpy(entrada->data, puntero, config->marco_size);
 	int cantEntradasProceso = cantidadEntradasCacheDelProceso(pid);
-	if(list_size(cache) < config->entradas_cache && cantEntradasProceso < config->cache_x_proc)
+//	pthread_mutex_lock(&cacheSem);
+	int size = list_size(cache);
+//	pthread_mutex_unlock(&cacheSem);
+	if( size < config->entradas_cache && cantEntradasProceso < config->cache_x_proc)
+	{
+//		pthread_mutex_lock(&cacheSem);
 		list_add_in_index(cache, 0, entrada);
+//		pthread_mutex_unlock(&cacheSem);
+	}
 	else
 		reemplazarLRU(entrada);
 }
@@ -279,12 +292,16 @@ void destruirEntradaCache(entradaCache* entrada)
 
 void reemplazarLRU(entradaCache* entrada)
 {
+//	pthread_mutex_lock(&cacheSem);
 	int tamanioLista = list_size(cache);
+//	pthread_mutex_unlock(&cacheSem);
 	if(cantidadEntradasCacheDelProceso(entrada->pid) < config->cache_x_proc && tamanioLista >= config->entradas_cache)
 	{
 		int indexMenosUsado = tamanioLista-1;
+//		pthread_mutex_lock(&cacheSem);
 		list_remove_and_destroy_element(cache, indexMenosUsado, destruirEntradaCache);
 		list_add_in_index(cache, 0, entrada);
+//		pthread_mutex_unlock(&cacheSem);
 	}
 	else
 	{
@@ -296,9 +313,11 @@ void reemplazarLRU(entradaCache* entrada)
 			if(i<config->cache_x_proc)
 				index++;
 		}
+//		pthread_mutex_lock(&cacheSem);
 		list_iterate(cache, calcularIndexMenosUsado);
 		list_remove_and_destroy_element(cache, index, destruirEntradaCache);
 		list_add_in_index(cache, 0, entrada);
+//		pthread_mutex_unlock(&cacheSem);
 	}
 }
 
@@ -327,11 +346,14 @@ char* obtenerPosicionAOperarEnCache(int pid, int pagina, int offset)
 	{
 		return pid == unaEntrada->pid && pagina == unaEntrada->pagina;
 	}
-	pthread_mutex_lock(&cacheSem);
 	entradaCache* entrada = list_remove_by_condition(cache, mismoPIDyPagina);
+	if(entrada == NULL)
+	{
+		printf("ENTRADA NULL: PAG: %i\n", pagina);
+		sleep(20);
+	}
 	char* punteroAFrame = entrada->data+offset;
 	list_add_in_index(cache, 0, entrada);
-	pthread_mutex_unlock(&cacheSem);
 	return punteroAFrame;
 }
 
@@ -377,7 +399,9 @@ void recibir_comandos()
 				{
 					puts("----------------DUMP CACHE----------------");
 					printf("ENTRADAS MAXIMA CACHE: %i | ENTRADAS MAXIMAS POR PROCESO: %i\n", config->entradas_cache, config->cache_x_proc);
+					pthread_mutex_lock(&cacheSem);
 					list_iterate(cache, mostrarEntradaCache);
+					pthread_mutex_unlock(&cacheSem);
 					puts("----------------DUMP CACHE----------------");
 				}
 			}
@@ -386,11 +410,14 @@ void recibir_comandos()
 		}
 		else if(!strcmp(comando[0], "retardo"))
 		{
+
+			pthread_mutex_lock(&retardoSem);
 			config->retardo_memoria = atoi(comando[1]);
+			pthread_mutex_unlock(&retardoSem);
 			printf("[MEMORIA]: NUEVO RETARDO SETEADO: %ims\n", config->retardo_memoria);
 		}
 		else if(!strcmp(comando[0], "flush"))
-			list_clean(cache);
+			list_clean_and_destroy_elements(cache, destruirEntradaCache);
 		else if(!strcmp(comando[0], "size"))
 		{
 			if(!strcmp(comando[1], "memory"))
@@ -546,7 +573,7 @@ void conexion_cpu(int conexion)
 
 char* leerDondeCorresponda(int pid, posicionEnMemoria* posicion)
 {
-
+	pthread_mutex_lock(&cacheSem);
 	char* linea;
 	if(config->entradas_cache > 0 && existeEnCache(pid, posicion->pagina))
 	{
@@ -556,29 +583,34 @@ char* leerDondeCorresponda(int pid, posicionEnMemoria* posicion)
 	else
 	{
 		puts("[CACHE]: NO EXISTE EN CACHE - RETARDO");
+		pthread_mutex_lock(&retardoSem);
 		usleep(1000*config->retardo_memoria);
+		pthread_mutex_unlock(&retardoSem);
 		puts("[CACHE]: SLEEP LISTO, SOLICITO Y AGREGO A CACHE");
 		linea = solicitarBytes(pid, posicion->pagina, posicion->offset, posicion->size);
 		if(config->entradas_cache != 0)
 			agregarACache(pid, posicion->pagina);
 	}
+	pthread_mutex_unlock(&cacheSem);
 	return linea;
 }
 
 void escribirDondeCorrespondaKernel(int pid, pedidoEscrituraDelKernel* pedido)
 {
-
+	pthread_mutex_lock(&cacheSem);
 	char* linea;
 	if(config->entradas_cache > 0 && existeEnCache(pid, pedido->posicion.pagina))
 	{
-		puts("[CACHE]: EXISTE EN CACHE");
+		printf("[CACHE]: EXISTE EN CACHE PAGINA: %i\n", pedido->posicion.pagina);
 		escribirBytesCache(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->data);
 	//	linea = solicitarBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
 	}
 	else
 	{
 		puts("[CACHE]: NO EXISTE EN CACHE - RETARDO");
+		pthread_mutex_lock(&retardoSem);
 		usleep(1000*config->retardo_memoria);
+		pthread_mutex_unlock(&retardoSem);
 		puts("[CACHE]: SLEEP LISTO, SOLICITO Y AGREGO A CACHE");
 		if(!escribirBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->data))
 			puts("[CACHE]: ERROR (ESTO DEBERIA SER UNREACHABLE, SI LO VES SE ROMPIO TODO)");
@@ -592,23 +624,27 @@ void escribirDondeCorrespondaKernel(int pid, pedidoEscrituraDelKernel* pedido)
 			}
 		}
 	}
+	pthread_mutex_unlock(&cacheSem);
 
 }
 
 void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
 {
+	pthread_mutex_lock(&cacheSem);
 	int* valorPuntero = &pedido->valor;
 //	char* linea;
 	if(config->entradas_cache > 0 && existeEnCache(pid, pedido->posicion.pagina))
 	{
-		puts("[CACHE]: EXISTE EN CACHE");
+		printf("[CACHE]: EXISTE EN CACHE PAGINA: %i\n", pedido->posicion.pagina);
 		escribirBytesCache(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, valorPuntero);
 //		linea = solicitarBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
 	}
 	else
 	{
 		puts("[CACHE]: NO EXISTE EN CACHE - RETARDO");
+		pthread_mutex_lock(&retardoSem);
 		usleep(1000*config->retardo_memoria);
+		pthread_mutex_unlock(&retardoSem);
 		puts("[CACHE]: SLEEP LISTO, SOLICITO Y AGREGO A CACHE");
 		if(!escribirBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, valorPuntero))
 			puts("[CACHE]: ERROR (ESTO DEBERIA SER UNREACHABLE, SI LO VES SE ROMPIO TODO)");
@@ -622,6 +658,7 @@ void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
 			}
 		}
 	}
+	pthread_mutex_unlock(&cacheSem);
 
 }
 
@@ -646,7 +683,7 @@ entradaTabla* obtenerEntradaAproximada(int pid, int pagina)
 entradaTabla* obtenerEntradaDe(int pid, int pagina)
 {
 	entradaTabla* pointer = obtenerEntradaAproximada(pid, pagina);
-	while(pointer->pid != pid || pointer->pagina != pagina)
+	while((pointer->pid != pid || pointer->pagina != pagina) && frameValido(pointer->frame))
 		pointer++;
 	return pointer;
 }

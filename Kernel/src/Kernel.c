@@ -58,6 +58,23 @@ void morirDecentemente()
 	destruirTablasFS();
 	destruirListaProcesos();
 	destruirListaDeColasSemaforos();
+	destruirCapaMemoria();
+	destruirVariablesGlobales();
+}
+
+void destruirVariableGlobal(GlobalVariable* gb)
+{
+	free(gb->name);
+	free(gb);
+}
+void destruirVariablesGlobales()
+{
+	list_destroy_and_destroy_elements(globalVariables,&destruirVariableGlobal);
+}
+
+void destruirCapaMemoria()
+{
+	list_destroy_and_destroy_elements(ownedPages, &destroyPageOwnership);
 }
 
 void destruirColasPlanificacion()

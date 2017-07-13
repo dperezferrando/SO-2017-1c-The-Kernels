@@ -1,22 +1,11 @@
-==7593== Memcheck, a memory error detector
-==7593== Copyright (C) 2002-2013, and GNU GPL'd, by Julian Seward et al.
-==7593== Using Valgrind-3.10.0.SVN and LibVEX; rerun with -h for copyright info
-==7593== Command: ./Memoria
-==7593== Parent PID: 2516
-==7593== 
-==7593== 
-==7593== HEAP SUMMARY:
-==7593==     in use at exit: 128,044 bytes in 3 blocks
-==7593==   total heap usage: 93 allocs, 90 frees, 129,947 bytes allocated
-==7593== 
-==7593== LEAK SUMMARY:
-==7593==    definitely lost: 0 bytes in 0 blocks
-==7593==    indirectly lost: 0 bytes in 0 blocks
-==7593==      possibly lost: 0 bytes in 0 blocks
-==7593==    still reachable: 128,044 bytes in 3 blocks
-==7593==         suppressed: 0 bytes in 0 blocks
-==7593== Reachable blocks (those to which a pointer was found) are not shown.
-==7593== To see them, rerun with: --leak-check=full --show-leak-kinds=all
-==7593== 
-==7593== For counts of detected and suppressed errors, rerun with: -v
-==7593== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+==8260== Helgrind, a thread error detector
+==8260== Copyright (C) 2007-2013, and GNU GPL'd, by OpenWorks LLP et al.
+==8260== Using Valgrind-3.10.0.SVN and LibVEX; rerun with -h for copyright info
+==8260== Command: ./Memoria
+==8260== Parent PID: 2774
+==8260== 
+==8260== 
+==8260== For counts of detected and suppressed errors, rerun with: -v
+==8260== Use --history-level=approx or =none to gain increased speed, at
+==8260== the cost of reduced accuracy of conflicting-access information
+==8260== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
