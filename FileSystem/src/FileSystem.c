@@ -330,7 +330,7 @@ char* leerArchivo(char* pathRelativa, int offset, int size){
 	return buffer;
 }
 
-int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
+/*int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
 
 	char* path = string_from_format("%s%s", ruta_Arch, pathRelativa);
 	int bloqueLogico = floor((double)offset/(double)metad->tamanio_Bloques);
@@ -347,10 +347,10 @@ int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
 	free(bloquesDelArchivo->bloques);
 	free(path);
 	return 1;
-}
-/*
+}*/
+
 int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
-	char* path = string_from_format("%s%s.bin", ruta_Arch, pathRelativa);
+	char* path = string_from_format("%s%s", ruta_Arch, pathRelativa);
 	FILE* blq;
 	FILE* blqt;
 	int faltanbloques=0;
@@ -370,7 +370,7 @@ int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
 		int usadoBloque =tamBloq-(cantbloques*tamBloq - Tam) ;
 		/*if(usadoBloque<0){
 			usadoBloque=0;
-		}*//*
+		}*/
 		if (offset>usadoBloque){
 			return -1;
 		}
@@ -563,7 +563,7 @@ int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
 	free(bloqs);
 	free(bloqsv);
 	return 0;
-}*/
+}
 											/////////////////////////////
 
 int borrarArchivo(char* pathRelativa){

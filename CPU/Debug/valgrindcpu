@@ -1,0 +1,140 @@
+==4761== Memcheck, a memory error detector
+==4761== Copyright (C) 2002-2013, and GNU GPL'd, by Julian Seward et al.
+==4761== Using Valgrind-3.10.0.SVN and LibVEX; rerun with -h for copyright info
+==4761== Command: ./CPU
+==4761== Parent PID: 2563
+==4761== 
+==4761== Syscall param socketcall.send(msg) points to uninitialised byte(s)
+==4761==    at 0x40AF281: send (socket.S:63)
+==4761==    by 0x804AB0C: internalSend (SocketLibrary.c:277)
+==4761==    by 0x804A44A: lSend (SocketLibrary.c:131)
+==4761==    by 0x804AE19: main (CPU.c:47)
+==4761==  Address 0x4279fac is 204 bytes inside a block of size 208 alloc'd
+==4761==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==4761==    by 0x804A3FE: lSend (SocketLibrary.c:127)
+==4761==    by 0x804AE19: main (CPU.c:47)
+==4761==  Uninitialised value was created by a heap allocation
+==4761==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==4761==    by 0x80492A9: deserializarPCB (Configuration.c:54)
+==4761==    by 0x804B047: esperarPCB (CPU.c:98)
+==4761==    by 0x804ACAF: main (CPU.c:20)
+==4761== 
+==4761== Syscall param socketcall.send(msg) points to uninitialised byte(s)
+==4761==    at 0x40AF281: send (socket.S:63)
+==4761==    by 0x804AB0C: internalSend (SocketLibrary.c:277)
+==4761==    by 0x804A44A: lSend (SocketLibrary.c:131)
+==4761==    by 0x804CFED: leer (CPU.c:715)
+==4761==    by 0x409CA01: analizadorLinea (in /usr/lib/libparser-ansisop.so)
+==4761==    by 0x804AD4D: main (CPU.c:33)
+==4761==  Address 0x4292c60 is 16 bytes inside a block of size 24 alloc'd
+==4761==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==4761==    by 0x804A3FE: lSend (SocketLibrary.c:127)
+==4761==    by 0x804CFED: leer (CPU.c:715)
+==4761==    by 0x409CA01: analizadorLinea (in /usr/lib/libparser-ansisop.so)
+==4761==    by 0x804AD4D: main (CPU.c:33)
+==4761==  Uninitialised value was created by a stack allocation
+==4761==    at 0x804CFB1: leer (CPU.c:710)
+==4761== 
+==4761== 
+==4761== HEAP SUMMARY:
+==4761==     in use at exit: 484 bytes in 23 blocks
+==4761==   total heap usage: 1,739 allocs, 1,716 frees, 65,233 bytes allocated
+==4761== 
+==4761== 3 bytes in 1 blocks are definitely lost in loss record 1 of 13
+==4761==    at 0x402C324: realloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==4761==    by 0x404EE6E: string_append (in /usr/lib/libcommons.so)
+==4761==    by 0x404F6CA: _string_append_with_format_list (in /usr/lib/libcommons.so)
+==4761==    by 0x404EF1D: string_from_vformat (in /usr/lib/libcommons.so)
+==4761==    by 0x404EEDE: string_from_format (in /usr/lib/libcommons.so)
+==4761==    by 0x404EF4D: string_itoa (in /usr/lib/libcommons.so)
+==4761==    by 0x409C637: analizadorLinea (in /usr/lib/libparser-ansisop.so)
+==4761==    by 0x804AD4D: main (CPU.c:33)
+==4761== 
+==4761== 6 bytes in 3 blocks are definitely lost in loss record 3 of 13
+==4761==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==4761==    by 0x41382E7: strdup (strdup.c:42)
+==4761==    by 0x404EE25: string_duplicate (in /usr/lib/libcommons.so)
+==4761==    by 0x404F77F: _string_split (in /usr/lib/libcommons.so)
+==4761==    by 0x404F298: string_split (in /usr/lib/libcommons.so)
+==4761==    by 0x409CA42: analizadorLinea (in /usr/lib/libparser-ansisop.so)
+==4761==    by 0x804AD4D: main (CPU.c:33)
+==4761== 
+==4761== 6 bytes in 3 blocks are definitely lost in loss record 4 of 13
+==4761==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==4761==    by 0x41382E7: strdup (strdup.c:42)
+==4761==    by 0x404EE25: string_duplicate (in /usr/lib/libcommons.so)
+==4761==    by 0x404F77F: _string_split (in /usr/lib/libcommons.so)
+==4761==    by 0x404F298: string_split (in /usr/lib/libcommons.so)
+==4761==    by 0x409C998: analizadorLinea (in /usr/lib/libparser-ansisop.so)
+==4761==    by 0x804AD4D: main (CPU.c:33)
+==4761== 
+==4761== 10 bytes in 4 blocks are definitely lost in loss record 5 of 13
+==4761==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==4761==    by 0x41382E7: strdup (strdup.c:42)
+==4761==    by 0x404EE25: string_duplicate (in /usr/lib/libcommons.so)
+==4761==    by 0x404F77F: _string_split (in /usr/lib/libcommons.so)
+==4761==    by 0x404F298: string_split (in /usr/lib/libcommons.so)
+==4761==    by 0x409CB7A: analizadorLinea (in /usr/lib/libparser-ansisop.so)
+==4761==    by 0x804AD4D: main (CPU.c:33)
+==4761== 
+==4761== 12 bytes in 1 blocks are definitely lost in loss record 6 of 13
+==4761==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==4761==    by 0x804A1B1: lRecv (SocketLibrary.c:78)
+==4761==    by 0x804B023: esperarPCB (CPU.c:95)
+==4761==    by 0x804ACAF: main (CPU.c:20)
+==4761== 
+==4761== 12 bytes in 1 blocks are definitely lost in loss record 7 of 13
+==4761==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==4761==    by 0x804C824: liberar (CPU.c:546)
+==4761==    by 0x409CC1B: analizadorLinea (in /usr/lib/libparser-ansisop.so)
+==4761==    by 0x804AD4D: main (CPU.c:33)
+==4761== 
+==4761== 15 bytes in 3 blocks are definitely lost in loss record 8 of 13
+==4761==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==4761==    by 0x41382E7: strdup (strdup.c:42)
+==4761==    by 0x404EE25: string_duplicate (in /usr/lib/libcommons.so)
+==4761==    by 0x404F77F: _string_split (in /usr/lib/libcommons.so)
+==4761==    by 0x404F298: string_split (in /usr/lib/libcommons.so)
+==4761==    by 0x409C85F: analizadorLinea (in /usr/lib/libparser-ansisop.so)
+==4761==    by 0x804AD4D: main (CPU.c:33)
+==4761== 
+==4761== 16 (12 direct, 4 indirect) bytes in 1 blocks are definitely lost in loss record 9 of 13
+==4761==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==4761==    by 0x804A1B1: lRecv (SocketLibrary.c:78)
+==4761==    by 0x804CC63: abrir (CPU.c:628)
+==4761==    by 0x409C8B4: analizadorLinea (in /usr/lib/libparser-ansisop.so)
+==4761==    by 0x804AD4D: main (CPU.c:33)
+==4761== 
+==4761== 16 bytes in 2 blocks are definitely lost in loss record 10 of 13
+==4761==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==4761==    by 0x804C7A1: serializarPedido (CPU.c:533)
+==4761==    by 0x804C682: reservar (CPU.c:509)
+==4761==    by 0x409CBA2: analizadorLinea (in /usr/lib/libparser-ansisop.so)
+==4761==    by 0x804AD4D: main (CPU.c:33)
+==4761== 
+==4761== 17 bytes in 1 blocks are definitely lost in loss record 11 of 13
+==4761==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==4761==    by 0x804CA7B: serializarPedidoEscrituraFS (CPU.c:590)
+==4761==    by 0x804CF40: escribir (CPU.c:699)
+==4761==    by 0x409CAB3: analizadorLinea (in /usr/lib/libparser-ansisop.so)
+==4761==    by 0x804AD4D: main (CPU.c:33)
+==4761== 
+==4761== 19 bytes in 1 blocks are definitely lost in loss record 12 of 13
+==4761==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==4761==    by 0x804CA7B: serializarPedidoEscrituraFS (CPU.c:590)
+==4761==    by 0x804CF40: escribir (CPU.c:699)
+==4761==    by 0x409D9AD: _imprimir (in /usr/lib/libparser-ansisop.so)
+==4761==    by 0x409C649: analizadorLinea (in /usr/lib/libparser-ansisop.so)
+==4761==    by 0x804AD4D: main (CPU.c:33)
+==4761== 
+==4761== LEAK SUMMARY:
+==4761==    definitely lost: 128 bytes in 21 blocks
+==4761==    indirectly lost: 4 bytes in 1 blocks
+==4761==      possibly lost: 0 bytes in 0 blocks
+==4761==    still reachable: 352 bytes in 1 blocks
+==4761==         suppressed: 0 bytes in 0 blocks
+==4761== Reachable blocks (those to which a pointer was found) are not shown.
+==4761== To see them, rerun with: --leak-check=full --show-leak-kinds=all
+==4761== 
+==4761== For counts of detected and suppressed errors, rerun with: -v
+==4761== ERROR SUMMARY: 15 errors from 13 contexts (suppressed: 0 from 0)

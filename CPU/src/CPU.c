@@ -694,6 +694,7 @@ void escribir(t_descriptor_archivo fileDescriptor, void* info, t_valor_variable 
  	 fi.pid = pcb->pid;
  	 fi.tamanio = tamanio;
  	 fi.cursor = -1;
+ 	 char* ay = (char*)info;
  	 log_info(logFile, "[ESCRIBIR ARCHIVO]: ESCRIBO '%s' | FD: %i | SIZE: %i\n", (char*)info, fileDescriptor, tamanio);
  	 serializado escrituraSerializada = serializarPedidoEscrituraFS((char*)info, fi);
  	 lSend(kernel, escrituraSerializada.data, ESCRIBIR_ARCHIVO, escrituraSerializada.size);
@@ -717,6 +718,8 @@ void leer(t_descriptor_archivo fileDescriptor, t_puntero info, t_valor_variable 
 	{
 		estado = ABORTADO;
 		log_error(logFile, "[LEER ARCHIVO]: NO EXISTE ARCHIVO O PERMISOS INVALIDOS");
+		destruirMensaje(m);
+		return;
 	}
 	t_valor_variable valor = atoi(m->data);
 	log_info(logFile, "[LEER ARCHIVO]: LEO %i | FD: %i | SIZE: %i\n", valor, fileDescriptor, tamanio);

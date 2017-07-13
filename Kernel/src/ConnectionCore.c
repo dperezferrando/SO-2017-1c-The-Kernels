@@ -912,7 +912,7 @@ void recibirDeCPU(int socket, connHandle* master)
 				lSend(socket, NULL, -3 ,0);
 				matarCuandoCorresponda(info.pid, -3);
 			}
-			if(data == -1)
+			else if(data == -1)
 			{
 				puts("CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
 				lSend(socket, NULL, -3 ,0);

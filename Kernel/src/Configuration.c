@@ -139,13 +139,13 @@ void mostrarVariable(variable* var)
 serializado serializarIndiceDeStack(indStk* indiceStack, int ultimoNivel)
 {
 	serializado indiceStackSerializado;
-	indiceStackSerializado.size = 0;
+	indiceStackSerializado.size = sizeof(variable)+sizeof(int)*3;
 	int i;
 	for(i = 0;i<=ultimoNivel;i++)
 	{
 		int cantVars = list_size(indiceStack[i].variables);
 		int cantArgs = list_size(indiceStack[i].argumentos);
-		indiceStackSerializado.size += (cantVars+cantArgs)*sizeof(variable)+sizeof(variable)+sizeof(int)*3;
+		indiceStackSerializado.size += (cantVars+cantArgs)*sizeof(variable);
 	}
 	indiceStackSerializado.data = malloc(indiceStackSerializado.size);
 	char* puntero = indiceStackSerializado.data;
@@ -230,7 +230,7 @@ indStk* crearIndiceDeStack()
 	indice->variableDeRetorno.posicion.offset = -1;
 	indice->variableDeRetorno.posicion.pagina = -1;
 	indice->variableDeRetorno.posicion.size = -1;
-	indice->variableDeRetorno.identificador = '?';
+	indice->variableDeRetorno.identificador = -1;
 	return indice;
 }
 
