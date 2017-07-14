@@ -924,6 +924,12 @@ void recibirDeCPU(int socket, connHandle* master)
 				lSend(socket, NULL, -3 ,0);
 				matarCuandoCorresponda(info.pid, -2);
 			}
+			else if(estado == -2)
+			{
+				puts("EL FILESYSTEM TUVO UN ERROR (POSIBLEMENTE NO TIENE ESPACIO)");
+				lSend(socket, NULL, -3, 0);
+				matarCuandoCorresponda(info.pid, -20);
+			}
 			else
 				lSend(socket, NULL, 104, 0);
 			free(data);
