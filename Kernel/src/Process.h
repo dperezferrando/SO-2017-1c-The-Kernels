@@ -9,6 +9,7 @@
 #include <parser/metadata_program.h>
 #include <math.h>
 #include "CapaFileSystem.h"
+#include "ConnectionCore.h"
 
 
 ProcessControl* PIDFind(int);
@@ -30,12 +31,12 @@ PCB* _fromQueueToQueue(t_queue*, t_queue*, int);
 PCB* _fromListToList(t_list*, t_list*, int, int);
 PCB* _fromListToQueue(t_list*, t_queue*, int PID, int);
 
-
+void mostrarPaginaHeap(PageOwnership* po);
 void killProcess(int,int);
 void freeProcessPages(int);
 void matarSiCorresponde(int pid);
 void modifyProcessState(int, int);
-void freePage(PageOwnership*, int);
+void freePage(PageOwnership*, int, int);
 void newProcess(PCB*, int, char*, int);
 void destroyPageOwnership(PageOwnership*);
 void destruirProcessControl(ProcessControl* pc);

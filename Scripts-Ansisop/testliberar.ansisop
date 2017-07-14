@@ -4,5 +4,6 @@ alocar a 230
 alocar b 230
 alocar c 230
 liberar b
-wait SEM1
+
+liberar c
 end

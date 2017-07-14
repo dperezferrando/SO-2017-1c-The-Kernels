@@ -41,6 +41,7 @@ bool isListener(int, connHandle);
 bool _usedFragment(HeapMetadata*);
 PageOwnership* pageToStore(MemoryRequest mr);
 
+void mostrarMetadata(HeapMetadata* hm);
 void matarDesdeProcessControl(ProcessControl*);
 void aceptarNuevoCPU(int);
 void enviarInformacion(int);

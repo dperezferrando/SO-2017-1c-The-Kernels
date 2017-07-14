@@ -74,15 +74,43 @@ void killProcess(int PID,int exitCode){
 	quitarDeColaDelSemaforoPorKill(PID);
 	eliminarEntradasDelProceso(PID);
 	_modifyExitCode(PID,exitCode);
-	//freeProcessPages(PID); ya lo hace memoria
+	informarMemoryLeaks(PID);
+	freeProcessPages(PID);
 	if(checkMultiprog() && queue_size(colaNew) >0)
 		readyProcess();
 
 }
 
+void informarMemoryLeaks(int pid)
+{
+	bool PIDFind(PageOwnership* po){
+		return po->pid== pid;
+	}
 
+	t_list* paginas= list_filter(ownedPages, &PIDFind);
+	int size = list_size(paginas);
+	printf("PAGINAS SIZE: %i\n", size);
+	if(size == 0)
+		printf("EL PROCESO PID: %i LIBERO TODO SU HEAP\n");
+	else
+	{
+		puts("---------------------------------------------------------");
+		printf("EL PROCESO PID: %i NO LIBERO LA SIGUIENTE MEMORIA:\n", pid);
+		list_iterate(paginas, &mostrarPaginaHeap);
+		puts("LIBERANDO MEMORIA...");
+		puts("---------------------------------------------------------");
 
+	}
+	list_destroy(paginas);
 
+}
+
+void mostrarPaginaHeap(PageOwnership* po)
+{
+	printf("PAGINA: %i\n", po->idpage);
+	list_iterate(po->occSpaces, &mostrarMetadata);
+	puts("------------------------------------------");
+}
 
 
 //-----------------------------------------------------Manejo de Planificacion-----------------------------------------------//
@@ -411,16 +439,16 @@ void freeProcessPages(int pid){
 	int size= list_size(paginas);
 	for(i=0;i<size;i++){
 		PageOwnership* po= list_get(paginas,0);
-		freePage(po,0);
+		freePage(po,0, 0);
 	}
 	list_destroy(paginas);
 }
 
-void freePage(PageOwnership* po, int index){
+void freePage(PageOwnership* po, int index, int avisoAMemoria){
 	void* msg= malloc(sizeof(int)*2);
 	memcpy(msg,&po->pid,sizeof(int));
 	memcpy(msg+sizeof(int),&po->idpage,sizeof(int));
-	if(!test)lSend(conexionMemoria,msg,4,sizeof(int)*2);
+	if(!test && avisoAMemoria)lSend(conexionMemoria,msg,4,sizeof(int)*2);
 	printf("SE LIBERO PID %i, PAGE %i",po->pid,po->idpage);
 	list_remove_and_destroy_element(ownedPages,index,&destroyPageOwnership);
 	free(msg);

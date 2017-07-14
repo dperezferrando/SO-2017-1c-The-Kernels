@@ -496,7 +496,7 @@ void* defragging(int pid, int idPage, t_list* page){
     	}
     	int index= findIndex(pid,idPage);
     	PageOwnership* po= findPage(pid,idPage);
-    	freePage(po, index);
+    	freePage(po, index, 1);
     	return NULL;
     }
 
