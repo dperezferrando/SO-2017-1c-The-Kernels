@@ -1,0 +1,20 @@
+#!/usr/bin/ansisop
+begin
+variables f, i, t, a
+#`i`: Iterador
+i=0
+#`f`: Hasta donde contar
+f=472
+:inicio
+#Incrementar el iterador
+i=i+1
+#Imprimir el contador
+prints n i
+alocar a 200
+
+#`t`: Comparador entre `i` y `f`
+t=f-i
+#De no ser iguales, salta a inicio
+jnz t inicio
+wait SEM1
+end

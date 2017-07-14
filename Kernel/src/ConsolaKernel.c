@@ -61,6 +61,15 @@ void recibir_comandos()
 					puts("-------COLA EXIT------");
 				}
 			}
+			else if(!strcmp(comando[0], "rafagasEj"))
+			{
+				if(comando[1] != NULL)
+				{
+					int pid = atoi(comando[1]);
+					ProcessControl* pc = PIDFind(pid); // ADENTRO TIENE MUTEX
+					printf("PROCESO PID: %i LLEVA %i RAFAGAS EJECUTADAS\n", pc->pid, pc->rafagasEj);
+				}
+			}
 			// FALTAN VARIOS CMDS QUE TODAVIA NO ESTA IMPLEMENTADO DONDE SE GUARDA ESA INFO
 			else if(!strcmp(comando[0], "tablaArchivos"))
 			{
@@ -103,17 +112,31 @@ void recibir_comandos()
 						config->GRADO_MULTIPROG = multiprog;
 						pthread_mutex_unlock(&mMultiprog);
 						printf("NUEVO GRADO DE MULTIPROGRAMACION: %i\n", config->GRADO_MULTIPROG);
-						int i;
-						pthread_mutex_lock(&mColaNew);
-						int new = queue_size(colaNew);
-						pthread_mutex_unlock(&mColaNew);
-						for(i = 0;i<new;i++)
-							readyProcess();
-
+						enviarTodosLosNewAReady();
 					}
 				}
 				else{
 					puts("Argumento no puede ser null\n");
+				}
+			}
+			else if(!strcmp(comando[0], "syscalls"))
+			{
+				if(comando[1]!=NULL){
+					int pid = atoi(comando[1]);
+					ProcessControl* pc = PIDFind(pid);
+					printf("SYSCALLS PID: %i: %i\n", pc->pid, pc->syscalls);
+				}
+			}
+			else if(!strcmp(comando[0], "heapInfo"))
+			{
+				if(comando[1]!=NULL){
+					int pid = atoi(comando[1]);
+					ProcessControl* pc = PIDFind(pid);
+					puts("---------HEAP INFO----------");
+					printf("CANTIDAD ALLOCS: %i | BYTES ALOCADOS: %i | PAGINAS ALOCADAS (CONTANDO LIBERADAS): %i\n", pc->cantAlocar, pc->heapBytes, pc->heapPages);
+					printf("CANTIDAD FREES: %i | BYTES LIBERADOS: %i\n", pc->cantFree, pc->freedBytes);
+					puts("---------HEAP INFO----------");
+
 				}
 			}
 			else if(!strcmp(comando[0], "kill"))
@@ -129,7 +152,17 @@ void recibir_comandos()
 			}
 			else if(!strcmp(comando[0], "togglePlanif"))
 			{
-				// NI PUTA IDEA YET
+				pthread_mutex_lock(&mTogglePlanif);
+				togglePlanif=1;
+				pthread_mutex_unlock(&mTogglePlanif);
+			}
+			else if(!strcmp(comando[0], "untogglePlanif"))
+			{
+				pthread_mutex_lock(&mTogglePlanif);
+				togglePlanif=0;
+				pthread_mutex_unlock(&mTogglePlanif);
+				enviarTodosLosNewAReady();
+				enviarTodosLosReadyAExecute();
 			}
 			else if(!strcmp(comando[0], "exit"))
 			{
@@ -144,6 +177,26 @@ void recibir_comandos()
 		}
 	}
 
+}
+
+void enviarTodosLosNewAReady()
+{
+	pthread_mutex_lock(&mColaNew);
+	int new = queue_size(colaNew);
+	pthread_mutex_unlock(&mColaNew);
+	int i;
+	for(i = 0;i<new;i++)
+		readyProcess();
+}
+
+void enviarTodosLosReadyAExecute()
+{
+	pthread_mutex_lock(&mColaReady);
+	int ready = queue_size(colaReady);
+	pthread_mutex_unlock(&mColaReady);
+	int i;
+	for(i = 0;i<ready;i++)
+		executeProcess();
 }
 
 void mostrarPID(PCB* pcb)

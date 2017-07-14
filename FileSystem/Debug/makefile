@@ -23,19 +23,19 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: CPU
+all: FileSystem
 
 # Tool invocations
-CPU: $(OBJS) $(USER_OBJS)
+FileSystem: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/utnso/Escritorio/tp-2017-1c-The-Kernels/ConfigLibrary/src" -o "CPU" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/utnso/tp-2017-1c-The-Kernels/SocketLibrary/src" -o "FileSystem" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) CPU
+	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) FileSystem
 	-@echo ' '
 
 .PHONY: all clean dependents

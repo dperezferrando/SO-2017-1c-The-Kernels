@@ -163,7 +163,7 @@ void conexion_kernel(int conexion)
 					lSend(conexion, NULL,-2,0);
 					break;
 				}
-				int paginaAsignada = tamanioProceso(pid);
+				int paginaAsignada = damePaginaHeap(pid);
 				printf("[HEAP]: PAGINA ASIGNADA: %i\n", paginaAsignada);
 				lSend(conexion, &paginaAsignada, 104,sizeof(int));
 				crearEntradas(pid, 1, paginaAsignada);
@@ -217,21 +217,25 @@ void conexion_kernel(int conexion)
 
 bool frameValido(int frame)
 {
-	return frame >= 0 && frame < config->marcos;
+	return frame > 0 && frame < config->marcos;
 }
 void finalizarPrograma(int pid)
 {
-	int pag = 0;
-	entradaTabla* pointer;
-	do
+	int pag = 0, i = 0;
+	entradaTabla* pointer = obtenerEntradaDe(pid, pag);
+	int tamanio = tamanioProceso(pid);
+	while(pag < tamanio)
 	{
-		pointer = obtenerEntradaDe(pid, pag);
-		pointer->pid = -1;
-		pointer->pagina = -1;
-		pag++;
-		pointer++;
+		if(pointer != NULL)
+		{
+			pointer->pid = -1;
+			pointer->pagina = -1;
+			pag++;
+		}
+		i++;
+		pointer = obtenerEntradaDe(pid, i);
 	}
-	while(pointer->pid == pid && frameValido(pointer->frame));
+//	while(pointer != NULL);//pointer->pid == pid && frameValido(pointer->frame));
 	bool pidDistintoA(entradaCache* entrada)
 	{
 		return entrada->pid != pid;
@@ -347,11 +351,6 @@ char* obtenerPosicionAOperarEnCache(int pid, int pagina, int offset)
 		return pid == unaEntrada->pid && pagina == unaEntrada->pagina;
 	}
 	entradaCache* entrada = list_remove_by_condition(cache, mismoPIDyPagina);
-	if(entrada == NULL)
-	{
-		printf("ENTRADA NULL: PAG: %i\n", pagina);
-		sleep(20);
-	}
 	char* punteroAFrame = entrada->data+offset;
 	list_add_in_index(cache, 0, entrada);
 	return punteroAFrame;
@@ -389,7 +388,9 @@ void recibir_comandos()
 		printf("COMANDO: %s ARG: %s\n", comando[0], comando[1]);
 		if(!strcmp(comando[0], "dump"))
 		{
-			if(!strcmp(comando[1], "estructuras"))
+			if(comando[1] == NULL)
+				puts("COMANDO INVALIDO");
+			else if(!strcmp(comando[1], "estructuras"))
 				mostrarTablaPaginas();
 			else if(!strcmp(comando[1], "cache"))
 			{
@@ -417,7 +418,11 @@ void recibir_comandos()
 			printf("[MEMORIA]: NUEVO RETARDO SETEADO: %ims\n", config->retardo_memoria);
 		}
 		else if(!strcmp(comando[0], "flush"))
+		{
+			pthread_mutex_lock(&cacheSem);
 			list_clean_and_destroy_elements(cache, destruirEntradaCache);
+			pthread_mutex_unlock(&cacheSem);
+		}
 		else if(!strcmp(comando[0], "size"))
 		{
 			if(!strcmp(comando[1], "memory"))
@@ -442,7 +447,17 @@ void recibir_comandos()
 
 int tamanioProceso(int pid)
 {
-	entradaTabla* puntero = (entradaTabla*)memoria+cantPaginasAdmin;
+	entradaTabla* puntero = (entradaTabla*)memoria + cantPaginasAdmin;
+	int i = 0;
+	do
+	{
+		if(puntero->pid == pid)
+			i++;
+		puntero++;
+	}
+	while(frameValido(puntero->frame));
+	return i;
+/*	entradaTabla* puntero = (entradaTabla*)memoria+cantPaginasAdmin;
 	int contador = 0;
 	while(puntero->frame != (config->marcos-1))
 	{
@@ -450,7 +465,7 @@ int tamanioProceso(int pid)
 			contador++;
 		puntero++;
 	}
-	return contador;
+	return contador;*/
 }
 
 int cantidadFramesOcupados()
@@ -470,7 +485,7 @@ int cantidadFramesOcupados()
 void mostrarDatosProcesos()
 {
 	entradaTabla* puntero = (entradaTabla*)memoria+cantPaginasAdmin;
-	while(puntero->frame != (config->marcos-1))
+	do
 	{
 		if(puntero->pid >= 0)
 		{
@@ -482,6 +497,7 @@ void mostrarDatosProcesos()
 		}
 		puntero++;
 	}
+	while(frameValido(puntero->frame));
 }
 
 int cantidadFramesLibres()
@@ -538,11 +554,15 @@ void conexion_cpu(int conexion)
 				// LEER
 				posicionEnMemoria* posicion = malloc(sizeof(posicionEnMemoria));
 				memcpy(posicion, mensaje->data, sizeof(posicionEnMemoria));
-				printf("[CPU %i]: LEER PAG: %i | OFFSET: %i | SIZE: %i\n", conexion, posicion->pagina, posicion->offset, posicion->size);
-				char* linea = leerDondeCorresponda(pidActual, posicion);
-				lSend(conexion, linea, 2, posicion->size);
+				if(!pedidoValido(pidActual, posicion))
+					lSend(conexion, NULL, -5, 0);
+				else {
+					printf("[CPU %i]: LEER PAG: %i | OFFSET: %i | SIZE: %i\n", conexion, posicion->pagina, posicion->offset, posicion->size);
+					char* linea = leerDondeCorresponda(pidActual, posicion);
+					lSend(conexion, linea, 2, posicion->size);
+					free(linea);
+				}
 				free(posicion);
-				free(linea);
 				break;
 			}
 
@@ -553,9 +573,14 @@ void conexion_cpu(int conexion)
 				memcpy(&pedido->posicion, mensaje->data, sizeof(posicionEnMemoria));
 				pedido->valor = malloc(pedido->posicion.size);
 				memcpy(pedido->valor, mensaje->data+sizeof(posicionEnMemoria),pedido->posicion.size);
-				printf("[CPU %i]: GUARDAR INFO EN PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %s\n", conexion, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor);
-
-				escribirDondeCorresponda(pidActual, pedido);
+				if(!pedidoValido(pidActual, &pedido->posicion))
+					lSend(conexion, NULL, -5, 0);
+				else
+				{
+					printf("[CPU %i]: GUARDAR INFO EN PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %s\n", conexion, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor);
+					escribirDondeCorresponda(pidActual, pedido);
+					lSend(conexion,NULL, 104, 0);
+				}
 				free(pedido->valor);
 				free(pedido);
 				break;
@@ -573,6 +598,11 @@ void conexion_cpu(int conexion)
 	close(conexion);
 	pthread_exit(NULL);
 
+}
+
+int pedidoValido(int pid, posicionEnMemoria* posicion)
+{
+	return obtenerEntradaDe(pid, posicion->pagina) != NULL;
 }
 
 char* leerDondeCorresponda(int pid, posicionEnMemoria* posicion)
@@ -602,7 +632,6 @@ char* leerDondeCorresponda(int pid, posicionEnMemoria* posicion)
 void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
 {
 	pthread_mutex_lock(&cacheSem);
-	char* linea;
 	if(config->entradas_cache > 0 && existeEnCache(pid, pedido->posicion.pagina))
 	{
 		printf("[CACHE]: EXISTE EN CACHE PAGINA: %i\n", pedido->posicion.pagina);
@@ -616,8 +645,11 @@ void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
 		usleep(1000*config->retardo_memoria);
 		pthread_mutex_unlock(&retardoSem);
 		puts("[CACHE]: SLEEP LISTO, SOLICITO Y AGREGO A CACHE");
-		if(!escribirBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor))
-			puts("[CACHE]: ERROR (ESTO DEBERIA SER UNREACHABLE, SI LO VES SE ROMPIO TODO)");
+		int estado = escribirBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor);
+		if(estado == 0)
+			puts("[CACHE]: OFFSET MAYOR A MARCO (ESTO DEBERIA SER UNREACHABLE, SI LO VES SE ROMPIO TODO)");
+		else if(estado == -1)
+			puts( "[CACHE]: NO EXISTE LA PAGINA EN MEMORIA - POSIBLEMENTE EL PROCESO HAYA SIDO AJUSTICIADO");
 		else
 		{
 			puts("[CACHE]: SE ESCRIBIO EN MEMORIA - AGREGANDO A CACHE LA PAGINA");
@@ -631,40 +663,6 @@ void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
 	pthread_mutex_unlock(&cacheSem);
 
 }
-/*
-void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
-{
-	pthread_mutex_lock(&cacheSem);
-	int* valorPuntero = &pedido->valor;
-//	char* linea;
-	if(config->entradas_cache > 0 && existeEnCache(pid, pedido->posicion.pagina))
-	{
-		printf("[CACHE]: EXISTE EN CACHE PAGINA: %i\n", pedido->posicion.pagina);
-		escribirBytesCache(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, valorPuntero);
-//		linea = solicitarBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
-	}
-	else
-	{
-		puts("[CACHE]: NO EXISTE EN CACHE - RETARDO");
-		pthread_mutex_lock(&retardoSem);
-		usleep(1000*config->retardo_memoria);
-		pthread_mutex_unlock(&retardoSem);
-		puts("[CACHE]: SLEEP LISTO, SOLICITO Y AGREGO A CACHE");
-		if(!escribirBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, valorPuntero))
-			puts("[CACHE]: ERROR (ESTO DEBERIA SER UNREACHABLE, SI LO VES SE ROMPIO TODO)");
-		else
-		{
-			puts("[CACHE]: SE ESCRIBIO EN MEMORIA - AGREGANDO A CACHE LA PAGINA");
-			if(config->entradas_cache != 0)
-			{
-				agregarACache(pid, pedido->posicion.pagina);
-//				linea = solicitarBytesACache(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
-			}
-		}
-	}
-	pthread_mutex_unlock(&cacheSem);
-
-}*/
 
 
 entradaTabla* obtenerEntradaAproximada(int pid, int pagina)
@@ -676,25 +674,41 @@ entradaTabla* obtenerEntradaAproximada(int pid, int pagina)
 	return pointer;
 }
 
-/*entradaTabla* obtenerEntradaDe(int pid, int pagina)
+int damePaginaHeap(int pid)
 {
-	entradaTabla* pointer = obtenerEntradaAproximada(pid, pagina);
-	while(pointer->pid != pid && pointer->pagina != pagina && pointer->frame != (config->marcos-1))
-		pointer++;
-	return pointer;
-}*/
+	int i = 0;
+	while(obtenerEntradaDe(pid, i) != NULL)
+		i++;
+	return i;
+}
 
 entradaTabla* obtenerEntradaDe(int pid, int pagina)
 {
 	entradaTabla* pointer = obtenerEntradaAproximada(pid, pagina);
+	entradaTabla* aux = pointer;
 	while((pointer->pid != pid || pointer->pagina != pagina) && frameValido(pointer->frame))
 		pointer++;
-	return pointer;
+
+	if(pointer->pid != pid || pointer->pagina != pagina)
+	{
+		pointer = (entradaTabla*)memoria+cantPaginasAdmin;
+		while(pointer != aux)
+		{
+			if(pointer->pid == pid && pointer->pagina == pagina)
+				return pointer;
+			pointer++;
+		}
+		return NULL;
+	}
+	else
+		return pointer;
 }
 
 char* obtenerPosicionAOperar(int pid, int pagina, int offset)
 {
 	entradaTabla* pointer = obtenerEntradaDe(pid, pagina);
+	if(pointer == NULL)
+		return NULL;
 	pthread_mutex_lock(&memoriaSem);
 	char* punteroAFrame = memoria + (pointer->frame*config->marco_size)+offset;
 	pthread_mutex_unlock(&memoriaSem);
@@ -716,6 +730,8 @@ int escribirBytes(int pid, int pagina, int offset, int tamanio, void* buffer)
 	if(tamanio+offset > config->marco_size)
 		return 0;
 	char* punteroAFrame = obtenerPosicionAOperar(pid, pagina, offset);
+	if(punteroAFrame == NULL)
+		return -1;
 	pthread_mutex_lock(&memoriaSem);
 	memcpy(punteroAFrame, buffer, tamanio);
 	pthread_mutex_unlock(&memoriaSem);
@@ -724,7 +740,15 @@ int escribirBytes(int pid, int pagina, int offset, int tamanio, void* buffer)
 
 int bestHashingAlgorithmInTheFuckingWorld(int pid, int pagina)
 {
-	return cantPaginasAdmin; // TO DO OBV
+	char str1[20];
+	char str2[20];
+	sprintf(str1, "%d", pid);
+	sprintf(str2, "%d", pagina);
+	strcat(str1, str2);
+	int aux = atoi(str1);
+	int marcosNoAdmin = (config->marcos-1) - cantPaginasAdmin;
+	int frame = ( aux % marcosNoAdmin) + cantPaginasAdmin;
+	return frame;
 }
 
 void inicializarPrograma(int pid, int cantidadPaginas, char* archivo, int tamanio)
@@ -780,19 +804,32 @@ int sePuedenAsignarPaginas(int pid, int cantidadDePaginas)
 
 void crearEntradas(int pid, int cantidadPaginas, int paginaInicial)
 {
-	entradaTabla* pointer = obtenerEntradaAproximada(pid, 0);
+	entradaTabla* pointer = obtenerEntradaAproximada(pid, paginaInicial);
 	int j = paginaInicial;
 	int i = 0;
 	while(i<cantidadPaginas)
 	{
+	//	pthread_mutex_lock(&memoriaSem);
 		if(pointer->pid == -1)
 		{
 			pointer->pid = pid;
 			pointer->pagina = j;
 			j++;
 			i++;
+			pointer = obtenerEntradaAproximada(pid, j);
 		}
-		pointer++;
+		else
+			pointer++;
+		if(pointer->frame < 0 || pointer->frame >= config->marcos)
+		{
+			puts("NULL");
+			pointer = (entradaTabla*)memoria+cantPaginasAdmin;
+		}
+
+//		pthread_mutex_unlock(&memoriaSem);
+
+
+
 	}
 
 }

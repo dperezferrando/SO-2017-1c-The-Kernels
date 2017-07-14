@@ -33,6 +33,7 @@ int main(int argc, char** argsv) {
 			analizadorLinea(linea, &primitivas, &primitivas_kernel);
 			free(linea);
 			pcb->programCounter++;
+			pcb->rafagasTotales++;
 			rafagas++;
 			if(quantum != 0 && rafagas == quantum && estado == OK)
 			{
@@ -41,6 +42,8 @@ int main(int argc, char** argsv) {
 				else
 					estado = KILLED;
 			}
+			puts("---------------------------------------------------------------------------------------------------------------");
+			usleep(quantumSleep*1000);
 		}
 		log_info(logFile, "[PCB EXPULSADO]: PID: %i | ESTADO: %i\n", pcb->pid, estado);
 		serializado pcbSerializado = serializarPCB(pcb);
@@ -50,7 +53,7 @@ int main(int argc, char** argsv) {
 		destruirPCB(pcb);
 	}
 	free(config);
-//	close(kernel);
+	close(kernel);
 	close(memoria);
 	log_destroy(logFile);
 	return EXIT_SUCCESS;
@@ -95,8 +98,9 @@ int esperarPCB()
 	Mensaje* mensaje = lRecv(kernel);
 	if(mensaje->header.tipoOperacion == -1)
 		return mensaje->header.tipoOperacion;
-	pcb = deserializarPCB(mensaje->data);
-	log_info(logFile, "[PCB RECIBIDO]: PID: %i\n", pcb->pid);
+	pcb = deserializarPCB(mensaje->data+sizeof(int));
+	memcpy(&quantumSleep, mensaje->data, sizeof(int));
+	log_warning(logFile, "[PCB RECIBIDO]: PID: %i | QUANTUM SLEEP: %i\n", pcb->pid, quantumSleep);
 	int op = mensaje->header.tipoOperacion;
 	destruirMensaje(mensaje);
 	return op;
@@ -155,6 +159,7 @@ void imprimir(configFile* c){
 
 // FUNCIONES ANSISOP PARSER
 t_puntero definirVariable(t_nombre_variable identificador){
+	int limiteStack = pcb->cantPaginasCodigo+stackSize;
 	log_info(logFile, "[DEFINIR VARIABLE - STACK LEVEL: %i]: '%c'\n", pcb->nivelDelStack, identificador);
 	posicionEnMemoria unaPosicion = calcularPosicion(pcb->nivelDelStack);
 	variable* unaVariable = malloc(sizeof(variable));
@@ -165,6 +170,11 @@ t_puntero definirVariable(t_nombre_variable identificador){
 	else if(isalpha(unaVariable->identificador))
 		list_add(pcb->indiceStack[pcb->nivelDelStack].variables, unaVariable);
 	t_puntero direccionReal = convertirADireccionReal(unaVariable->posicion);
+	if(unaPosicion.pagina >= limiteStack)
+	{
+		log_error(logFile, "[DEFINIR VARIABLE]: STACK OVER FLOW PAPU - PROGRAMA ABORTADO");
+		estado = STKOF;
+	}
 	log_info(logFile, "[DEFINIR VARIABLE - STACK LEVEL: %i]: '%c' | PAG: %i | OFFSET: %i | Size: %i:\n", pcb->nivelDelStack, unaVariable->identificador, unaVariable->posicion.pagina, unaVariable->posicion.offset, unaVariable->posicion.size);
 	return direccionReal;
 
@@ -190,11 +200,12 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador){
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor){
 	log_info(logFile, "[ASIGNAR COMPARTIDA]: VAR: %s | VALOR: %i\n", variable, valor);
 	int len = strlen(variable)+1;
-	int size = len + sizeof(int)*2;
+	int size = len + sizeof(int)*3;
 	char* data = malloc(size);
 	memcpy(data, &len, sizeof(int));
 	memcpy(data +sizeof(int), variable, len);
 	memcpy(data + sizeof(int) + len, &valor, sizeof(int));
+	memcpy(data + sizeof(int)*2 + len, &pcb->pid, sizeof(int));
 	lSend(kernel, data, ASIGNARCOMPARTIDA, size);
 	free(data);
 /*	Mensaje* respuesta = lRecv(kernel);
@@ -208,12 +219,19 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 t_valor_variable obtenerValorCompartida(t_nombre_compartida nombre){
 
 	log_info(logFile, "[VALOR COMPARTIDA]: SE PIDE EL VALOR DE: %s\n", nombre);
-	lSend(kernel, nombre, OBTENERCOMPARTIDA, strlen(nombre)+1);
+	int len = strlen(nombre)+1;
+	int size = len + sizeof(int)*2;
+	char* data = malloc(size);
+	memcpy(data, &pcb->pid, sizeof(int));
+	memcpy(data+sizeof(int), &len, sizeof(int));
+	memcpy(data+sizeof(int)*2, nombre, len);
+	lSend(kernel, data, OBTENERCOMPARTIDA, size);
 	Mensaje* respuesta = lRecv(kernel);
 	int valor;
 	memcpy(&valor, respuesta->data, sizeof(int));
 	log_info(logFile, "[VALOR COMPARTIDA]: EL VALOR DE %s es: %i\n", nombre, valor);
 	destruirMensaje(respuesta);
+	free(data);
 	return valor;
 }
 
@@ -309,6 +327,11 @@ variable* obtenerUltimaVariable(t_list* listaVariables)
 
 char* leerEnMemoria(posicionEnMemoria posicion)
 {
+	if(estado != OK)
+	{
+		log_error(logFile, "[LEER EN MEMORIA]: PROGRAMA ABORTADO -> NO SE LEE NADA");
+		return NULL;
+	}
 	int total = posicion.offset + posicion.size;
 	int segundoSize;
 	char* instruccion;
@@ -316,6 +339,12 @@ char* leerEnMemoria(posicionEnMemoria posicion)
 	if(total <= tamanioPagina)
 	{
 		instruccion = enviarPedidoLecturaMemoria(posicion);
+		if(instruccion == NULL)
+		{
+			log_error(logFile, "[LEER EN MEMORIA]: POSICION INVALIDA");
+			estado = STKOF;
+			return NULL;
+		}
 		instruccion[posicion.size-1] = '\0';
 	}
 	else
@@ -326,6 +355,12 @@ char* leerEnMemoria(posicionEnMemoria posicion)
 		posicion.size -= segundoSize;
 		log_info(logFile, "[LEER EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
 		char* primeraParte = enviarPedidoLecturaMemoria(posicion);
+		if(primeraParte == NULL)
+		{
+			log_error(logFile, "[LEER EN MEMORIA]: POSICION INVALIDA");
+			estado = STKOF;
+			return NULL;
+		}
 		memcpy(puntero, primeraParte, posicion.size);
 		puntero+= posicion.size;
 		free(primeraParte);
@@ -333,6 +368,12 @@ char* leerEnMemoria(posicionEnMemoria posicion)
 		posicion.offset = 0;
 		posicion.size = segundoSize;
 		char* segundaParteInstruccion = enviarPedidoLecturaMemoria(posicion);
+		if(segundaParteInstruccion == NULL)
+		{
+			log_error(logFile, "[LEER EN MEMORIA]: POSICION INVALIDA");
+			estado = STKOF;
+			return NULL;
+		}
 		segundaParteInstruccion[posicion.size-1] = '\0';
 		memcpy(puntero, segundaParteInstruccion, posicion.size);
 		free(segundaParteInstruccion);
@@ -345,6 +386,11 @@ char* leerEnMemoria(posicionEnMemoria posicion)
 
 void escribirEnMemoria(posicionEnMemoria posicion, char* valor)
 {
+	if(estado != OK)
+	{
+		log_error(logFile, "[ESCRIBIR EN MEMORIA]: PROGRAMA ABORTADO -> NO SE ESCRIBE NADA");
+		return;
+	}
 	log_info(logFile, "[ESCRIBIR EN MEMORIA]: PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %s\n", posicion.pagina, posicion.offset, posicion.size, valor);
 	int limiteStack = pcb->cantPaginasCodigo+stackSize;
 	int total = posicion.offset + posicion.size;
@@ -356,37 +402,54 @@ void escribirEnMemoria(posicionEnMemoria posicion, char* valor)
 	}*/
 
 	if(total <= tamanioPagina)
-		enviarPedidoEscrituraMemoria(posicion, valor);
+	{
+		if(enviarPedidoEscrituraMemoria(posicion, valor) == -5)
+		{
+			estado = STKOF;
+			log_error(logFile, "[ESCRIBIR EN MEMORIA]: LA POSICION ENVIADA A MEMORIA ES INCORRECTA - POSIBLEMENTE HEAP INVALIDO");
+		}
+	}
 	else
 	{
 		int segundoSize;
 		segundoSize = total-tamanioPagina;
 		posicion.size -= segundoSize;
-		int valorAEnviar;
+	/*	int valorAEnviar;
 		int* a = &valor;
-		char* puntero = (char*)a;
-		memcpy(&valorAEnviar, puntero, posicion.size);
-		puntero += posicion.size;
+		char* puntero = (char*)a;*/
+	/*	memcpy(&valorAEnviar,valor, posicion.size);
+		puntero += posicion.size;*/
 		log_info(logFile, "[ESCRIBIR EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
-		enviarPedidoEscrituraMemoria(posicion, valorAEnviar);
+		if(enviarPedidoEscrituraMemoria(posicion, valor) == -5)
+		{
+			estado = STKOF;
+			log_error(logFile, "[ESCRIBIR EN MEMORIA]: LA POSICION ENVIADA A MEMORIA ES INCORRECTA - POSIBLEMENTE HEAP INVALIDO");
+			return;
+		}
+		valor += posicion.size;
 		posicion.pagina++;
 		posicion.offset = 0;
 		posicion.size = segundoSize;
-		memcpy(&valorAEnviar, puntero, posicion.size);
+		//memcpy(&valorAEnviar, puntero, posicion.size);
 		log_info(logFile, "[ESCRIBIR EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
-	/*	if(posicion.pagina >= limiteStack)
+		if(posicion.pagina >= limiteStack)
 		{
 			log_error(logFile, "[ESCRIBIR EN MEMORIA]: STACK OVER FLOW PAPU - PROGRAMA ABORTADO");
 			estado = STKOF;
 			return;
-		}*/
+		}
 
-		enviarPedidoEscrituraMemoria(posicion, valorAEnviar);
+		if(enviarPedidoEscrituraMemoria(posicion, valor) == -5)
+		{
+			estado = STKOF;
+			log_error(logFile, "[ESCRIBIR EN MEMORIA]: LA POSICION ENVIADA A MEMORIA ES INCORRECTA - POSIBLEMENTE HEAP INVALIDO");
+			return;
+		}
 
 	}
 }
 
-void enviarPedidoEscrituraMemoria(posicionEnMemoria posicion, char* valor)
+int enviarPedidoEscrituraMemoria(posicionEnMemoria posicion, char* valor)
 {
 	/*pedidoEscrituraMemoria* pedido = malloc(sizeof(pedidoEscrituraMemoria));
 	pedido->posicion = posicion;/
@@ -397,12 +460,18 @@ void enviarPedidoEscrituraMemoria(posicionEnMemoria posicion, char* valor)
 	memcpy(pedido+sizeof(posicionEnMemoria), valor, posicion.size);
 	lSend(memoria, pedido, 3,size);
 	free(pedido);
+	Mensaje* respuesta = lRecv(memoria);
+	int op = respuesta->header.tipoOperacion;
+	destruirMensaje(respuesta);
+	return op;
 }
 
 char* enviarPedidoLecturaMemoria(posicionEnMemoria posicion)
 {
 	lSend(memoria, &posicion, LEER, sizeof(posicionEnMemoria));
 	Mensaje* respuesta = lRecv(memoria);
+	if(respuesta->header.tipoOperacion == -5)
+		return NULL;
 	char* data = malloc(respuesta->header.tamanio+1);
 	memcpy(data, respuesta->data, respuesta->header.tamanio);
 	destruirMensaje(respuesta);
@@ -446,6 +515,8 @@ t_valor_variable dereferenciar(t_puntero posicion)
 	log_info(logFile, "[DEREFERENCIAR - STACK LEVEL: %i]\n", pcb->nivelDelStack);
 	posicionEnMemoria direccionLogica = convertirADireccionLogica(posicion);
 	char* info = leerEnMemoria(direccionLogica);
+	if(info == NULL)
+		return 0;
 	t_valor_variable valor;
 	memcpy(&valor, info, sizeof(int));
 	log_info(logFile, "[DEREFERENCIAR - STACK LEVEL: %i]: OBTENGO DE MEMORIA EL SIGUIENTE VALOR: %i\n", pcb->nivelDelStack, valor);
@@ -474,6 +545,12 @@ void irAlLabel(t_nombre_etiqueta nombre){
 	log_info(logFile, "[IR A LABEL - STACK LEVEL: %i]\n", pcb->nivelDelStack);
 	t_puntero_instruccion instruccionParaPCB;
 	instruccionParaPCB = metadata_buscar_etiqueta(nombre, pcb->indiceEtiqueta, pcb->sizeIndiceEtiquetas);
+	if(instruccionParaPCB == -1)
+	{
+		log_error(logFile, "[IR A LABEL]: MOSTRO ESTE SCRIPT ESTA ROTISIMO. SALU2");
+		estado = ABORTADO;
+		return;
+	}
 	pcb->programCounter = instruccionParaPCB-1;
 	log_info(logFile, "[IR A LABEL - STACK LEVEL: %i]: '%s' | PC: %i\n", pcb->nivelDelStack, nombre, pcb->programCounter);
 }
@@ -488,9 +565,10 @@ void retornar(t_valor_variable valorDeRetorno){
 	//PRIMITIVAS ANSISOP KERNEL
 
 void wait(t_nombre_semaforo nombre){
-	int tamanio = strlen(nombre);
+
+	serializado sem = serializarSemaforo(nombre);
 	//Envio el nombre del semaforo, uso string_substring_until porque el parser agarra el nombre con el /n
-	lSend(kernel, nombre, WAIT, tamanio);
+	lSend(kernel, sem.data, WAIT, sem.size);
 	//El kernel me responde si tengo que bloquear
 	Mensaje *m = lRecv(kernel);
 	//Bloqueado = 3, No bloqueado = 0
@@ -498,16 +576,30 @@ void wait(t_nombre_semaforo nombre){
 	if(bloqueado == BLOQUEADO){
 		log_info(logFile, "[WAIT - PROCESO BLOQUEADO POR SEMAFORO]");
 		//Envio el pid al kernel para que lo guarde en la cola del semaforo
-		lSend(kernel, &pcb->pid, WAIT, sizeof(int));
+	//	lSend(kernel, &pcb->pid, WAIT, sizeof(int));
 		//Para salir del while
 		estado = BLOQUEADO;
 	}
+	free(sem.data);
 	destruirMensaje(m);
 }
 
 void signalSem(t_nombre_semaforo nombre){
-	int tamanio = strlen(nombre);
-	lSend(kernel, nombre, SIGNAL, tamanio);
+	serializado sem = serializarSemaforo(nombre);
+	lSend(kernel, sem.data, SIGNAL, sem.size);
+	free(sem.data);
+}
+
+serializado serializarSemaforo(char* nombre)
+{
+	serializado sem;
+	int tamanio = strlen(nombre)+1;
+	sem.size = tamanio+sizeof(int)*2;
+	sem.data = malloc(sem.size);
+	memcpy(sem.data, &pcb->pid, sizeof(int));
+	memcpy(sem.data+sizeof(int), &tamanio, sizeof(int));
+	memcpy(sem.data+sizeof(int)*2, nombre, tamanio);
+	return sem;
 }
 
 t_puntero reservar(t_valor_variable nroBytes){
@@ -555,6 +647,13 @@ void liberar(t_puntero puntero ){
 	memcpy(data+sizeof(int), &posicion.pagina, sizeof(int));
 	memcpy(data+sizeof(int)*2, &posicion.offset, sizeof(int));
 	lSend(kernel, data, LIBERAR_PUNTERO, size);
+	Mensaje* respuesta = lRecv(kernel);
+	if(respuesta->header.tipoOperacion == -5)
+	{
+		estado = STKOF;
+		log_error(logFile, "[HEAP]: SE QUISO LIBERAR UNA PAGINA INCORRECTA");
+	}
+	destruirMensaje(respuesta);
 	log_info(logFile, "[HEAP]: SE LIBERA PUNTERO DIR FISICA: %i | DIR LOGICA: PAG: %i | OFFSET: %i", puntero, posicion.pagina, posicion.offset);
 
 }

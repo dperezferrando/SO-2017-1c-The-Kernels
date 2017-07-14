@@ -42,6 +42,7 @@ typedef struct __attribute__ ((packed)) pedidoEscrituraDelKernel {
 	char* data;
 } pedidoEscrituraDelKernel;
 
+
 void imprimirConfigFile(configFile*);
 configFile* leerArchivoConfig(t_config*);
 void conexion_kernel();

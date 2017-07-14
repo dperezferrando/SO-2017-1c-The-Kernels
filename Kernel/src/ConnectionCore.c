@@ -165,7 +165,7 @@ void mostrarMetadata(HeapMetadata* hm)
 }
 int memoryRequest(MemoryRequest mr, int* offset, PageOwnership* po){
 	int operation;
-	if((operation = grabarPedido(po,mr,offset)) == -1)
+	if((operation = grabarPedido(po,mr,offset)) < 0)
 		return operation;
 	int memreq;
 	if((memreq=sendMemoryRequest(mr,po,*offset))!=1)
@@ -173,12 +173,13 @@ int memoryRequest(MemoryRequest mr, int* offset, PageOwnership* po){
 		list_iterate(po->occSpaces, mostrarMetadata); // debug
 		return memreq;
 	}
-	return operation;
 }
 
 
 int freeMemory(int pid, int page, int offset){
-	// IMPLEMENTAR MATAR PAGINAS CUANDO QUEDAN VACIAS
+	ProcessControl* pc;
+	if(!test)pc = PIDFind(pid);
+	if(!test)pc->cantFree++;
 	PageOwnership* po= findPage(pid,page);
 	if(po==NULL)return -1;
 	int acc=0,i=0;
@@ -191,6 +192,7 @@ int freeMemory(int pid, int page, int offset){
 	}
 	//hm= list_get(po->occSpaces,i);
 	hm->isFree=1;
+	if(!test)pc->freedBytes += hm->size;
 	sendKillRequest(pid,page,offset-sizeof(HeapMetadata),hm);
 	void* memPage = defragging(pid,page,po->occSpaces);
 	if(memPage == NULL)
@@ -233,6 +235,10 @@ HeapMetadata* initializeHeapMetadata(int size){
 
 int grabarPedido(PageOwnership* po, MemoryRequest mr, int* offset){
 
+	ProcessControl* pc;
+	if(!test)pc =  PIDFind(mr.pid);
+	if(!test)pc->cantAlocar++;
+	if(!test)pc->heapBytes += mr.size;
 	if(!viableRequest(mr.size)) return -1;
 	HeapMetadata* hm= initializeHeapMetadata(mr.size);
 	PageOwnership* paginaExistente = pageToStore(mr);//busco la pagina para guardarlo, si no hay -1
@@ -242,6 +248,7 @@ int grabarPedido(PageOwnership* po, MemoryRequest mr, int* offset){
 		initializePageOwnership(po);//aca queda el PageOwnership con la estructura que marca el espacio libre
 		*offset= occupyPageSize(po,hm);
 		list_add(ownedPages,po);
+		if(!test)pc->heapPages++;
 
 		return 1;
 	}
@@ -481,23 +488,23 @@ bool isEmpty(t_list* page){
 	return 1;
 }
 
+int findIndex(int pid, int idPage){
+	int i;
+	for(i=0;i<list_size(ownedPages);i++){
+		PageOwnership* po= list_get(ownedPages,i);
+		if(po->pid==pid && po->idpage==idPage)break;
+	}
+	return i;
+}
 
 void* defragging(int pid, int idPage, t_list* page){
 
     if(!fragmented(page)) return NULL;
 
     if(isEmpty(page)){
-    	int findIndex(int pid, int idPage){
-    		int i;
-    		for(i=0;i<list_size(ownedPages);i++){
-    			PageOwnership* po= list_get(ownedPages,i);
-    			if(po->pid==pid && po->idpage==idPage)break;
-    		}
-    		return i;
-    	}
     	int index= findIndex(pid,idPage);
     	PageOwnership* po= findPage(pid,idPage);
-    	freePage(po, index);
+    	freePage(po, index, 1);
     	return NULL;
     }
 
@@ -694,8 +701,12 @@ void recibirDeCPU(int socket, connHandle* master)
 		{
 			//obtener valor variable compartida
 			puts("CPU PIDE VALOR DE VARIABLE");
-			char* nombre= malloc(mensaje->header.tamanio);
-			memcpy(nombre,mensaje->data,mensaje->header.tamanio);
+			int pid, len;
+			memcpy(&pid, mensaje->data, sizeof(int));
+			memcpy(&len, mensaje->data+sizeof(int), sizeof(int));
+			char* nombre= malloc(len);
+			memcpy(nombre,mensaje->data+sizeof(int)*2,len);
+			sumarSyscall(pid);
 			GlobalVariable * gb= findGlobalVariable(nombre);
 			lSend(socket,&gb->value,104,sizeof(int));
 			free(nombre);
@@ -705,12 +716,14 @@ void recibirDeCPU(int socket, connHandle* master)
 		{
 			//asignar valor variable compartida
 			puts("CPU QUIERE ASIGNAR VARIABLE");
-			int len=0;
+			int len=0, pid;
 			memcpy(&len,mensaje->data,sizeof(int));
 			char* nombre= malloc(len);
 			memcpy(nombre,mensaje->data+sizeof(int),len);
 			int newValue= 0;
 			memcpy(&newValue,mensaje->data+sizeof(int) + len,sizeof(int));
+			memcpy(&pid, mensaje->data+sizeof(int)*2 + len, sizeof(int));
+			sumarSyscall(pid);
 			GlobalVariable * gb= findGlobalVariable(nombre);
 			gb->value= newValue;
 			free(nombre);
@@ -721,6 +734,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			// RESERVAR HEAP
 			puts("CPU PIDE HEAP");
 			MemoryRequest mr = deserializeMemReq(mensaje->data);
+			sumarSyscall(mr.pid);
 			PageOwnership* po= malloc(sizeof(PageOwnership));
 			int* offset = malloc(sizeof(int));
 			int res= memoryRequest(mr,offset,po);
@@ -756,28 +770,33 @@ void recibirDeCPU(int socket, connHandle* master)
 			memcpy(&pid,mensaje->data,sizeof(int));
 			memcpy(&page,mensaje->data+sizeof(int),sizeof(int));
 			memcpy(&offset,mensaje->data+sizeof(int)*2,sizeof(int));
-			freeMemory(pid,page,offset);
+			sumarSyscall(pid);
+			if(freeMemory(pid,page,offset) == -1)
+				lSend(socket, NULL, -5, 0);
+			else
+				lSend(socket, NULL, 104, 0);
 			//memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr)); funcion para eliminar
 			break;
 		}
 		case 202:
 		{
 			puts("PROCESO UTILIZA WAIT");
-			char* sem = malloc(mensaje->header.tamanio+1);
-			memcpy(sem, mensaje->data, mensaje->header.tamanio);
-			sem[mensaje->header.tamanio] = '\0';
+
+			int len;
+			int* pid = malloc(sizeof(int));
+			memcpy(pid, mensaje->data, sizeof(int));
+			memcpy(&len, mensaje->data+sizeof(int), sizeof(int));
+			char* sem = malloc(len);
+			memcpy(sem, mensaje->data+sizeof(int)*2,len);
 			puts("OBTENER VALOR");
+			sumarSyscall(*pid);
 			if(obtenerValorSemaforo(sem) <= 0) {
 				//Aviso a CPU que hay bloqueo
 				lSend(socket, mensaje->data, 3, sizeof(int));
 				//CPU me envia el pid a bloquearse
-				Mensaje* m = lRecv(socket);
-				int* pidblock = malloc(sizeof(int));
-				*pidblock = *(int*)m->data;
 				//Envio el pid a la cola del semaforo
-				enviarAColaDelSemaforo(sem, pidblock);
+				enviarAColaDelSemaforo(sem, pid);
 				free(sem);
-				destruirMensaje(m);
 			} else {
 				//Aviso a CPU que no hay bloqueo
 				lSend(socket, mensaje->data, 0, sizeof(int));
@@ -789,15 +808,18 @@ void recibirDeCPU(int socket, connHandle* master)
 		case 203:
 		{
 			puts("PROCESO UTILIZA SIGNAL");
-			char* sem = malloc(mensaje->header.tamanio+1);
-			memcpy(sem, mensaje->data, mensaje->header.tamanio);
-			sem[mensaje->header.tamanio] = '\0';
+			int len, pid;
+			memcpy(&pid, mensaje->data, sizeof(int));
+			memcpy(&len, mensaje->data+sizeof(int), sizeof(int));
+			char* sem = malloc(len);
+			memcpy(sem, mensaje->data+sizeof(int)*2,len);
 			int pos = obtenerPosicionSemaforo(sem);
+			sumarSyscall(pid);
 			if(laColaDelSemaforoEstaVacia(pos))
 				signalSemaforo(sem);
 			else {
-				int pid = quitarDeColaDelSemaforo(sem);
-				fromBlockedToReady(pid);
+				int pidDesbloq = quitarDeColaDelSemaforo(sem);
+				fromBlockedToReady(pidDesbloq);
 			}
 			free(sem);
 			break;
@@ -807,6 +829,7 @@ void recibirDeCPU(int socket, connHandle* master)
 
 			rutayPermisos rp = deserializarRutaPermisos(mensaje->data);
 			int fd = abrirArchivo(rp.pid,rp.ruta, rp.permisos);
+			sumarSyscall(rp.pid);
 			if(fd != -1)
 				lSend(socket, &fd, 104, sizeof(int));
 			else
@@ -820,10 +843,12 @@ void recibirDeCPU(int socket, connHandle* master)
 
 		case 207: // BORRAR ARCHIVO
 		{
+
 			int fd;
 			int pid;
 			memcpy(&pid, mensaje->data, sizeof(int));
 			memcpy(&fd, mensaje->data+sizeof(int), sizeof(int));
+			sumarSyscall(pid);
 			int estado = borrarArchivo(pid,fd);
 			if(estado == -1)
 			{
@@ -844,10 +869,12 @@ void recibirDeCPU(int socket, connHandle* master)
 
 		case 208: // CERRAR ARCHIVO
 		{
+
 			int fd;
 			int pid;
 			memcpy(&pid, mensaje->data, sizeof(int));
 			memcpy(&fd, mensaje->data+sizeof(int), sizeof(int));
+			sumarSyscall(pid);
 			if(!cerrarArchivo(pid, fd))
 			{
 				puts("CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
@@ -861,8 +888,10 @@ void recibirDeCPU(int socket, connHandle* master)
 
 		case 209: // MOVER CURSOR
 		{
+
 			fileInfo info;
 			memcpy(&info, mensaje->data, sizeof(fileInfo));
+			sumarSyscall(info.pid);
 			if(!moverCursorArchivo(info))
 			{
 				puts("CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
@@ -879,6 +908,7 @@ void recibirDeCPU(int socket, connHandle* master)
 
 			fileInfo info;
 			char* data = deserializarPedidoEscritura(mensaje->data,&info);
+			sumarSyscall(info.pid);
 			printf("[ESCRITURA]: PID: %i | FD: %i | TAMANIO: %i\n", info.pid, info.fd, info.tamanio);
 			int estado = escribirArchivo(info, data);
 			if(estado == -1)
@@ -903,8 +933,10 @@ void recibirDeCPU(int socket, connHandle* master)
 		case 211: // LEER ARCHIVO
 		{
 			puts("CPU QUIERE LEER");
+
 			fileInfo info;
 			memcpy(&info, mensaje->data, sizeof(fileInfo));
+			sumarSyscall(info.pid);
 			char* data = leerArchivo(info);
 			if(data == NULL)
 			{
@@ -927,6 +959,13 @@ void recibirDeCPU(int socket, connHandle* master)
 		}
 	}
 	destruirMensaje(mensaje);
+
+}
+
+void sumarSyscall(int pid)
+{
+	ProcessControl* pc = PIDFind(pid);
+	pc->syscalls++;
 
 }
 
@@ -1002,6 +1041,8 @@ void* serializarScript(int pid, int tamanio, int paginasTotales, int* tamanioSer
 
 PCB* recibirPCB(Mensaje* mensaje){
 	PCB* pcb = deserializarPCB(mensaje->data);
+	ProcessControl* pc = PIDFind(pcb->pid);
+	pc->rafagasEj = pcb->rafagasTotales;
 	printf("RECIBIDO PCB: PID: %i\n", pcb->pid);
 	return pcb;
 }
@@ -1015,7 +1056,17 @@ void closeHandle(int s, connHandle* master)
 
 
 int checkMultiprog(){
+
+	pthread_mutex_lock(&mColaReady);
+	pthread_mutex_lock(&mListaBlocked);
+	pthread_mutex_lock(&mListaExec);
+
 	int currentMultiprog= queue_size(colaReady) + list_size(blockedList) + list_size(executeList);
+
+	pthread_mutex_unlock(&mListaExec);
+	pthread_mutex_unlock(&mListaBlocked);
+	pthread_mutex_unlock(&mColaReady);
+
 	pthread_mutex_lock(&mMultiprog);
 	int res = config->GRADO_MULTIPROG > currentMultiprog;
 	pthread_mutex_unlock(&mMultiprog);

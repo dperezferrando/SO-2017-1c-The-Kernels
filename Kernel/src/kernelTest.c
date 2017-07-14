@@ -13,9 +13,9 @@ int kernelTest(int flag){
 	CU_add_test(heapTest, "occupyPageSizeTest", occupyPageSizeTest);
 	CU_add_test(heapTest, "sendMemoryRequestNewPageTest", sendMemoryRequestNewPageTest);
 	CU_add_test(heapTest, "sendMemoryRequestNotNewPageTest", sendMemoryRequestNotNewPageTest);
-	CU_add_test(heapTest, "grabarPedidoTestNewPage", grabarPedidoTestNewPage);
-	CU_add_test(heapTest, "grabarPedidoTestNotNewPage", grabarPedidoTestNotNewPage);
-	//CU_add_test(heapTest, "freeMemoryTest", freeMemoryTest);
+	//CU_add_test(heapTest, "grabarPedidoTestNewPage", grabarPedidoTestNewPage);
+	//CU_add_test(heapTest, "grabarPedidoTestNotNewPage", grabarPedidoTestNotNewPage);
+	CU_add_test(heapTest, "freeMemoryTest", freeMemoryTest);
 	CU_add_test(heapTest, "defraggingTest", defraggingTest);
 	CU_add_test(heapTest, "globalVariableTest", globalVariableTest);
 

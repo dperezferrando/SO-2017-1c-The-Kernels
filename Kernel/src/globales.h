@@ -26,6 +26,13 @@ struct ProcessControl{
 	int toBeKilled; // 0 = NO otro numero = EXIT CODE
 	char* script;
 	int tamanioScript;
+	int rafagasEj;
+	int syscalls;
+	int heapPages;
+	int heapBytes;
+	int freedBytes;
+	int cantAlocar;
+	int cantFree;
 } typedef ProcessControl;
 
 struct MemoryRequest{
@@ -78,6 +85,7 @@ struct tablaDeProceso // Lista de tablas de proceso (que a su vez son una lista)
 
 bool test;
 bool morir;
+bool togglePlanif;
 
 int maxPID;
 int conexionFS;
@@ -117,6 +125,7 @@ pthread_mutex_t mtablaGlobalFS;
 pthread_mutex_t mMultiprog;
 pthread_mutex_t mProcess;
 pthread_mutex_t mMaxPID;
+pthread_mutex_t mTogglePlanif;
 
 /*
  * en caso de ver que sea necesario *

@@ -5,18 +5,18 @@ metadata* metad;
 t_config* configHandler;
 
 int main(int argc, char** argsv){
-	config = configurate("/home/utnso/tp-2017-1c-The-Kernels/FileSystem/Debug/filesystem.conf", leerArchivoConfig, keys);
+	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/FileSystem/Debug/filesystem.conf", leerArchivoConfig, keys);
 	levantarPaths();
 	levantarBitmap();
 	puts("bitmap levantado");
 	levantarBloquesEnUso();
 	puts("bitmap al dia");
-	testsmuycabezitas();
+	//testsmuycabeitas();
 	kernel = getBindedSocket(config->ip_propia, config->puerto);
-	/*lListen(kernel, 5);
+	lListen(kernel, 5);
 	puts("ESPERANDO AL KERNEL");
 	conexion = lAccept(kernel, KERNEL_ID);
-	esperarOperacion();*/
+	esperarOperacion();
 	close(kernel);
 	free(config);
 	free(metad);

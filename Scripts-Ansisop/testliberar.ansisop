@@ -1,0 +1,9 @@
+beging
+variables a,b,c,d
+alocar a 230
+alocar b 230
+alocar c 230
+liberar b
+liberar b
+liberar c
+end

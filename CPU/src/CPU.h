@@ -14,6 +14,7 @@
 #include "../../ConfigLibrary/src/Configuration.c"
 #include "../../SocketLibrary/src/SocketLibrary.c"
 #include <signal.h>
+#include <unistd.h>
 
 
 //DEFINES DE MEMORIA
@@ -81,6 +82,7 @@ int stackSize;
 int estado;
 t_log*  logFile;
 int toBeKilled;
+int quantumSleep;
 // ANSISOP
 t_puntero definirVariable(t_nombre_variable);
 t_puntero obtenerPosicionVariable(t_nombre_variable);
@@ -151,13 +153,14 @@ posicionEnMemoria calcularPosicion(int);
 indStk* crearIndiceDeStack();
 variable* obtenerUltimaVariable(t_list* listaVariables);
 t_puntero convertirADireccionReal(posicionEnMemoria unaPosicion);
-void enviarPedidoEscrituraMemoria(posicionEnMemoria posicion, char* valor);
+int enviarPedidoEscrituraMemoria(posicionEnMemoria posicion, char* valor);
 char* enviarPedidoLecturaMemoria(posicionEnMemoria posicion);
 posicionEnMemoria convertirADireccionLogica(t_puntero posicionReal);
 posicionEnMemoria generarPosicionEnBaseAUltimaVariableDe(t_list*);
 char* leerEnMemoria(posicionEnMemoria);
-void enviarPedidoEscrituraMemoria(posicionEnMemoria posicion, char* valor);
 void recibirInformacion();
 serializado serializarPedido(int num);
 void sig_handler(int signo);
 void levantarLog();
+void escribirEnMemoria(posicionEnMemoria posicion, char* valor);
+serializado serializarSemaforo(char* nombre);

@@ -25,6 +25,7 @@ PCB* createProcess(char* script, int tamanioScript){
 	pcb->indiceStack = crearIndiceDeStack();
 	pcb->exitCode = 0;
 	pcb->programCounter = 0;
+	pcb->rafagasTotales = 0;
 	crearEstructurasFSProceso(pcb->pid);
 	metadata_destruir(metadata);
 	return pcb;
@@ -35,7 +36,9 @@ void _modifyExitCode(int PID,int exitCode){
 	bool _PIDFind(PCB* pcb){
 		return pcb->pid== PID;
 	}
+	pthread_mutex_lock(&mColaFinished);
 	PCB* pcb= list_find(colaFinished->elements,&(_PIDFind));
+	pthread_mutex_unlock(&mColaFinished);
 	pcb->exitCode= exitCode;
 }
 
@@ -72,15 +75,43 @@ void killProcess(int PID,int exitCode){
 	quitarDeColaDelSemaforoPorKill(PID);
 	eliminarEntradasDelProceso(PID);
 	_modifyExitCode(PID,exitCode);
-	//freeProcessPages(PID); ya lo hace memoria
+	informarMemoryLeaks(PID);
+	freeProcessPages(PID);
 	if(checkMultiprog() && queue_size(colaNew) >0)
 		readyProcess();
 
 }
 
+void informarMemoryLeaks(int pid)
+{
+	bool PIDFind(PageOwnership* po){
+		return po->pid== pid;
+	}
 
+	t_list* paginas= list_filter(ownedPages, &PIDFind);
+	int size = list_size(paginas);
+	printf("PAGINAS SIZE: %i\n", size);
+	if(size == 0)
+		printf("EL PROCESO PID: %i LIBERO TODO SU HEAP\n");
+	else
+	{
+		puts("---------------------------------------------------------");
+		printf("EL PROCESO PID: %i NO LIBERO LA SIGUIENTE MEMORIA:\n", pid);
+		list_iterate(paginas, &mostrarPaginaHeap);
+		puts("LIBERANDO MEMORIA...");
+		puts("---------------------------------------------------------");
 
+	}
+	list_destroy(paginas);
 
+}
+
+void mostrarPaginaHeap(PageOwnership* po)
+{
+	printf("PAGINA: %i\n", po->idpage);
+	list_iterate(po->occSpaces, &mostrarMetadata);
+	puts("------------------------------------------");
+}
 
 
 //-----------------------------------------------------Manejo de Planificacion-----------------------------------------------//
@@ -99,6 +130,14 @@ void newProcess(PCB* pcb, int consola, char* script, int tamanioScript)
 	pc->consola = consola;
 	pc->toBeKilled = 0;
 	pc->script = malloc(tamanioScript);
+	pc->rafagasEj = 0;
+	pc->heapBytes = 0;
+	pc->syscalls = 0;
+	pc->heapBytes = 0;
+	pc->cantAlocar = 0;
+	pc->cantFree = 0;
+	pc->freedBytes = 0;
+	pc->heapPages = 0;
 	memcpy(pc->script, script, tamanioScript);
 	pc->tamanioScript = tamanioScript;
 	list_add(process,pc);
@@ -112,6 +151,10 @@ void matarSiCorresponde(int pid)
 }
 
 int readyProcess(){//-1 ==> no se pudo poner en ready
+	pthread_mutex_lock(&mTogglePlanif);//si justo lo cambian, lo lamento, los semaforos no van a prevenir que en la funcion no entre cambiado
+	bool toggle= togglePlanif;
+	pthread_mutex_unlock(&mTogglePlanif);
+	if(toggle)return -2;
 	if(checkMultiprog()){
 		fromNewToReady();
 	} else {
@@ -124,6 +167,10 @@ int readyProcess(){//-1 ==> no se pudo poner en ready
 
 
 int executeProcess(){
+	pthread_mutex_lock(&mTogglePlanif);//si justo lo cambian, lo lamento, los semaforos no van a prevenir que en la funcion no entre cambiado
+	bool toggle= togglePlanif;
+	pthread_mutex_unlock(&mTogglePlanif);
+	if(toggle)return -2;
 	pthread_mutex_lock(&mColaCPUS);
 	int cpus = queue_size(colaCPUS);
 	pthread_mutex_unlock(&mColaCPUS);
@@ -140,7 +187,11 @@ int executeProcess(){
 		pthread_mutex_unlock(&mColaCPUS);
 		if(!test){
 			pcbSerializado = serializarPCB(pcb);
-			lSend(CPU, pcbSerializado.data, 1, pcbSerializado.size);
+			int quantumSleep = config->QUANTUM_SLEEP;
+			char* buff = malloc(sizeof(int)+pcbSerializado.size);
+			memcpy(buff, &quantumSleep, sizeof(int));
+			memcpy(buff+sizeof(int), pcbSerializado.data, pcbSerializado.size);
+			lSend(CPU, buff, 1, pcbSerializado.size + sizeof(int));
 			puts("PCB ENVIADO");
 			free(pcbSerializado.data);
 		}
@@ -174,7 +225,19 @@ void cpuReturnsProcessTo(PCB* newPCB, int state){
 
 //aaaaaa
 PCB* fromNewToReady(){
+
+	pthread_mutex_lock(&mTogglePlanif);
+	bool toggle= togglePlanif;
+	pthread_mutex_unlock(&mTogglePlanif);
+
+	if(toggle)return NULL;
+
+	pthread_mutex_lock(&mColaNew);
+	pthread_mutex_lock(&mColaReady);
 	PCB* pcb = _fromQueueToQueue(colaNew,colaReady,1);
+	pthread_mutex_unlock(&mColaReady);
+	pthread_mutex_unlock(&mColaNew);
+
 	if(pcb == NULL)
 		return NULL;
 	ProcessControl* pc = PIDFind(pcb->pid);
@@ -191,36 +254,82 @@ PCB* fromNewToReady(){
 
 
 PCB* fromBlockedToReady(int pid){
+//	pthread_mutex_lock(&mListaBlocked);
+//	pthread_mutex_lock(&mColaReady);
+	pthread_mutex_lock(&mTogglePlanif);
+	bool toggle= togglePlanif;
+	pthread_mutex_unlock(&mTogglePlanif);
+	if(toggle)return NULL;
 	return _fromListToQueue(blockedList,colaReady,pid,1);
+//	pthread_mutex_unlock(&mColaReady);
+//	pthread_mutex_unlock(&mListaBlocked);
 }
 
 
 PCB* fromExecuteToReady(int pid){
+//	pthread_mutex_lock(&mListaExec);
+//	pthread_mutex_lock(&mColaReady);
 	return _fromListToQueue(executeList,colaReady,pid,1);
+//	pthread_mutex_unlock(&mColaReady);
+//	pthread_mutex_unlock(&mListaExec);
 }
 
 PCB* fromExecuteToBlocked(int pid){
+//	pthread_mutex_lock(&mListaExec);
+//	pthread_mutex_lock(&mListaBlocked);
 	return _fromListToList(executeList,blockedList,pid,3);
+//	pthread_mutex_unlock(&mListaBlocked);
+//	pthread_mutex_unlock(&mListaExec);
 }
 
 
 PCB* fromReadyToExecute(){
+
+	pthread_mutex_lock(&mTogglePlanif);
+	bool toggle= togglePlanif;
+	pthread_mutex_unlock(&mTogglePlanif);
+
+	if(toggle)return NULL;
+
+//	pthread_mutex_lock(&mColaReady);
+//	pthread_mutex_lock(&mListaExec);
 	return _fromQueueToList(colaReady,executeList,2);
+//	pthread_mutex_unlock(&mListaExec);
+//	pthread_mutex_unlock(&mColaReady);
 }
 
 
 PCB* fromExecuteToFinished(int pid){
+//	pthread_mutex_lock(&mColaFinished);
+//	pthread_mutex_lock(&mListaExec);
 	return _fromListToQueue(executeList,colaFinished,pid,9);
+//	pthread_mutex_unlock(&mListaExec);
+//	pthread_mutex_unlock(&mColaFinished);
 }
 
 
 PCB* fromReadyToFinished(int pid){
+
+	pthread_mutex_lock(&mTogglePlanif);
+	bool toggle= togglePlanif;
+	pthread_mutex_unlock(&mTogglePlanif);
+
+	if(toggle)return NULL;
+
+//	pthread_mutex_lock(&mColaFinished);
+//	pthread_mutex_lock(&mColaReady);
 	return _fromListToQueue(colaReady->elements,colaFinished,pid,9);
+//	pthread_mutex_unlock(&mColaReady);
+//	pthread_mutex_unlock(&mColaFinished);
 }
 
 
 PCB* fromBlockedToFinished(int pid){
+//	pthread_mutex_lock(&mColaFinished);
+//	pthread_mutex_lock(&mListaBlocked);
 	return _fromListToQueue(blockedList,colaFinished,pid,9);
+//	pthread_mutex_unlock(&mListaBlocked);
+//	pthread_mutex_unlock(&mColaFinished);
 }
 
 
@@ -339,17 +448,19 @@ void freeProcessPages(int pid){
 	int size= list_size(paginas);
 	for(i=0;i<size;i++){
 		PageOwnership* po= list_get(paginas,0);
-		freePage(po,0);
+		list_remove(paginas,0);
+    	int index= findIndex(po->pid,po->idpage);
+		freePage(po,index, 0);
 	}
 	list_destroy(paginas);
 }
 
-void freePage(PageOwnership* po, int index){
+void freePage(PageOwnership* po, int index, int avisoAMemoria){
 	void* msg= malloc(sizeof(int)*2);
 	memcpy(msg,&po->pid,sizeof(int));
 	memcpy(msg+sizeof(int),&po->idpage,sizeof(int));
-	if(!test)lSend(conexionMemoria,msg,4,sizeof(int)*2);
-	printf("SE LIBERO PID %i, PAGE %i",po->pid,po->idpage);
+	if(!test && avisoAMemoria)lSend(conexionMemoria,msg,4,sizeof(int)*2);
+	printf("SE LIBERO PID %i, PAGE %i\n",po->pid,po->idpage);
 	list_remove_and_destroy_element(ownedPages,index,&destroyPageOwnership);
 	free(msg);
 }

@@ -25,6 +25,7 @@ int PIDFindPO(int);
 int readyProcess();
 int executeProcess();
 int checkMultiprog();
+int findIndex(int, int);
 int offset(t_list*, int);
 int _usedFragments(t_list*);
 int enviarScriptAMemoria(PCB*,char*, int);
@@ -41,6 +42,7 @@ bool isListener(int, connHandle);
 bool _usedFragment(HeapMetadata*);
 PageOwnership* pageToStore(MemoryRequest mr);
 
+void mostrarMetadata(HeapMetadata* hm);
 void matarDesdeProcessControl(ProcessControl*);
 void aceptarNuevoCPU(int);
 void enviarInformacion(int);
