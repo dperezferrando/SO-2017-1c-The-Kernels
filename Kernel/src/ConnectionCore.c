@@ -1015,7 +1015,17 @@ void closeHandle(int s, connHandle* master)
 
 
 int checkMultiprog(){
+
+	pthread_mutex_lock(&mColaReady);
+	pthread_mutex_lock(&mListaBlocked);
+	pthread_mutex_lock(&mListaExec);
+
 	int currentMultiprog= queue_size(colaReady) + list_size(blockedList) + list_size(executeList);
+
+	pthread_mutex_unlock(&mListaExec);
+	pthread_mutex_unlock(&mListaBlocked);
+	pthread_mutex_unlock(&mColaReady);
+
 	pthread_mutex_lock(&mMultiprog);
 	int res = config->GRADO_MULTIPROG > currentMultiprog;
 	pthread_mutex_unlock(&mMultiprog);

@@ -129,7 +129,15 @@ void recibir_comandos()
 			}
 			else if(!strcmp(comando[0], "togglePlanif"))
 			{
-				// NI PUTA IDEA YET
+				pthread_mutex_lock(&mTogglePlanif);
+				togglePlanif=1;
+				pthread_mutex_unlock(&mTogglePlanif);
+			}
+			else if(!strcmp(comando[0], "untogglePlanif"))
+			{
+				pthread_mutex_lock(&mTogglePlanif);
+				togglePlanif=0;
+				pthread_mutex_unlock(&mTogglePlanif);
 			}
 			else if(!strcmp(comando[0], "exit"))
 			{

@@ -35,7 +35,9 @@ void _modifyExitCode(int PID,int exitCode){
 	bool _PIDFind(PCB* pcb){
 		return pcb->pid== PID;
 	}
+	pthread_mutex_lock(&mColaFinished);
 	PCB* pcb= list_find(colaFinished->elements,&(_PIDFind));
+	pthread_mutex_unlock(&mColaFinished);
 	pcb->exitCode= exitCode;
 }
 
@@ -112,6 +114,10 @@ void matarSiCorresponde(int pid)
 }
 
 int readyProcess(){//-1 ==> no se pudo poner en ready
+	pthread_mutex_lock(&mTogglePlanif);//si justo lo cambian, lo lamento, los semaforos no van a prevenir que en la funcion no entre cambiado
+	bool toggle= togglePlanif;
+	pthread_mutex_unlock(&mTogglePlanif);
+	if(toggle)return -2;
 	if(checkMultiprog()){
 		fromNewToReady();
 	} else {
@@ -124,6 +130,10 @@ int readyProcess(){//-1 ==> no se pudo poner en ready
 
 
 int executeProcess(){
+	pthread_mutex_lock(&mTogglePlanif);//si justo lo cambian, lo lamento, los semaforos no van a prevenir que en la funcion no entre cambiado
+	bool toggle= togglePlanif;
+	pthread_mutex_unlock(&mTogglePlanif);
+	if(toggle)return -2;
 	pthread_mutex_lock(&mColaCPUS);
 	int cpus = queue_size(colaCPUS);
 	pthread_mutex_unlock(&mColaCPUS);
@@ -178,7 +188,19 @@ void cpuReturnsProcessTo(PCB* newPCB, int state){
 
 //aaaaaa
 PCB* fromNewToReady(){
+
+	pthread_mutex_lock(&mTogglePlanif);
+	bool toggle= togglePlanif;
+	pthread_mutex_unlock(&mTogglePlanif);
+
+	if(toggle)return NULL;
+
+	pthread_mutex_lock(&mColaNew);
+	pthread_mutex_lock(&mColaReady);
 	PCB* pcb = _fromQueueToQueue(colaNew,colaReady,1);
+	pthread_mutex_unlock(&mColaReady);
+	pthread_mutex_unlock(&mColaNew);
+
 	if(pcb == NULL)
 		return NULL;
 	ProcessControl* pc = PIDFind(pcb->pid);
@@ -195,36 +217,78 @@ PCB* fromNewToReady(){
 
 
 PCB* fromBlockedToReady(int pid){
+	pthread_mutex_lock(&mListaBlocked);
+	pthread_mutex_lock(&mColaReady);
 	return _fromListToQueue(blockedList,colaReady,pid,1);
+	pthread_mutex_unlock(&mColaReady);
+	pthread_mutex_unlock(&mListaBlocked);
 }
 
 
 PCB* fromExecuteToReady(int pid){
+	pthread_mutex_lock(&mListaExec);
+	pthread_mutex_lock(&mColaReady);
 	return _fromListToQueue(executeList,colaReady,pid,1);
+	pthread_mutex_unlock(&mColaReady);
+	pthread_mutex_unlock(&mListaExec);
 }
 
 PCB* fromExecuteToBlocked(int pid){
+	pthread_mutex_lock(&mListaExec);
+	pthread_mutex_lock(&mListaBlocked);
 	return _fromListToList(executeList,blockedList,pid,3);
+	pthread_mutex_unlock(&mListaBlocked);
+	pthread_mutex_unlock(&mListaExec);
 }
 
 
 PCB* fromReadyToExecute(){
+
+	pthread_mutex_lock(&mTogglePlanif);
+	bool toggle= togglePlanif;
+	pthread_mutex_unlock(&mTogglePlanif);
+
+	if(toggle)return NULL;
+
+	pthread_mutex_lock(&mColaReady);
+	pthread_mutex_lock(&mListaExec);
 	return _fromQueueToList(colaReady,executeList,2);
+	pthread_mutex_unlock(&mListaExec);
+	pthread_mutex_unlock(&mColaReady);
 }
 
 
 PCB* fromExecuteToFinished(int pid){
+	pthread_mutex_lock(&mColaFinished);
+	pthread_mutex_lock(&mListaExec);
 	return _fromListToQueue(executeList,colaFinished,pid,9);
+	pthread_mutex_unlock(&mListaExec);
+	pthread_mutex_unlock(&mColaFinished);
 }
 
 
 PCB* fromReadyToFinished(int pid){
+
+	pthread_mutex_lock(&mTogglePlanif);
+	bool toggle= togglePlanif;
+	pthread_mutex_unlock(&mTogglePlanif);
+
+	if(toggle)return NULL;
+
+	pthread_mutex_lock(&mColaFinished);
+	pthread_mutex_lock(&mColaReady);
 	return _fromListToQueue(colaReady->elements,colaFinished,pid,9);
+	pthread_mutex_unlock(&mColaReady);
+	pthread_mutex_unlock(&mColaFinished);
 }
 
 
 PCB* fromBlockedToFinished(int pid){
+	pthread_mutex_lock(&mColaFinished);
+	pthread_mutex_lock(&mListaBlocked);
 	return _fromListToQueue(blockedList,colaFinished,pid,9);
+	pthread_mutex_unlock(&mListaBlocked);
+	pthread_mutex_unlock(&mColaFinished);
 }
 
 
