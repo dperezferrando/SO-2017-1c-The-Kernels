@@ -14,6 +14,7 @@
 #include "../../ConfigLibrary/src/Configuration.c"
 #include "../../SocketLibrary/src/SocketLibrary.c"
 #include <signal.h>
+#include <unistd.h>
 
 
 //DEFINES DE MEMORIA
@@ -81,6 +82,7 @@ int stackSize;
 int estado;
 t_log*  logFile;
 int toBeKilled;
+int quantumSleep;
 // ANSISOP
 t_puntero definirVariable(t_nombre_variable);
 t_puntero obtenerPosicionVariable(t_nombre_variable);
