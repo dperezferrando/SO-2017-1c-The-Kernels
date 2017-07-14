@@ -8,6 +8,14 @@
 #include <commons/string.h>
 #include <commons/collections/list.h>
 
+// COLORES
+#define ROJO    "\x1b[31m"
+#define VERDE   "\x1b[32m"
+#define AMARILLO "\x1b[33m"
+#define AZUL    "\x1b[34m"
+#define ROSA "\x1b[35m"
+#define CELESTE    "\x1b[36m"
+#define RESET  "\x1b[0m"
 
 //Globales para serializar OpFS
 char* pathOpFS;
@@ -56,11 +64,12 @@ typedef struct __attribute__((packed)) PCB{
 	int sizeIndiceCodigo;
 	int sizeIndiceEtiquetas;
 	int nivelDelStack;
+	int rafagasTotales;
 }PCB;
 
 typedef struct __attribute__ ((packed)) pedidoEscrituraMemoria {
 	posicionEnMemoria posicion;
-	char* valor;
+	int valor;
 } pedidoEscrituraMemoria;
 
 typedef struct __attribute__ ((packed)) fileInfo {

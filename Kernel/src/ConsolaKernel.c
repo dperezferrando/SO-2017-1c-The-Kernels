@@ -61,6 +61,15 @@ void recibir_comandos()
 					puts("-------COLA EXIT------");
 				}
 			}
+			else if(!strcmp(comando[0], "rafagasEj"))
+			{
+				if(comando[1] != NULL)
+				{
+					int pid = atoi(comando[1]);
+					ProcessControl* pc = PIDFind(pid); // ADENTRO TIENE MUTEX
+					printf("PROCESO PID: %i LLEVA %i RAFAGAS EJECUTADAS\n", pc->pid, pc->rafagasEj);
+				}
+			}
 			// FALTAN VARIOS CMDS QUE TODAVIA NO ESTA IMPLEMENTADO DONDE SE GUARDA ESA INFO
 			else if(!strcmp(comando[0], "tablaArchivos"))
 			{
@@ -108,6 +117,26 @@ void recibir_comandos()
 				}
 				else{
 					puts("Argumento no puede ser null\n");
+				}
+			}
+			else if(!strcmp(comando[0], "syscalls"))
+			{
+				if(comando[1]!=NULL){
+					int pid = atoi(comando[1]);
+					ProcessControl* pc = PIDFind(pid);
+					printf("SYSCALLS PID: %i: %i\n", pc->pid, pc->syscalls);
+				}
+			}
+			else if(!strcmp(comando[0], "heapInfo"))
+			{
+				if(comando[1]!=NULL){
+					int pid = atoi(comando[1]);
+					ProcessControl* pc = PIDFind(pid);
+					puts("---------HEAP INFO----------");
+					printf("CANTIDAD ALLOCS: %i | BYTES ALOCADOS: %i | PAGINAS ALOCADAS (CONTANDO LIBERADAS): %i\n", pc->cantAlocar, pc->heapBytes, pc->heapPages);
+					printf("CANTIDAD FREES: %i | BYTES LIBERADOS: %i\n", pc->cantFree, pc->freedBytes);
+					puts("---------HEAP INFO----------");
+
 				}
 			}
 			else if(!strcmp(comando[0], "kill"))

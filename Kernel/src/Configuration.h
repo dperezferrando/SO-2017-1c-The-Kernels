@@ -64,6 +64,7 @@ typedef struct __attribute__((packed)) PCB{
 	int sizeIndiceCodigo;
 	int sizeIndiceEtiquetas;
 	int nivelDelStack;
+	int rafagasTotales;
 }PCB;
 
 typedef struct __attribute__ ((packed)) pedidoEscrituraMemoria {

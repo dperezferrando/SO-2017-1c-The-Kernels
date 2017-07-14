@@ -26,6 +26,13 @@ struct ProcessControl{
 	int toBeKilled; // 0 = NO otro numero = EXIT CODE
 	char* script;
 	int tamanioScript;
+	int rafagasEj;
+	int syscalls;
+	int heapPages;
+	int heapBytes;
+	int freedBytes;
+	int cantAlocar;
+	int cantFree;
 } typedef ProcessControl;
 
 struct MemoryRequest{

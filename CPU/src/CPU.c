@@ -33,6 +33,7 @@ int main(int argc, char** argsv) {
 			analizadorLinea(linea, &primitivas, &primitivas_kernel);
 			free(linea);
 			pcb->programCounter++;
+			pcb->rafagasTotales++;
 			rafagas++;
 			if(quantum != 0 && rafagas == quantum && estado == OK)
 			{
@@ -199,11 +200,12 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador){
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor){
 	log_info(logFile, "[ASIGNAR COMPARTIDA]: VAR: %s | VALOR: %i\n", variable, valor);
 	int len = strlen(variable)+1;
-	int size = len + sizeof(int)*2;
+	int size = len + sizeof(int)*3;
 	char* data = malloc(size);
 	memcpy(data, &len, sizeof(int));
 	memcpy(data +sizeof(int), variable, len);
 	memcpy(data + sizeof(int) + len, &valor, sizeof(int));
+	memcpy(data + sizeof(int)*2 + len, &pcb->pid, sizeof(int));
 	lSend(kernel, data, ASIGNARCOMPARTIDA, size);
 	free(data);
 /*	Mensaje* respuesta = lRecv(kernel);
@@ -217,12 +219,19 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 t_valor_variable obtenerValorCompartida(t_nombre_compartida nombre){
 
 	log_info(logFile, "[VALOR COMPARTIDA]: SE PIDE EL VALOR DE: %s\n", nombre);
-	lSend(kernel, nombre, OBTENERCOMPARTIDA, strlen(nombre)+1);
+	int len = strlen(nombre)+1;
+	int size = len + sizeof(int)*2;
+	char* data = malloc(size);
+	memcpy(data, &pcb->pid, sizeof(int));
+	memcpy(data+sizeof(int), &len, sizeof(int));
+	memcpy(data+sizeof(int)*2, nombre, len);
+	lSend(kernel, data, OBTENERCOMPARTIDA, size);
 	Mensaje* respuesta = lRecv(kernel);
 	int valor;
 	memcpy(&valor, respuesta->data, sizeof(int));
 	log_info(logFile, "[VALOR COMPARTIDA]: EL VALOR DE %s es: %i\n", nombre, valor);
 	destruirMensaje(respuesta);
+	free(data);
 	return valor;
 }
 
@@ -556,9 +565,10 @@ void retornar(t_valor_variable valorDeRetorno){
 	//PRIMITIVAS ANSISOP KERNEL
 
 void wait(t_nombre_semaforo nombre){
-	int tamanio = strlen(nombre);
+
+	serializado sem = serializarSemaforo(nombre);
 	//Envio el nombre del semaforo, uso string_substring_until porque el parser agarra el nombre con el /n
-	lSend(kernel, nombre, WAIT, tamanio);
+	lSend(kernel, sem.data, WAIT, sem.size);
 	//El kernel me responde si tengo que bloquear
 	Mensaje *m = lRecv(kernel);
 	//Bloqueado = 3, No bloqueado = 0
@@ -566,16 +576,30 @@ void wait(t_nombre_semaforo nombre){
 	if(bloqueado == BLOQUEADO){
 		log_info(logFile, "[WAIT - PROCESO BLOQUEADO POR SEMAFORO]");
 		//Envio el pid al kernel para que lo guarde en la cola del semaforo
-		lSend(kernel, &pcb->pid, WAIT, sizeof(int));
+	//	lSend(kernel, &pcb->pid, WAIT, sizeof(int));
 		//Para salir del while
 		estado = BLOQUEADO;
 	}
+	free(sem.data);
 	destruirMensaje(m);
 }
 
 void signalSem(t_nombre_semaforo nombre){
-	int tamanio = strlen(nombre);
-	lSend(kernel, nombre, SIGNAL, tamanio);
+	serializado sem = serializarSemaforo(nombre);
+	lSend(kernel, sem.data, SIGNAL, sem.size);
+	free(sem.data);
+}
+
+serializado serializarSemaforo(char* nombre)
+{
+	serializado sem;
+	int tamanio = strlen(nombre)+1;
+	sem.size = tamanio+sizeof(int)*2;
+	sem.data = malloc(sem.size);
+	memcpy(sem.data, &pcb->pid, sizeof(int));
+	memcpy(sem.data+sizeof(int), &tamanio, sizeof(int));
+	memcpy(sem.data+sizeof(int)*2, nombre, tamanio);
+	return sem;
 }
 
 t_puntero reservar(t_valor_variable nroBytes){
@@ -623,6 +647,13 @@ void liberar(t_puntero puntero ){
 	memcpy(data+sizeof(int), &posicion.pagina, sizeof(int));
 	memcpy(data+sizeof(int)*2, &posicion.offset, sizeof(int));
 	lSend(kernel, data, LIBERAR_PUNTERO, size);
+	Mensaje* respuesta = lRecv(kernel);
+	if(respuesta->header.tipoOperacion == -5)
+	{
+		estado = STKOF;
+		log_error(logFile, "[HEAP]: SE QUISO LIBERAR UNA PAGINA INCORRECTA");
+	}
+	destruirMensaje(respuesta);
 	log_info(logFile, "[HEAP]: SE LIBERA PUNTERO DIR FISICA: %i | DIR LOGICA: PAG: %i | OFFSET: %i", puntero, posicion.pagina, posicion.offset);
 
 }

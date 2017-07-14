@@ -25,6 +25,7 @@ PCB* createProcess(char* script, int tamanioScript){
 	pcb->indiceStack = crearIndiceDeStack();
 	pcb->exitCode = 0;
 	pcb->programCounter = 0;
+	pcb->rafagasTotales = 0;
 	crearEstructurasFSProceso(pcb->pid);
 	metadata_destruir(metadata);
 	return pcb;
@@ -129,6 +130,14 @@ void newProcess(PCB* pcb, int consola, char* script, int tamanioScript)
 	pc->consola = consola;
 	pc->toBeKilled = 0;
 	pc->script = malloc(tamanioScript);
+	pc->rafagasEj = 0;
+	pc->heapBytes = 0;
+	pc->syscalls = 0;
+	pc->heapBytes = 0;
+	pc->cantAlocar = 0;
+	pc->cantFree = 0;
+	pc->freedBytes = 0;
+	pc->heapPages = 0;
 	memcpy(pc->script, script, tamanioScript);
 	pc->tamanioScript = tamanioScript;
 	list_add(process,pc);
@@ -449,7 +458,7 @@ void freePage(PageOwnership* po, int index, int avisoAMemoria){
 	memcpy(msg,&po->pid,sizeof(int));
 	memcpy(msg+sizeof(int),&po->idpage,sizeof(int));
 	if(!test && avisoAMemoria)lSend(conexionMemoria,msg,4,sizeof(int)*2);
-	printf("SE LIBERO PID %i, PAGE %i",po->pid,po->idpage);
+	printf("SE LIBERO PID %i, PAGE %i\n",po->pid,po->idpage);
 	list_remove_and_destroy_element(ownedPages,index,&destroyPageOwnership);
 	free(msg);
 }

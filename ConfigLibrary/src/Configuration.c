@@ -78,7 +78,9 @@ PCB* deserializarPCB(char* pcbSerializado) // A SER REEMPLAZADO POR LO DE NICO
 	memcpy(indiceStackSerializado.data, puntero, indiceStackSerializado.size);
 	puntero += indiceStackSerializado.size;
 	pcb->indiceStack = deserializarIndiceDeStack(indiceStackSerializado, pcb->nivelDelStack);
-	memcpy(puntero, &pcb->exitCode, sizeof(int));
+	memcpy(&pcb->exitCode, puntero, sizeof(int));
+	puntero += sizeof(int);
+	memcpy(&pcb->rafagasTotales, puntero, sizeof(int));
 	free(indiceStackSerializado.data);
 	return pcb;
 
@@ -88,7 +90,7 @@ serializado serializarPCB(PCB* pcb)
 {
 	serializado pcbSerializado;
 	serializado indiceStackSerializado = serializarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
-	pcbSerializado.size = sizeof(int)*8 + pcb->sizeIndiceCodigo + pcb->sizeIndiceEtiquetas + indiceStackSerializado.size;
+	pcbSerializado.size = sizeof(int)*9 + pcb->sizeIndiceCodigo + pcb->sizeIndiceEtiquetas + indiceStackSerializado.size;
 	pcbSerializado.data = malloc(pcbSerializado.size);
 	char* puntero = pcbSerializado.data;
 	memcpy(puntero, &pcb->pid, sizeof(int));
@@ -112,6 +114,8 @@ serializado serializarPCB(PCB* pcb)
 	memcpy(puntero, indiceStackSerializado.data, indiceStackSerializado.size);
 	puntero += indiceStackSerializado.size;
 	memcpy(puntero, &pcb->exitCode, sizeof(int));
+	puntero += sizeof(int);
+	memcpy(puntero, &pcb->rafagasTotales, sizeof(int));
 	free(indiceStackSerializado.data);
 	return pcbSerializado;
 
