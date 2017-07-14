@@ -165,7 +165,7 @@ void mostrarMetadata(HeapMetadata* hm)
 }
 int memoryRequest(MemoryRequest mr, int* offset, PageOwnership* po){
 	int operation;
-	if((operation = grabarPedido(po,mr,offset)) == -1)
+	if((operation = grabarPedido(po,mr,offset)) < 0)
 		return operation;
 	int memreq;
 	if((memreq=sendMemoryRequest(mr,po,*offset))!=1)
@@ -173,7 +173,6 @@ int memoryRequest(MemoryRequest mr, int* offset, PageOwnership* po){
 		list_iterate(po->occSpaces, mostrarMetadata); // debug
 		return memreq;
 	}
-	return operation;
 }
 
 

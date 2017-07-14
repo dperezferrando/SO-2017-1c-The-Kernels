@@ -163,7 +163,7 @@ void conexion_kernel(int conexion)
 					lSend(conexion, NULL,-2,0);
 					break;
 				}
-				int paginaAsignada = tamanioProceso(pid);
+				int paginaAsignada = damePaginaHeap(pid);
 				printf("[HEAP]: PAGINA ASIGNADA: %i\n", paginaAsignada);
 				lSend(conexion, &paginaAsignada, 104,sizeof(int));
 				crearEntradas(pid, 1, paginaAsignada);
@@ -217,19 +217,23 @@ void conexion_kernel(int conexion)
 
 bool frameValido(int frame)
 {
-	return frame >= 0 && frame < config->marcos;
+	return frame > 0 && frame < config->marcos;
 }
 void finalizarPrograma(int pid)
 {
-	int pag = 0;
+	int pag = 0, i = 0;
 	entradaTabla* pointer = obtenerEntradaDe(pid, pag);
-	while(pointer != NULL)
+	int tamanio = tamanioProceso(pid);
+	while(pag < tamanio)
 	{
-
-		pointer->pid = -1;
-		pointer->pagina = -1;
-		pag++;
-		pointer = obtenerEntradaDe(pid, pag);
+		if(pointer != NULL)
+		{
+			pointer->pid = -1;
+			pointer->pagina = -1;
+			pag++;
+		}
+		i++;
+		pointer = obtenerEntradaDe(pid, i);
 	}
 //	while(pointer != NULL);//pointer->pid == pid && frameValido(pointer->frame));
 	bool pidDistintoA(entradaCache* entrada)
@@ -443,9 +447,15 @@ void recibir_comandos()
 
 int tamanioProceso(int pid)
 {
+	entradaTabla* puntero = (entradaTabla*)memoria + cantPaginasAdmin;
 	int i = 0;
-	while(obtenerEntradaDe(pid, i) != NULL)
-		i++;
+	do
+	{
+		if(puntero->pid == pid)
+			i++;
+		puntero++;
+	}
+	while(frameValido(puntero->frame));
 	return i;
 /*	entradaTabla* puntero = (entradaTabla*)memoria+cantPaginasAdmin;
 	int contador = 0;
@@ -475,7 +485,7 @@ int cantidadFramesOcupados()
 void mostrarDatosProcesos()
 {
 	entradaTabla* puntero = (entradaTabla*)memoria+cantPaginasAdmin;
-	while(frameValido(puntero->frame))
+	do
 	{
 		if(puntero->pid >= 0)
 		{
@@ -487,6 +497,7 @@ void mostrarDatosProcesos()
 		}
 		puntero++;
 	}
+	while(frameValido(puntero->frame));
 }
 
 int cantidadFramesLibres()
@@ -543,11 +554,15 @@ void conexion_cpu(int conexion)
 				// LEER
 				posicionEnMemoria* posicion = malloc(sizeof(posicionEnMemoria));
 				memcpy(posicion, mensaje->data, sizeof(posicionEnMemoria));
-				printf("[CPU %i]: LEER PAG: %i | OFFSET: %i | SIZE: %i\n", conexion, posicion->pagina, posicion->offset, posicion->size);
-				char* linea = leerDondeCorresponda(pidActual, posicion);
-				lSend(conexion, linea, 2, posicion->size);
+				if(!pedidoValido(pidActual, posicion))
+					lSend(conexion, NULL, -5, 0);
+				else {
+					printf("[CPU %i]: LEER PAG: %i | OFFSET: %i | SIZE: %i\n", conexion, posicion->pagina, posicion->offset, posicion->size);
+					char* linea = leerDondeCorresponda(pidActual, posicion);
+					lSend(conexion, linea, 2, posicion->size);
+					free(linea);
+				}
 				free(posicion);
-				free(linea);
 				break;
 			}
 
@@ -558,9 +573,14 @@ void conexion_cpu(int conexion)
 				memcpy(&pedido->posicion, mensaje->data, sizeof(posicionEnMemoria));
 				pedido->valor = malloc(pedido->posicion.size);
 				memcpy(pedido->valor, mensaje->data+sizeof(posicionEnMemoria),pedido->posicion.size);
-				printf("[CPU %i]: GUARDAR INFO EN PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %s\n", conexion, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor);
-
-				escribirDondeCorresponda(pidActual, pedido);
+				if(!pedidoValido(pidActual, &pedido->posicion))
+					lSend(conexion, NULL, -5, 0);
+				else
+				{
+					printf("[CPU %i]: GUARDAR INFO EN PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %s\n", conexion, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor);
+					escribirDondeCorresponda(pidActual, pedido);
+					lSend(conexion,NULL, 104, 0);
+				}
 				free(pedido->valor);
 				free(pedido);
 				break;
@@ -578,6 +598,11 @@ void conexion_cpu(int conexion)
 	close(conexion);
 	pthread_exit(NULL);
 
+}
+
+int pedidoValido(int pid, posicionEnMemoria* posicion)
+{
+	return obtenerEntradaDe(pid, posicion->pagina) != NULL;
 }
 
 char* leerDondeCorresponda(int pid, posicionEnMemoria* posicion)
@@ -649,13 +674,32 @@ entradaTabla* obtenerEntradaAproximada(int pid, int pagina)
 	return pointer;
 }
 
+int damePaginaHeap(int pid)
+{
+	int i = 0;
+	while(obtenerEntradaDe(pid, i) != NULL)
+		i++;
+	return i;
+}
+
 entradaTabla* obtenerEntradaDe(int pid, int pagina)
 {
 	entradaTabla* pointer = obtenerEntradaAproximada(pid, pagina);
+	entradaTabla* aux = pointer;
 	while((pointer->pid != pid || pointer->pagina != pagina) && frameValido(pointer->frame))
 		pointer++;
+
 	if(pointer->pid != pid || pointer->pagina != pagina)
+	{
+		pointer = (entradaTabla*)memoria+cantPaginasAdmin;
+		while(pointer != aux)
+		{
+			if(pointer->pid == pid && pointer->pagina == pagina)
+				return pointer;
+			pointer++;
+		}
 		return NULL;
+	}
 	else
 		return pointer;
 }
@@ -702,10 +746,8 @@ int bestHashingAlgorithmInTheFuckingWorld(int pid, int pagina)
 	sprintf(str2, "%d", pagina);
 	strcat(str1, str2);
 	int aux = atoi(str1);
-	printf("AUX = %i\n", aux);
 	int marcosNoAdmin = (config->marcos-1) - cantPaginasAdmin;
 	int frame = ( aux % marcosNoAdmin) + cantPaginasAdmin;
-	printf("PAGINA: %i | PID: %i | FRAME: %i\n", pagina, pid, frame);
 	return frame;
 }
 
@@ -778,7 +820,7 @@ void crearEntradas(int pid, int cantidadPaginas, int paginaInicial)
 		}
 		else
 			pointer++;
-		if(!frameValido(pointer->frame))
+		if(pointer->frame < 0 || pointer->frame >= config->marcos)
 		{
 			puts("NULL");
 			pointer = (entradaTabla*)memoria+cantPaginasAdmin;

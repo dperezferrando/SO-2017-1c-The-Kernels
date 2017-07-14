@@ -103,13 +103,7 @@ void recibir_comandos()
 						config->GRADO_MULTIPROG = multiprog;
 						pthread_mutex_unlock(&mMultiprog);
 						printf("NUEVO GRADO DE MULTIPROGRAMACION: %i\n", config->GRADO_MULTIPROG);
-						int i;
-						pthread_mutex_lock(&mColaNew);
-						int new = queue_size(colaNew);
-						pthread_mutex_unlock(&mColaNew);
-						for(i = 0;i<new;i++)
-							readyProcess();
-
+						enviarTodosLosNewAReady();
 					}
 				}
 				else{
@@ -138,6 +132,8 @@ void recibir_comandos()
 				pthread_mutex_lock(&mTogglePlanif);
 				togglePlanif=0;
 				pthread_mutex_unlock(&mTogglePlanif);
+				enviarTodosLosNewAReady();
+				enviarTodosLosReadyAExecute();
 			}
 			else if(!strcmp(comando[0], "exit"))
 			{
@@ -152,6 +148,26 @@ void recibir_comandos()
 		}
 	}
 
+}
+
+void enviarTodosLosNewAReady()
+{
+	pthread_mutex_lock(&mColaNew);
+	int new = queue_size(colaNew);
+	pthread_mutex_unlock(&mColaNew);
+	int i;
+	for(i = 0;i<new;i++)
+		readyProcess();
+}
+
+void enviarTodosLosReadyAExecute()
+{
+	pthread_mutex_lock(&mColaReady);
+	int ready = queue_size(colaReady);
+	pthread_mutex_unlock(&mColaReady);
+	int i;
+	for(i = 0;i<ready;i++)
+		executeProcess();
 }
 
 void mostrarPID(PCB* pcb)

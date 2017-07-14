@@ -318,6 +318,11 @@ variable* obtenerUltimaVariable(t_list* listaVariables)
 
 char* leerEnMemoria(posicionEnMemoria posicion)
 {
+	if(estado != OK)
+	{
+		log_error(logFile, "[LEER EN MEMORIA]: PROGRAMA ABORTADO -> NO SE LEE NADA");
+		return NULL;
+	}
 	int total = posicion.offset + posicion.size;
 	int segundoSize;
 	char* instruccion;
@@ -325,6 +330,12 @@ char* leerEnMemoria(posicionEnMemoria posicion)
 	if(total <= tamanioPagina)
 	{
 		instruccion = enviarPedidoLecturaMemoria(posicion);
+		if(instruccion == NULL)
+		{
+			log_error(logFile, "[LEER EN MEMORIA]: POSICION INVALIDA");
+			estado = STKOF;
+			return NULL;
+		}
 		instruccion[posicion.size-1] = '\0';
 	}
 	else
@@ -335,6 +346,12 @@ char* leerEnMemoria(posicionEnMemoria posicion)
 		posicion.size -= segundoSize;
 		log_info(logFile, "[LEER EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
 		char* primeraParte = enviarPedidoLecturaMemoria(posicion);
+		if(primeraParte == NULL)
+		{
+			log_error(logFile, "[LEER EN MEMORIA]: POSICION INVALIDA");
+			estado = STKOF;
+			return NULL;
+		}
 		memcpy(puntero, primeraParte, posicion.size);
 		puntero+= posicion.size;
 		free(primeraParte);
@@ -342,6 +359,12 @@ char* leerEnMemoria(posicionEnMemoria posicion)
 		posicion.offset = 0;
 		posicion.size = segundoSize;
 		char* segundaParteInstruccion = enviarPedidoLecturaMemoria(posicion);
+		if(segundaParteInstruccion == NULL)
+		{
+			log_error(logFile, "[LEER EN MEMORIA]: POSICION INVALIDA");
+			estado = STKOF;
+			return NULL;
+		}
 		segundaParteInstruccion[posicion.size-1] = '\0';
 		memcpy(puntero, segundaParteInstruccion, posicion.size);
 		free(segundaParteInstruccion);
@@ -354,9 +377,9 @@ char* leerEnMemoria(posicionEnMemoria posicion)
 
 void escribirEnMemoria(posicionEnMemoria posicion, char* valor)
 {
-	if(estado == STKOF)
+	if(estado != OK)
 	{
-		log_error(logFile, "[ESCRIBIR EN MEMORIA]: STACK OVERFLOW -> NO SE ESCRIBE NADA");
+		log_error(logFile, "[ESCRIBIR EN MEMORIA]: PROGRAMA ABORTADO -> NO SE ESCRIBE NADA");
 		return;
 	}
 	log_info(logFile, "[ESCRIBIR EN MEMORIA]: PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %s\n", posicion.pagina, posicion.offset, posicion.size, valor);
@@ -370,7 +393,13 @@ void escribirEnMemoria(posicionEnMemoria posicion, char* valor)
 	}*/
 
 	if(total <= tamanioPagina)
-		enviarPedidoEscrituraMemoria(posicion, valor);
+	{
+		if(enviarPedidoEscrituraMemoria(posicion, valor) == -5)
+		{
+			estado = STKOF;
+			log_error(logFile, "[ESCRIBIR EN MEMORIA]: LA POSICION ENVIADA A MEMORIA ES INCORRECTA - POSIBLEMENTE HEAP INVALIDO");
+		}
+	}
 	else
 	{
 		int segundoSize;
@@ -382,7 +411,12 @@ void escribirEnMemoria(posicionEnMemoria posicion, char* valor)
 	/*	memcpy(&valorAEnviar,valor, posicion.size);
 		puntero += posicion.size;*/
 		log_info(logFile, "[ESCRIBIR EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
-		enviarPedidoEscrituraMemoria(posicion, valor);
+		if(enviarPedidoEscrituraMemoria(posicion, valor) == -5)
+		{
+			estado = STKOF;
+			log_error(logFile, "[ESCRIBIR EN MEMORIA]: LA POSICION ENVIADA A MEMORIA ES INCORRECTA - POSIBLEMENTE HEAP INVALIDO");
+			return;
+		}
 		valor += posicion.size;
 		posicion.pagina++;
 		posicion.offset = 0;
@@ -396,12 +430,17 @@ void escribirEnMemoria(posicionEnMemoria posicion, char* valor)
 			return;
 		}
 
-		enviarPedidoEscrituraMemoria(posicion, valor);
+		if(enviarPedidoEscrituraMemoria(posicion, valor) == -5)
+		{
+			estado = STKOF;
+			log_error(logFile, "[ESCRIBIR EN MEMORIA]: LA POSICION ENVIADA A MEMORIA ES INCORRECTA - POSIBLEMENTE HEAP INVALIDO");
+			return;
+		}
 
 	}
 }
 
-void enviarPedidoEscrituraMemoria(posicionEnMemoria posicion, char* valor)
+int enviarPedidoEscrituraMemoria(posicionEnMemoria posicion, char* valor)
 {
 	/*pedidoEscrituraMemoria* pedido = malloc(sizeof(pedidoEscrituraMemoria));
 	pedido->posicion = posicion;/
@@ -412,12 +451,18 @@ void enviarPedidoEscrituraMemoria(posicionEnMemoria posicion, char* valor)
 	memcpy(pedido+sizeof(posicionEnMemoria), valor, posicion.size);
 	lSend(memoria, pedido, 3,size);
 	free(pedido);
+	Mensaje* respuesta = lRecv(memoria);
+	int op = respuesta->header.tipoOperacion;
+	destruirMensaje(respuesta);
+	return op;
 }
 
 char* enviarPedidoLecturaMemoria(posicionEnMemoria posicion)
 {
 	lSend(memoria, &posicion, LEER, sizeof(posicionEnMemoria));
 	Mensaje* respuesta = lRecv(memoria);
+	if(respuesta->header.tipoOperacion == -5)
+		return NULL;
 	char* data = malloc(respuesta->header.tamanio+1);
 	memcpy(data, respuesta->data, respuesta->header.tamanio);
 	destruirMensaje(respuesta);
@@ -461,6 +506,8 @@ t_valor_variable dereferenciar(t_puntero posicion)
 	log_info(logFile, "[DEREFERENCIAR - STACK LEVEL: %i]\n", pcb->nivelDelStack);
 	posicionEnMemoria direccionLogica = convertirADireccionLogica(posicion);
 	char* info = leerEnMemoria(direccionLogica);
+	if(info == NULL)
+		return 0;
 	t_valor_variable valor;
 	memcpy(&valor, info, sizeof(int));
 	log_info(logFile, "[DEREFERENCIAR - STACK LEVEL: %i]: OBTENGO DE MEMORIA EL SIGUIENTE VALOR: %i\n", pcb->nivelDelStack, valor);

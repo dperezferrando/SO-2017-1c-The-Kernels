@@ -1,10 +1,8 @@
 beging
-variables a,b,c
+variables a,b,c,d
 alocar a 230
 alocar b 230
 alocar c 230
 liberar b
-liberar a
-liberar c
 wait SEM1
 end

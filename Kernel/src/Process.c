@@ -217,28 +217,32 @@ PCB* fromNewToReady(){
 
 
 PCB* fromBlockedToReady(int pid){
-	pthread_mutex_lock(&mListaBlocked);
-	pthread_mutex_lock(&mColaReady);
+//	pthread_mutex_lock(&mListaBlocked);
+//	pthread_mutex_lock(&mColaReady);
+	pthread_mutex_lock(&mTogglePlanif);
+	bool toggle= togglePlanif;
+	pthread_mutex_unlock(&mTogglePlanif);
+	if(toggle)return NULL;
 	return _fromListToQueue(blockedList,colaReady,pid,1);
-	pthread_mutex_unlock(&mColaReady);
-	pthread_mutex_unlock(&mListaBlocked);
+//	pthread_mutex_unlock(&mColaReady);
+//	pthread_mutex_unlock(&mListaBlocked);
 }
 
 
 PCB* fromExecuteToReady(int pid){
-	pthread_mutex_lock(&mListaExec);
-	pthread_mutex_lock(&mColaReady);
+//	pthread_mutex_lock(&mListaExec);
+//	pthread_mutex_lock(&mColaReady);
 	return _fromListToQueue(executeList,colaReady,pid,1);
-	pthread_mutex_unlock(&mColaReady);
-	pthread_mutex_unlock(&mListaExec);
+//	pthread_mutex_unlock(&mColaReady);
+//	pthread_mutex_unlock(&mListaExec);
 }
 
 PCB* fromExecuteToBlocked(int pid){
-	pthread_mutex_lock(&mListaExec);
-	pthread_mutex_lock(&mListaBlocked);
+//	pthread_mutex_lock(&mListaExec);
+//	pthread_mutex_lock(&mListaBlocked);
 	return _fromListToList(executeList,blockedList,pid,3);
-	pthread_mutex_unlock(&mListaBlocked);
-	pthread_mutex_unlock(&mListaExec);
+//	pthread_mutex_unlock(&mListaBlocked);
+//	pthread_mutex_unlock(&mListaExec);
 }
 
 
@@ -250,20 +254,20 @@ PCB* fromReadyToExecute(){
 
 	if(toggle)return NULL;
 
-	pthread_mutex_lock(&mColaReady);
-	pthread_mutex_lock(&mListaExec);
+//	pthread_mutex_lock(&mColaReady);
+//	pthread_mutex_lock(&mListaExec);
 	return _fromQueueToList(colaReady,executeList,2);
-	pthread_mutex_unlock(&mListaExec);
-	pthread_mutex_unlock(&mColaReady);
+//	pthread_mutex_unlock(&mListaExec);
+//	pthread_mutex_unlock(&mColaReady);
 }
 
 
 PCB* fromExecuteToFinished(int pid){
-	pthread_mutex_lock(&mColaFinished);
-	pthread_mutex_lock(&mListaExec);
+//	pthread_mutex_lock(&mColaFinished);
+//	pthread_mutex_lock(&mListaExec);
 	return _fromListToQueue(executeList,colaFinished,pid,9);
-	pthread_mutex_unlock(&mListaExec);
-	pthread_mutex_unlock(&mColaFinished);
+//	pthread_mutex_unlock(&mListaExec);
+//	pthread_mutex_unlock(&mColaFinished);
 }
 
 
@@ -275,20 +279,20 @@ PCB* fromReadyToFinished(int pid){
 
 	if(toggle)return NULL;
 
-	pthread_mutex_lock(&mColaFinished);
-	pthread_mutex_lock(&mColaReady);
+//	pthread_mutex_lock(&mColaFinished);
+//	pthread_mutex_lock(&mColaReady);
 	return _fromListToQueue(colaReady->elements,colaFinished,pid,9);
-	pthread_mutex_unlock(&mColaReady);
-	pthread_mutex_unlock(&mColaFinished);
+//	pthread_mutex_unlock(&mColaReady);
+//	pthread_mutex_unlock(&mColaFinished);
 }
 
 
 PCB* fromBlockedToFinished(int pid){
-	pthread_mutex_lock(&mColaFinished);
-	pthread_mutex_lock(&mListaBlocked);
+//	pthread_mutex_lock(&mColaFinished);
+//	pthread_mutex_lock(&mListaBlocked);
 	return _fromListToQueue(blockedList,colaFinished,pid,9);
-	pthread_mutex_unlock(&mListaBlocked);
-	pthread_mutex_unlock(&mColaFinished);
+//	pthread_mutex_unlock(&mListaBlocked);
+//	pthread_mutex_unlock(&mColaFinished);
 }
 
 
