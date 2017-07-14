@@ -2,6 +2,7 @@
 #define LOCALHOST "127.0.0.1"
 configFile* config;
 metadata* metad;
+t_config* configHandler;
 
 int main(int argc, char** argsv){
 	config = configurate("/home/utnso/tp-2017-1c-The-Kernels/FileSystem/Debug/filesystem.conf", leerArchivoConfig, keys);
@@ -11,14 +12,16 @@ int main(int argc, char** argsv){
 	levantarBloquesEnUso();
 	puts("bitmap al dia");
 	testsmuycabezitas();
-	/*kernel = getBindedSocket(config->ip_propia, config->puerto);
-	lListen(kernel, 5);
+	kernel = getBindedSocket(config->ip_propia, config->puerto);
+	/*lListen(kernel, 5);
 	puts("ESPERANDO AL KERNEL");
 	conexion = lAccept(kernel, KERNEL_ID);
-	esperarOperacion();
-	close(kernel);*/
+	esperarOperacion();*/
+	close(kernel);
 	free(config);
 	free(metad);
+	//free(bloquesGG);
+	//config_destroy(configHandler);
 	destruirBitmap();
 	puts("fin");
 	return EXIT_SUCCESS;
@@ -153,7 +156,7 @@ void esperarOperacion()
 				// IDEM LEER
 			/*	int retorno = validarArchivo(path);
 				if(retorno==-1){
-					lSend(kernel, 0, 1, sizeof(int));
+					lSend(kernel, 0, 1, sizeof(int));validarArchivo
 					break;
 				}*/
 				// IDEM LEER, PUEDE NO SER NECESARIO
@@ -217,6 +220,7 @@ int validarArchivo(char* pathRelativa){
 	FILE *arch;
 	arch = fopen (path,"r");
 	if (arch==NULL){
+		free(path);
 		return -1;
 	}
 	fclose(arch);
@@ -341,6 +345,7 @@ char* leerArchivo(char* pathRelativa, int offset, int size){
 	free(bloqs);
 	free(rutablq);
 	free(path);
+	//free(bloquesGG);
 	return buffer;
 }
 
@@ -373,9 +378,10 @@ int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
 	int bloqueLogico = floor((double)offset/(double)metad->tamanio_Bloques);
 	int bloquesAnteriores = floor((double)offset/(double)metad->tamanio_Bloques);
 	bloques* bloquesDelArchivo = getbloques(path);
-	int cantBloquesSig= bloquesDelArchivo->tamanio - bloqueLogico+1;
+	int cantBloquesSig= bloquesDelArchivo->tamanio - (bloqueLogico+1);
 	if (bloquesDelArchivo->tamanio < bloqueLogico + 1){
-		free(bloquesDelArchivo->bloques);
+		free(bloquesDelArchivo);
+		//free(bloquesGG);
 		addbloque(path);
 		bloquesDelArchivo = getbloques(path);
 	}
@@ -404,7 +410,8 @@ int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
 	free(rutaBloqueFisico);
 	while(falta==1){
 		if(cantBloquesSig==0){
-			free(bloquesDelArchivo->bloques);
+			free(bloquesDelArchivo);
+			//free(bloquesGG);
 			addbloque(path);
 			bloquesDelArchivo = getbloques(path);
 		}
@@ -424,7 +431,8 @@ int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
 	    fclose(bloque);
 	    free(rutaBloqueFisico);
 	}
-	free(bloquesDelArchivo->bloques);
+	free(bloquesDelArchivo);
+	//free(bloquesGG);
 	cambiarTamanio(path,tamanioArchivo + sizeASumar);
 	free(path);
 	return 1;
@@ -667,10 +675,12 @@ int borrarArchivo(char* pathRelativa){
 	if(remove(path)!=0){
 		free(bloques);
 		free(bloqs);
+		//free(bloquesGG);
 		return -1;
 	}
 	free(bloques);
 	free(bloqs);
+	//free(bloquesGG);
 	free(path);
 	return 0;
 }
@@ -695,15 +705,24 @@ bloques* getbloques(char* path){
 	while(sBloques[cont]!=NULL){
 		cont++;
 	}
-	int*bloques=malloc(sizeof(int)*cont);
+	int * bloques=malloc(sizeof(int)*cont);
 	cont=0;
 	while(sBloques[cont]!=NULL){
 		bloques[cont]=atoi(sBloques[cont]);
 		cont++;
 		}
+	/*int i;
+	for(i=0;i<=cont;i++){
+		bloqs->bloques[i]=bloques[i];
+	}*/
 	bloqs->bloques=bloques;
 	bloqs->tamanio=cont;
+	//free(bloques);
 	config_destroy(Archconf);
+	int j;
+	for(j=0;j<=cont;j++){
+		free(sBloques[j]);
+	}
 	free(sBloques);
 	return bloqs;
 }
@@ -886,6 +905,7 @@ quitarUltimoBloque(char* path){
 	free(pathtemp);
 	free(bloques);
 	free(bloqs);
+	//free(bloquesGG);
 	return;
 }
 
@@ -907,7 +927,7 @@ int cambiarTamanio(char* path,int tam){
 	strcpy(pathtemp,ruta_Arch);
 	strcat(pathtemp,"temporal.bin");
 	archt = fopen(pathtemp,"w");
-	char c;
+	char c = 0;
 	while(c!='='){
 		c = fgetc(arch);
 		putc(c,archt);
@@ -1234,6 +1254,7 @@ testsmuycabezitas(){ //no se rian los estoy haciendo asi para comitearselos rapi
 		else puts("error test3");
 		free(bloqs);
 		free(bloques);
+		//free(bloquesGG);
 		//test3
 
 		//test4 borrar creado
@@ -1274,6 +1295,7 @@ testsmuycabezitas(){ //no se rian los estoy haciendo asi para comitearselos rapi
 		 else puts("error test5");
 		free (bloqs);
 		free (bloques);
+		//free(bloquesGG);
 		//test5
 
 		//test6 quitar un bloque
@@ -1286,6 +1308,7 @@ testsmuycabezitas(){ //no se rian los estoy haciendo asi para comitearselos rapi
 		 else puts("error test6");
 		 free (bloqs);
 		 free (bloques);
+		 //free(bloquesGG);
 		//test6
 
 		//test7 borrar archivo con muchos bloques
@@ -1305,6 +1328,7 @@ testsmuycabezitas(){ //no se rian los estoy haciendo asi para comitearselos rapi
 						cont++;
 					}
 					free(rutablq);
+
 				}
 			if(cont==34){
 				puts("piola test7");
@@ -1314,6 +1338,7 @@ testsmuycabezitas(){ //no se rian los estoy haciendo asi para comitearselos rapi
 		else puts("error test7");
 		free (bloques);
 		free(bloqs);
+		//free(bloquesGG);
 	}
 		//test7
 
