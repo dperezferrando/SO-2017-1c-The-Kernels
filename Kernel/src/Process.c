@@ -72,7 +72,7 @@ void killProcess(int PID,int exitCode){
 	quitarDeColaDelSemaforoPorKill(PID);
 	eliminarEntradasDelProceso(PID);
 	_modifyExitCode(PID,exitCode);
-	freeProcessPages(PID);
+	//freeProcessPages(PID); ya lo hace memoria
 	if(checkMultiprog() && queue_size(colaNew) >0)
 		readyProcess();
 
@@ -349,6 +349,7 @@ void freePage(PageOwnership* po, int index){
 	memcpy(msg,&po->pid,sizeof(int));
 	memcpy(msg+sizeof(int),&po->idpage,sizeof(int));
 	if(!test)lSend(conexionMemoria,msg,4,sizeof(int)*2);
+	printf("SE LIBERO PID %i, PAGE %i",po->pid,po->idpage);
 	list_remove_and_destroy_element(ownedPages,index,&destroyPageOwnership);
 	free(msg);
 }
