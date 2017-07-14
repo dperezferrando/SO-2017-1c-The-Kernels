@@ -161,13 +161,16 @@ void esperarOperacion()
 				}*/
 				// IDEM LEER, PUEDE NO SER NECESARIO
 				int result = escribirArchivo(path,offset,size,buffer);
+				free(buffer);
 				if(result==-1){
-					lSend(conexion, 0, -4, sizeof(int));
+					lSend(conexion, NULL, -4, 0);
 					break;
 				}
+				else
+					lSend(conexion, NULL, 104, 0);
 				// WHY? EL KERNEL YA CONOCE EL PATH
 				//retornoDePath(path);
-				free(buffer);
+
 				break;
 			}
 			case 5:{
