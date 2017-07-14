@@ -15,7 +15,7 @@
 #include "../../ConfigLibrary/src/Configuration.c"
 #include "../../SocketLibrary/src/SocketLibrary.c"
 
-
+int kernelvive = 1;
 int kernel;
 int conexion;
 int flagC;
