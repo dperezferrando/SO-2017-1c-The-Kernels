@@ -194,6 +194,7 @@ int executeProcess(){
 			lSend(CPU, buff, 1, pcbSerializado.size + sizeof(int));
 			puts("PCB ENVIADO");
 			free(pcbSerializado.data);
+			free(buff);
 		}
 		return 1;
 		}

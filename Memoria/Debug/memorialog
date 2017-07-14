@@ -1,11 +1,290 @@
-==11227== Helgrind, a thread error detector
-==11227== Copyright (C) 2007-2013, and GNU GPL'd, by OpenWorks LLP et al.
-==11227== Using Valgrind-3.10.0.SVN and LibVEX; rerun with -h for copyright info
-==11227== Command: ./Memoria
-==11227== Parent PID: 2495
-==11227== 
-==11227== 
-==11227== For counts of detected and suppressed errors, rerun with: -v
-==11227== Use --history-level=approx or =none to gain increased speed, at
-==11227== the cost of reduced accuracy of conflicting-access information
-==11227== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 35521 from 73)
+==5195== Memcheck, a memory error detector
+==5195== Copyright (C) 2002-2013, and GNU GPL'd, by Julian Seward et al.
+==5195== Using Valgrind-3.10.0.SVN and LibVEX; rerun with -h for copyright info
+==5195== Command: ./Memoria
+==5195== Parent PID: 2339
+==5195== 
+==5195== Thread 2:
+==5195== Conditional jump or move depends on uninitialised value(s)
+==5195==    at 0x804B4C2: frameValido (Memoria.c:220)
+==5195==    by 0x804BF5D: tamanioProceso (Memoria.c:458)
+==5195==    by 0x804B57F: finalizarPrograma (Memoria.c:226)
+==5195==    by 0x804B4AA: conexion_kernel (Memoria.c:209)
+==5195==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5195==    by 0x41A350D: clone (clone.S:129)
+==5195==  Uninitialised value was created by a heap allocation
+==5195==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x804AE2E: arrancarMemoria (Memoria.c:48)
+==5195==    by 0x804AD09: main (Memoria.c:31)
+==5195== 
+==5195== Conditional jump or move depends on uninitialised value(s)
+==5195==    at 0x804C7BF: obtenerEntradaDe (Memoria.c:689)
+==5195==    by 0x804B5B7: finalizarPrograma (Memoria.c:236)
+==5195==    by 0x804B4AA: conexion_kernel (Memoria.c:209)
+==5195==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5195==    by 0x41A350D: clone (clone.S:129)
+==5195==  Uninitialised value was created by a heap allocation
+==5195==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x804AE2E: arrancarMemoria (Memoria.c:48)
+==5195==    by 0x804AD09: main (Memoria.c:31)
+==5195== 
+==5195== Conditional jump or move depends on uninitialised value(s)
+==5195==    at 0x804C7CA: obtenerEntradaDe (Memoria.c:689)
+==5195==    by 0x804B5B7: finalizarPrograma (Memoria.c:236)
+==5195==    by 0x804B4AA: conexion_kernel (Memoria.c:209)
+==5195==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5195==    by 0x41A350D: clone (clone.S:129)
+==5195==  Uninitialised value was created by a heap allocation
+==5195==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x804AE2E: arrancarMemoria (Memoria.c:48)
+==5195==    by 0x804AD09: main (Memoria.c:31)
+==5195== 
+==5195== Conditional jump or move depends on uninitialised value(s)
+==5195==    at 0x804B4C2: frameValido (Memoria.c:220)
+==5195==    by 0x804C7D9: obtenerEntradaDe (Memoria.c:689)
+==5195==    by 0x804B5B7: finalizarPrograma (Memoria.c:236)
+==5195==    by 0x804B4AA: conexion_kernel (Memoria.c:209)
+==5195==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5195==    by 0x41A350D: clone (clone.S:129)
+==5195==  Uninitialised value was created by a heap allocation
+==5195==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x804AE2E: arrancarMemoria (Memoria.c:48)
+==5195==    by 0x804AD09: main (Memoria.c:31)
+==5195== 
+==5195== Conditional jump or move depends on uninitialised value(s)
+==5195==    at 0x804C7E6: obtenerEntradaDe (Memoria.c:692)
+==5195==    by 0x804B5B7: finalizarPrograma (Memoria.c:236)
+==5195==    by 0x804B4AA: conexion_kernel (Memoria.c:209)
+==5195==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5195==    by 0x41A350D: clone (clone.S:129)
+==5195==  Uninitialised value was created by a heap allocation
+==5195==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x804AE2E: arrancarMemoria (Memoria.c:48)
+==5195==    by 0x804AD09: main (Memoria.c:31)
+==5195== 
+==5195== Conditional jump or move depends on uninitialised value(s)
+==5195==    at 0x804C7F1: obtenerEntradaDe (Memoria.c:692)
+==5195==    by 0x804B5B7: finalizarPrograma (Memoria.c:236)
+==5195==    by 0x804B4AA: conexion_kernel (Memoria.c:209)
+==5195==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5195==    by 0x41A350D: clone (clone.S:129)
+==5195==  Uninitialised value was created by a heap allocation
+==5195==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x804AE2E: arrancarMemoria (Memoria.c:48)
+==5195==    by 0x804AD09: main (Memoria.c:31)
+==5195== 
+==5195== Conditional jump or move depends on uninitialised value(s)
+==5195==    at 0x804C7BF: obtenerEntradaDe (Memoria.c:689)
+==5195==    by 0x804C786: damePaginaHeap (Memoria.c:680)
+==5195==    by 0x804B2F5: conexion_kernel (Memoria.c:166)
+==5195==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5195==    by 0x41A350D: clone (clone.S:129)
+==5195==  Uninitialised value was created by a heap allocation
+==5195==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x804AE2E: arrancarMemoria (Memoria.c:48)
+==5195==    by 0x804AD09: main (Memoria.c:31)
+==5195== 
+==5195== Conditional jump or move depends on uninitialised value(s)
+==5195==    at 0x804B4C2: frameValido (Memoria.c:220)
+==5195==    by 0x804C7D9: obtenerEntradaDe (Memoria.c:689)
+==5195==    by 0x804C786: damePaginaHeap (Memoria.c:680)
+==5195==    by 0x804B2F5: conexion_kernel (Memoria.c:166)
+==5195==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5195==    by 0x41A350D: clone (clone.S:129)
+==5195==  Uninitialised value was created by a heap allocation
+==5195==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x804AE2E: arrancarMemoria (Memoria.c:48)
+==5195==    by 0x804AD09: main (Memoria.c:31)
+==5195== 
+==5195== Conditional jump or move depends on uninitialised value(s)
+==5195==    at 0x804C7E6: obtenerEntradaDe (Memoria.c:692)
+==5195==    by 0x804C786: damePaginaHeap (Memoria.c:680)
+==5195==    by 0x804B2F5: conexion_kernel (Memoria.c:166)
+==5195==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5195==    by 0x41A350D: clone (clone.S:129)
+==5195==  Uninitialised value was created by a heap allocation
+==5195==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x804AE2E: arrancarMemoria (Memoria.c:48)
+==5195==    by 0x804AD09: main (Memoria.c:31)
+==5195== 
+==5195== Syscall param socketcall.send(msg) points to uninitialised byte(s)
+==5195==    at 0x40A92A8: send (socket.S:98)
+==5195==    by 0x804AB9C: internalSend (SocketLibrary.c:277)
+==5195==    by 0x804A4DA: lSend (SocketLibrary.c:131)
+==5195==    by 0x804B468: conexion_kernel (Memoria.c:197)
+==5195==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5195==    by 0x41A350D: clone (clone.S:129)
+==5195==  Address 0x4273575 is 13 bytes inside a block of size 264 alloc'd
+==5195==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x804A48E: lSend (SocketLibrary.c:127)
+==5195==    by 0x804B468: conexion_kernel (Memoria.c:197)
+==5195==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5195==    by 0x41A350D: clone (clone.S:129)
+==5195==  Uninitialised value was created by a heap allocation
+==5195==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x804AE2E: arrancarMemoria (Memoria.c:48)
+==5195==    by 0x804AD09: main (Memoria.c:31)
+==5195== 
+==5195== Conditional jump or move depends on uninitialised value(s)
+==5195==    at 0x804CC5A: crearEntradas (Memoria.c:823)
+==5195==    by 0x804B347: conexion_kernel (Memoria.c:169)
+==5195==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5195==    by 0x41A350D: clone (clone.S:129)
+==5195==  Uninitialised value was created by a heap allocation
+==5195==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x804AE2E: arrancarMemoria (Memoria.c:48)
+==5195==    by 0x804AD09: main (Memoria.c:31)
+==5195== 
+==5195== Conditional jump or move depends on uninitialised value(s)
+==5195==    at 0x804CC6C: crearEntradas (Memoria.c:823)
+==5195==    by 0x804B347: conexion_kernel (Memoria.c:169)
+==5195==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5195==    by 0x41A350D: clone (clone.S:129)
+==5195==  Uninitialised value was created by a heap allocation
+==5195==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x804AE2E: arrancarMemoria (Memoria.c:48)
+==5195==    by 0x804AD09: main (Memoria.c:31)
+==5195== 
+==5195== Conditional jump or move depends on uninitialised value(s)
+==5195==    at 0x804CC1C: crearEntradas (Memoria.c:813)
+==5195==    by 0x804B347: conexion_kernel (Memoria.c:169)
+==5195==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5195==    by 0x41A350D: clone (clone.S:129)
+==5195==  Uninitialised value was created by a heap allocation
+==5195==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x804AE2E: arrancarMemoria (Memoria.c:48)
+==5195==    by 0x804AD09: main (Memoria.c:31)
+==5195== 
+==5195== Conditional jump or move depends on uninitialised value(s)
+==5195==    at 0x804C7BF: obtenerEntradaDe (Memoria.c:689)
+==5195==    by 0x804C859: obtenerPosicionAOperar (Memoria.c:709)
+==5195==    by 0x804C949: escribirBytes (Memoria.c:732)
+==5195==    by 0x804C6A9: escribirDondeCorresponda (Memoria.c:648)
+==5195==    by 0x804B27C: conexion_kernel (Memoria.c:149)
+==5195==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5195==    by 0x41A350D: clone (clone.S:129)
+==5195==  Uninitialised value was created by a heap allocation
+==5195==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x804AE2E: arrancarMemoria (Memoria.c:48)
+==5195==    by 0x804AD09: main (Memoria.c:31)
+==5195== 
+==5195== Conditional jump or move depends on uninitialised value(s)
+==5195==    at 0x804B4C2: frameValido (Memoria.c:220)
+==5195==    by 0x804C7D9: obtenerEntradaDe (Memoria.c:689)
+==5195==    by 0x804C859: obtenerPosicionAOperar (Memoria.c:709)
+==5195==    by 0x804C949: escribirBytes (Memoria.c:732)
+==5195==    by 0x804C6A9: escribirDondeCorresponda (Memoria.c:648)
+==5195==    by 0x804B27C: conexion_kernel (Memoria.c:149)
+==5195==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5195==    by 0x41A350D: clone (clone.S:129)
+==5195==  Uninitialised value was created by a heap allocation
+==5195==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x804AE2E: arrancarMemoria (Memoria.c:48)
+==5195==    by 0x804AD09: main (Memoria.c:31)
+==5195== 
+==5195== Conditional jump or move depends on uninitialised value(s)
+==5195==    at 0x804C7E6: obtenerEntradaDe (Memoria.c:692)
+==5195==    by 0x804C859: obtenerPosicionAOperar (Memoria.c:709)
+==5195==    by 0x804C949: escribirBytes (Memoria.c:732)
+==5195==    by 0x804C6A9: escribirDondeCorresponda (Memoria.c:648)
+==5195==    by 0x804B27C: conexion_kernel (Memoria.c:149)
+==5195==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5195==    by 0x41A350D: clone (clone.S:129)
+==5195==  Uninitialised value was created by a heap allocation
+==5195==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x804AE2E: arrancarMemoria (Memoria.c:48)
+==5195==    by 0x804AD09: main (Memoria.c:31)
+==5195== 
+==5195== Conditional jump or move depends on uninitialised value(s)
+==5195==    at 0x804C7BF: obtenerEntradaDe (Memoria.c:689)
+==5195==    by 0x804C859: obtenerPosicionAOperar (Memoria.c:709)
+==5195==    by 0x804B68C: agregarACache (Memoria.c:262)
+==5195==    by 0x804C700: escribirDondeCorresponda (Memoria.c:658)
+==5195==    by 0x804B27C: conexion_kernel (Memoria.c:149)
+==5195==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5195==    by 0x41A350D: clone (clone.S:129)
+==5195==  Uninitialised value was created by a heap allocation
+==5195==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x804AE2E: arrancarMemoria (Memoria.c:48)
+==5195==    by 0x804AD09: main (Memoria.c:31)
+==5195== 
+==5195== Conditional jump or move depends on uninitialised value(s)
+==5195==    at 0x804B4C2: frameValido (Memoria.c:220)
+==5195==    by 0x804C7D9: obtenerEntradaDe (Memoria.c:689)
+==5195==    by 0x804C859: obtenerPosicionAOperar (Memoria.c:709)
+==5195==    by 0x804B68C: agregarACache (Memoria.c:262)
+==5195==    by 0x804C700: escribirDondeCorresponda (Memoria.c:658)
+==5195==    by 0x804B27C: conexion_kernel (Memoria.c:149)
+==5195==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5195==    by 0x41A350D: clone (clone.S:129)
+==5195==  Uninitialised value was created by a heap allocation
+==5195==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x804AE2E: arrancarMemoria (Memoria.c:48)
+==5195==    by 0x804AD09: main (Memoria.c:31)
+==5195== 
+==5195== Conditional jump or move depends on uninitialised value(s)
+==5195==    at 0x804C7E6: obtenerEntradaDe (Memoria.c:692)
+==5195==    by 0x804C859: obtenerPosicionAOperar (Memoria.c:709)
+==5195==    by 0x804B68C: agregarACache (Memoria.c:262)
+==5195==    by 0x804C700: escribirDondeCorresponda (Memoria.c:658)
+==5195==    by 0x804B27C: conexion_kernel (Memoria.c:149)
+==5195==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5195==    by 0x41A350D: clone (clone.S:129)
+==5195==  Uninitialised value was created by a heap allocation
+==5195==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x804AE2E: arrancarMemoria (Memoria.c:48)
+==5195==    by 0x804AD09: main (Memoria.c:31)
+==5195== 
+==5195== 
+==5195== HEAP SUMMARY:
+==5195==     in use at exit: 2,707 bytes in 351 blocks
+==5195==   total heap usage: 15,137 allocs, 14,786 frees, 276,626 bytes allocated
+==5195== 
+==5195== Thread 1:
+==5195== 136 bytes in 1 blocks are possibly lost in loss record 4 of 8
+==5195==    at 0x402C109: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x401117E: allocate_dtv (dl-tls.c:296)
+==5195==    by 0x40118EB: _dl_allocate_tls (dl-tls.c:460)
+==5195==    by 0x40A27A2: pthread_create@@GLIBC_2.1 (allocatestack.c:589)
+==5195==    by 0x804AD7F: main (Memoria.c:36)
+==5195== 
+==5195== 136 bytes in 1 blocks are possibly lost in loss record 5 of 8
+==5195==    at 0x402C109: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x401117E: allocate_dtv (dl-tls.c:296)
+==5195==    by 0x40118EB: _dl_allocate_tls (dl-tls.c:460)
+==5195==    by 0x40A27A2: pthread_create@@GLIBC_2.1 (allocatestack.c:589)
+==5195==    by 0x804ADA3: main (Memoria.c:37)
+==5195== 
+==5195== 136 bytes in 1 blocks are possibly lost in loss record 6 of 8
+==5195==    at 0x402C109: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x401117E: allocate_dtv (dl-tls.c:296)
+==5195==    by 0x40118EB: _dl_allocate_tls (dl-tls.c:460)
+==5195==    by 0x40A27A2: pthread_create@@GLIBC_2.1 (allocatestack.c:589)
+==5195==    by 0x804ADC7: main (Memoria.c:38)
+==5195== 
+==5195== 272 bytes in 2 blocks are possibly lost in loss record 7 of 8
+==5195==    at 0x402C109: calloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x401117E: allocate_dtv (dl-tls.c:296)
+==5195==    by 0x40118EB: _dl_allocate_tls (dl-tls.c:460)
+==5195==    by 0x40A27A2: pthread_create@@GLIBC_2.1 (allocatestack.c:589)
+==5195==    by 0x804C17C: esperar_cpus (Memoria.c:525)
+==5195==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5195==    by 0x41A350D: clone (clone.S:129)
+==5195== 
+==5195== 1,961 bytes in 342 blocks are definitely lost in loss record 8 of 8
+==5195==    at 0x402A17C: malloc (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5195==    by 0x804B20B: conexion_kernel (Memoria.c:146)
+==5195==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5195==    by 0x41A350D: clone (clone.S:129)
+==5195== 
+==5195== LEAK SUMMARY:
+==5195==    definitely lost: 1,961 bytes in 342 blocks
+==5195==    indirectly lost: 0 bytes in 0 blocks
+==5195==      possibly lost: 680 bytes in 5 blocks
+==5195==    still reachable: 66 bytes in 4 blocks
+==5195==         suppressed: 0 bytes in 0 blocks
+==5195== Reachable blocks (those to which a pointer was found) are not shown.
+==5195== To see them, rerun with: --leak-check=full --show-leak-kinds=all
+==5195== 
+==5195== For counts of detected and suppressed errors, rerun with: -v
+==5195== ERROR SUMMARY: 10130 errors from 24 contexts (suppressed: 0 from 0)

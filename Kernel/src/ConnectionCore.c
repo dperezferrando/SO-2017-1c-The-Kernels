@@ -796,12 +796,12 @@ void recibirDeCPU(int socket, connHandle* master)
 				//CPU me envia el pid a bloquearse
 				//Envio el pid a la cola del semaforo
 				enviarAColaDelSemaforo(sem, pid);
-				free(sem);
 			} else {
 				//Aviso a CPU que no hay bloqueo
 				lSend(socket, mensaje->data, 0, sizeof(int));
 				waitSemaforo(sem);
 			}
+			free(sem);
 			break;
 		}
 
@@ -1138,7 +1138,9 @@ void operarSemaforo(char* c, int num) {
 	int nuevoValor = atoi(valor)+num ;
 	//Lo guardo en su posicion pero antes lo vuelvo a convertir a string que trucazo no
 	config->SEM_INIT[pos] = string_itoa(nuevoValor);
-	printf("SEMAFORO %s CAMBIO SU VALOR A: %s\n",semaforo, string_itoa(nuevoValor));
+	char* nV= string_itoa(nuevoValor);
+	printf("SEMAFORO %s CAMBIO SU VALOR A: %s\n",semaforo, nV);
+	free(nV);
 }
 
 void waitSemaforo(char* c) {

@@ -30,7 +30,7 @@ int main(int argc, char** argsv) {
 
 			char* linea = pedirInstruccionAMemoria(pcb, tamanioPagina);
 			log_info(logFile, "[PEDIR INSTRUCCION NRO %i | RAFAGA: %i]: %s\n",  pcb->programCounter, rafagas, linea);
-			analizadorLinea(linea, &primitivas, &primitivas_kernel);
+			analizadorLinea(linea, &primitivas, &primitivas_kernel);//aca supuestamente leakea
 			free(linea);
 			pcb->programCounter++;
 			pcb->rafagasTotales++;
@@ -620,6 +620,7 @@ t_puntero reservar(t_valor_variable nroBytes){
 	memcpy(&posicion.offset, respuesta->data+sizeof(int), sizeof(int));
 	t_puntero puntero = convertirADireccionReal(posicion);
 	destruirMensaje(respuesta);
+	free(pedido.data);
 	log_info(logFile, "[HEAP]: KERNEL DEVUELVE PUNTERO. DIR FISICA: %i | DIR LOGICA: PAG: %i | OFFSET: %i", puntero, posicion.pagina, posicion.offset);
 	return puntero;
 
@@ -655,7 +656,7 @@ void liberar(t_puntero puntero ){
 	}
 	destruirMensaje(respuesta);
 	log_info(logFile, "[HEAP]: SE LIBERA PUNTERO DIR FISICA: %i | DIR LOGICA: PAG: %i | OFFSET: %i", puntero, posicion.pagina, posicion.offset);
-
+	free(data);
 }
 
 serializado serializarRutaYPermisos(char* ruta, char* permisos)
@@ -743,6 +744,7 @@ t_descriptor_archivo abrir(t_direccion_archivo ruta , t_banderas flags){
 	}
 	free(cadenaFlags);
 	free(rutaYFlagsSerializados.data);
+	destruirMensaje(mensaje);
 	return fileDescriptor;
 }
 
@@ -810,6 +812,7 @@ void escribir(t_descriptor_archivo fileDescriptor, void* info, t_valor_variable 
  		estado = ABORTADO;
  		log_error(logFile, "[ESCRIBIR ARCHIVO]: NO EXISTE ARCHIVO O PERMISOS INVALIDOS");
  	}
+ 	free(escrituraSerializada.data);
  	destruirMensaje(m);
 }
 
