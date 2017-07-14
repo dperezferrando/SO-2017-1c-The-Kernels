@@ -25,6 +25,7 @@ int PIDFindPO(int);
 int readyProcess();
 int executeProcess();
 int checkMultiprog();
+int findIndex(int, int);
 int offset(t_list*, int);
 int _usedFragments(t_list*);
 int enviarScriptAMemoria(PCB*,char*, int);

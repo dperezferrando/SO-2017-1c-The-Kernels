@@ -448,7 +448,9 @@ void freeProcessPages(int pid){
 	int size= list_size(paginas);
 	for(i=0;i<size;i++){
 		PageOwnership* po= list_get(paginas,0);
-		freePage(po,0, 0);
+		list_remove(paginas,0);
+    	int index= findIndex(po->pid,po->idpage);
+		freePage(po,index, 0);
 	}
 	list_destroy(paginas);
 }

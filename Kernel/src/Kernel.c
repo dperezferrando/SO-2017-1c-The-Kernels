@@ -32,7 +32,6 @@ int main(int argc, char** argsv) {
 	morir =0;
 
 	process= list_create();
-
 	colaCPUS = queue_create();
 
 	colaNew = queue_create();

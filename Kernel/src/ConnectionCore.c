@@ -177,8 +177,9 @@ int memoryRequest(MemoryRequest mr, int* offset, PageOwnership* po){
 
 
 int freeMemory(int pid, int page, int offset){
-	ProcessControl* pc = PIDFind(pid);
-	pc->cantFree++;
+	ProcessControl* pc;
+	if(!test)pc = PIDFind(pid);
+	if(!test)pc->cantFree++;
 	PageOwnership* po= findPage(pid,page);
 	if(po==NULL)return -1;
 	int acc=0,i=0;
@@ -191,7 +192,7 @@ int freeMemory(int pid, int page, int offset){
 	}
 	//hm= list_get(po->occSpaces,i);
 	hm->isFree=1;
-	pc->freedBytes += hm->size;
+	if(!test)pc->freedBytes += hm->size;
 	sendKillRequest(pid,page,offset-sizeof(HeapMetadata),hm);
 	void* memPage = defragging(pid,page,po->occSpaces);
 	if(memPage == NULL)
@@ -234,9 +235,10 @@ HeapMetadata* initializeHeapMetadata(int size){
 
 int grabarPedido(PageOwnership* po, MemoryRequest mr, int* offset){
 
-	ProcessControl* pc =  PIDFind(mr.pid);
-	pc->cantAlocar++;
-	pc->heapBytes += mr.size;
+	ProcessControl* pc;
+	if(!test)pc =  PIDFind(mr.pid);
+	if(!test)pc->cantAlocar++;
+	if(!test)pc->heapBytes += mr.size;
 	if(!viableRequest(mr.size)) return -1;
 	HeapMetadata* hm= initializeHeapMetadata(mr.size);
 	PageOwnership* paginaExistente = pageToStore(mr);//busco la pagina para guardarlo, si no hay -1
@@ -246,7 +248,7 @@ int grabarPedido(PageOwnership* po, MemoryRequest mr, int* offset){
 		initializePageOwnership(po);//aca queda el PageOwnership con la estructura que marca el espacio libre
 		*offset= occupyPageSize(po,hm);
 		list_add(ownedPages,po);
-		pc->heapPages++;
+		if(!test)pc->heapPages++;
 
 		return 1;
 	}
@@ -486,20 +488,20 @@ bool isEmpty(t_list* page){
 	return 1;
 }
 
+int findIndex(int pid, int idPage){
+	int i;
+	for(i=0;i<list_size(ownedPages);i++){
+		PageOwnership* po= list_get(ownedPages,i);
+		if(po->pid==pid && po->idpage==idPage)break;
+	}
+	return i;
+}
 
 void* defragging(int pid, int idPage, t_list* page){
 
     if(!fragmented(page)) return NULL;
 
     if(isEmpty(page)){
-    	int findIndex(int pid, int idPage){
-    		int i;
-    		for(i=0;i<list_size(ownedPages);i++){
-    			PageOwnership* po= list_get(ownedPages,i);
-    			if(po->pid==pid && po->idpage==idPage)break;
-    		}
-    		return i;
-    	}
     	int index= findIndex(pid,idPage);
     	PageOwnership* po= findPage(pid,idPage);
     	freePage(po, index, 1);
