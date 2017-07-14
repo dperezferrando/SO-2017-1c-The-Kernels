@@ -4,7 +4,7 @@ variables f, i, t, a
 #`i`: Iterador
 i=0
 #`f`: Hasta donde contar
-f=475
+f=472
 :inicio
 #Incrementar el iterador
 i=i+1

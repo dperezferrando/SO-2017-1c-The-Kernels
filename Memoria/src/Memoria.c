@@ -222,16 +222,16 @@ bool frameValido(int frame)
 void finalizarPrograma(int pid)
 {
 	int pag = 0;
-	entradaTabla* pointer;
-	do
+	entradaTabla* pointer = obtenerEntradaDe(pid, pag);
+	while(pointer != NULL)
 	{
-		pointer = obtenerEntradaDe(pid, pag);
+
 		pointer->pid = -1;
 		pointer->pagina = -1;
 		pag++;
-		pointer++;
+		pointer = obtenerEntradaDe(pid, pag);
 	}
-	while(pointer->pid == pid && frameValido(pointer->frame));
+//	while(pointer != NULL);//pointer->pid == pid && frameValido(pointer->frame));
 	bool pidDistintoA(entradaCache* entrada)
 	{
 		return entrada->pid != pid;
@@ -347,11 +347,6 @@ char* obtenerPosicionAOperarEnCache(int pid, int pagina, int offset)
 		return pid == unaEntrada->pid && pagina == unaEntrada->pagina;
 	}
 	entradaCache* entrada = list_remove_by_condition(cache, mismoPIDyPagina);
-	if(entrada == NULL)
-	{
-		printf("ENTRADA NULL: PAG: %i\n", pagina);
-		sleep(20);
-	}
 	char* punteroAFrame = entrada->data+offset;
 	list_add_in_index(cache, 0, entrada);
 	return punteroAFrame;
@@ -389,7 +384,9 @@ void recibir_comandos()
 		printf("COMANDO: %s ARG: %s\n", comando[0], comando[1]);
 		if(!strcmp(comando[0], "dump"))
 		{
-			if(!strcmp(comando[1], "estructuras"))
+			if(comando[1] == NULL)
+				puts("COMANDO INVALIDO");
+			else if(!strcmp(comando[1], "estructuras"))
 				mostrarTablaPaginas();
 			else if(!strcmp(comando[1], "cache"))
 			{
@@ -417,7 +414,11 @@ void recibir_comandos()
 			printf("[MEMORIA]: NUEVO RETARDO SETEADO: %ims\n", config->retardo_memoria);
 		}
 		else if(!strcmp(comando[0], "flush"))
+		{
+			pthread_mutex_lock(&cacheSem);
 			list_clean_and_destroy_elements(cache, destruirEntradaCache);
+			pthread_mutex_unlock(&cacheSem);
+		}
 		else if(!strcmp(comando[0], "size"))
 		{
 			if(!strcmp(comando[1], "memory"))
@@ -442,7 +443,11 @@ void recibir_comandos()
 
 int tamanioProceso(int pid)
 {
-	entradaTabla* puntero = (entradaTabla*)memoria+cantPaginasAdmin;
+	int i = 0;
+	while(obtenerEntradaDe(pid, i) != NULL)
+		i++;
+	return i;
+/*	entradaTabla* puntero = (entradaTabla*)memoria+cantPaginasAdmin;
 	int contador = 0;
 	while(puntero->frame != (config->marcos-1))
 	{
@@ -450,7 +455,7 @@ int tamanioProceso(int pid)
 			contador++;
 		puntero++;
 	}
-	return contador;
+	return contador;*/
 }
 
 int cantidadFramesOcupados()
@@ -470,7 +475,7 @@ int cantidadFramesOcupados()
 void mostrarDatosProcesos()
 {
 	entradaTabla* puntero = (entradaTabla*)memoria+cantPaginasAdmin;
-	while(puntero->frame != (config->marcos-1))
+	while(frameValido(puntero->frame))
 	{
 		if(puntero->pid >= 0)
 		{
@@ -633,40 +638,6 @@ void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
 	pthread_mutex_unlock(&cacheSem);
 
 }
-/*
-void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
-{
-	pthread_mutex_lock(&cacheSem);
-	int* valorPuntero = &pedido->valor;
-//	char* linea;
-	if(config->entradas_cache > 0 && existeEnCache(pid, pedido->posicion.pagina))
-	{
-		printf("[CACHE]: EXISTE EN CACHE PAGINA: %i\n", pedido->posicion.pagina);
-		escribirBytesCache(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, valorPuntero);
-//		linea = solicitarBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
-	}
-	else
-	{
-		puts("[CACHE]: NO EXISTE EN CACHE - RETARDO");
-		pthread_mutex_lock(&retardoSem);
-		usleep(1000*config->retardo_memoria);
-		pthread_mutex_unlock(&retardoSem);
-		puts("[CACHE]: SLEEP LISTO, SOLICITO Y AGREGO A CACHE");
-		if(!escribirBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, valorPuntero))
-			puts("[CACHE]: ERROR (ESTO DEBERIA SER UNREACHABLE, SI LO VES SE ROMPIO TODO)");
-		else
-		{
-			puts("[CACHE]: SE ESCRIBIO EN MEMORIA - AGREGANDO A CACHE LA PAGINA");
-			if(config->entradas_cache != 0)
-			{
-				agregarACache(pid, pedido->posicion.pagina);
-//				linea = solicitarBytesACache(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
-			}
-		}
-	}
-	pthread_mutex_unlock(&cacheSem);
-
-}*/
 
 
 entradaTabla* obtenerEntradaAproximada(int pid, int pagina)
@@ -677,14 +648,6 @@ entradaTabla* obtenerEntradaAproximada(int pid, int pagina)
 	pthread_mutex_unlock(&memoriaSem);
 	return pointer;
 }
-
-/*entradaTabla* obtenerEntradaDe(int pid, int pagina)
-{
-	entradaTabla* pointer = obtenerEntradaAproximada(pid, pagina);
-	while(pointer->pid != pid && pointer->pagina != pagina && pointer->frame != (config->marcos-1))
-		pointer++;
-	return pointer;
-}*/
 
 entradaTabla* obtenerEntradaDe(int pid, int pagina)
 {
@@ -733,7 +696,17 @@ int escribirBytes(int pid, int pagina, int offset, int tamanio, void* buffer)
 
 int bestHashingAlgorithmInTheFuckingWorld(int pid, int pagina)
 {
-	return cantPaginasAdmin; // TO DO OBV
+	char str1[20];
+	char str2[20];
+	sprintf(str1, "%d", pid);
+	sprintf(str2, "%d", pagina);
+	strcat(str1, str2);
+	int aux = atoi(str1);
+	printf("AUX = %i\n", aux);
+	int marcosNoAdmin = (config->marcos-1) - cantPaginasAdmin;
+	int frame = ( aux % marcosNoAdmin) + cantPaginasAdmin;
+	printf("PAGINA: %i | PID: %i | FRAME: %i\n", pagina, pid, frame);
+	return frame;
 }
 
 void inicializarPrograma(int pid, int cantidadPaginas, char* archivo, int tamanio)
@@ -789,19 +762,32 @@ int sePuedenAsignarPaginas(int pid, int cantidadDePaginas)
 
 void crearEntradas(int pid, int cantidadPaginas, int paginaInicial)
 {
-	entradaTabla* pointer = obtenerEntradaAproximada(pid, 0);
+	entradaTabla* pointer = obtenerEntradaAproximada(pid, paginaInicial);
 	int j = paginaInicial;
 	int i = 0;
 	while(i<cantidadPaginas)
 	{
+	//	pthread_mutex_lock(&memoriaSem);
 		if(pointer->pid == -1)
 		{
 			pointer->pid = pid;
 			pointer->pagina = j;
 			j++;
 			i++;
+			pointer = obtenerEntradaAproximada(pid, j);
 		}
-		pointer++;
+		else
+			pointer++;
+		if(!frameValido(pointer->frame))
+		{
+			puts("NULL");
+			pointer = (entradaTabla*)memoria+cantPaginasAdmin;
+		}
+
+//		pthread_mutex_unlock(&memoriaSem);
+
+
+
 	}
 
 }

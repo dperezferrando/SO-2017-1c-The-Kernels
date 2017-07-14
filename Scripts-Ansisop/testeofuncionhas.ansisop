@@ -1,0 +1,4 @@
+begin
+variables a
+wait SEM1
+end
