@@ -742,12 +742,14 @@ void recibirDeCPU(int socket, connHandle* master)
 				puts("PEDIDO MAYOR QUE EL TAMAÑO DE UNA PAGINA");
 				matarCuandoCorresponda(mr.pid,-8);
 				lSend(socket, NULL, -2, 0);
+				//free(po);
 				break;
 			}
 			else if (res == -2){
 				puts("NO HAY ESPACIO DEBE FINALIZAR PROCESO");
 				matarCuandoCorresponda(mr.pid,-9);
 				lSend(socket, NULL, -2, 0);
+				//free(po);
 				break;
 			}
 			*offset = (*offset)+sizeof(HeapMetadata);

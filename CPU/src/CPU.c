@@ -610,6 +610,7 @@ t_puntero reservar(t_valor_variable nroBytes){
 	Mensaje* respuesta = lRecv(kernel);
 	if(respuesta->header.tipoOperacion == -2)
 	{
+		free(pedido.data);
 		log_error(logFile, "[HEAP]: NO HAY ESPACIO DISPONIBLE O SE SUPERO EL TAMANIO MAXIMO");
 		estado = ABORTADO;
 		return 0;
@@ -620,7 +621,7 @@ t_puntero reservar(t_valor_variable nroBytes){
 	memcpy(&posicion.offset, respuesta->data+sizeof(int), sizeof(int));
 	t_puntero puntero = convertirADireccionReal(posicion);
 	destruirMensaje(respuesta);
-	free(pedido.data);
+	if(pedido.data!=NULL)free(pedido.data);
 	log_info(logFile, "[HEAP]: KERNEL DEVUELVE PUNTERO. DIR FISICA: %i | DIR LOGICA: PAG: %i | OFFSET: %i", puntero, posicion.pagina, posicion.offset);
 	return puntero;
 
