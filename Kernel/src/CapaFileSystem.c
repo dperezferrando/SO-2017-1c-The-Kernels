@@ -159,7 +159,7 @@ char* leerArchivo(fileInfo info)
 	return data;
 }
 
-bool escribirArchivo(fileInfo info, char* data)
+int escribirArchivo(fileInfo info, char* data)
 {
 	if(info.fd == 1)
 		imprimirPorPantalla(info, data);
@@ -172,6 +172,10 @@ bool escribirArchivo(fileInfo info, char* data)
 			return -1;
 		serializado pedidoEscritura = serializarPedidoEscritura(entrada->entradaGlobal->ruta, entrada->cursor, info.tamanio, data);
 		lSend(conexionFS, pedidoEscritura.data, 3, pedidoEscritura.size);
+		Mensaje* respuesta = lRecv(conexionFS);
+		if(respuesta->header.tipoOperacion == -4)
+			return -2;
+		destruirMensaje(respuesta);
 		free(pedidoEscritura.data);
 	}
 	return 1;
