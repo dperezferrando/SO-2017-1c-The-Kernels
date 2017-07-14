@@ -41,6 +41,8 @@ int main(int argc, char** argsv) {
 				else
 					estado = KILLED;
 			}
+			puts("---------------------------------------------------------------------------------------------------------------");
+			usleep(quantumSleep*1000);
 		}
 		log_info(logFile, "[PCB EXPULSADO]: PID: %i | ESTADO: %i\n", pcb->pid, estado);
 		serializado pcbSerializado = serializarPCB(pcb);
@@ -50,7 +52,7 @@ int main(int argc, char** argsv) {
 		destruirPCB(pcb);
 	}
 	free(config);
-//	close(kernel);
+	close(kernel);
 	close(memoria);
 	log_destroy(logFile);
 	return EXIT_SUCCESS;
@@ -95,8 +97,9 @@ int esperarPCB()
 	Mensaje* mensaje = lRecv(kernel);
 	if(mensaje->header.tipoOperacion == -1)
 		return mensaje->header.tipoOperacion;
-	pcb = deserializarPCB(mensaje->data);
-	log_info(logFile, "[PCB RECIBIDO]: PID: %i\n", pcb->pid);
+	pcb = deserializarPCB(mensaje->data+sizeof(int));
+	memcpy(&quantumSleep, mensaje->data, sizeof(int));
+	log_warning(logFile, "[PCB RECIBIDO]: PID: %i | QUANTUM SLEEP: %i\n", pcb->pid, quantumSleep);
 	int op = mensaje->header.tipoOperacion;
 	destruirMensaje(mensaje);
 	return op;

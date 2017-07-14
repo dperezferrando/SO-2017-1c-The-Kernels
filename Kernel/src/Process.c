@@ -140,7 +140,11 @@ int executeProcess(){
 		pthread_mutex_unlock(&mColaCPUS);
 		if(!test){
 			pcbSerializado = serializarPCB(pcb);
-			lSend(CPU, pcbSerializado.data, 1, pcbSerializado.size);
+			int quantumSleep = config->QUANTUM_SLEEP;
+			char* buff = malloc(sizeof(int)+pcbSerializado.size);
+			memcpy(buff, &quantumSleep, sizeof(int));
+			memcpy(buff+sizeof(int), pcbSerializado.data, pcbSerializado.size);
+			lSend(CPU, buff, 1, pcbSerializado.size + sizeof(int));
 			puts("PCB ENVIADO");
 			free(pcbSerializado.data);
 		}
