@@ -161,3 +161,4 @@ void recibirInformacion();
 serializado serializarPedido(int num);
 void sig_handler(int signo);
 void levantarLog();
+void escribirEnMemoria(posicionEnMemoria posicion, char* valor);

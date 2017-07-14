@@ -1,0 +1,11 @@
+begin
+variables a
+alocar a 100
+*a = 65
+prints n *a
+prints s a
+a = a+1
+*a = 66
+prints n *a
+prints s a
+end

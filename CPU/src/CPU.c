@@ -155,6 +155,7 @@ void imprimir(configFile* c){
 
 // FUNCIONES ANSISOP PARSER
 t_puntero definirVariable(t_nombre_variable identificador){
+	int limiteStack = pcb->cantPaginasCodigo+stackSize;
 	log_info(logFile, "[DEFINIR VARIABLE - STACK LEVEL: %i]: '%c'\n", pcb->nivelDelStack, identificador);
 	posicionEnMemoria unaPosicion = calcularPosicion(pcb->nivelDelStack);
 	variable* unaVariable = malloc(sizeof(variable));
@@ -165,6 +166,11 @@ t_puntero definirVariable(t_nombre_variable identificador){
 	else if(isalpha(unaVariable->identificador))
 		list_add(pcb->indiceStack[pcb->nivelDelStack].variables, unaVariable);
 	t_puntero direccionReal = convertirADireccionReal(unaVariable->posicion);
+	if(unaPosicion.pagina >= limiteStack)
+	{
+		log_error(logFile, "[DEFINIR VARIABLE]: STACK OVER FLOW PAPU - PROGRAMA ABORTADO");
+		estado = STKOF;
+	}
 	log_info(logFile, "[DEFINIR VARIABLE - STACK LEVEL: %i]: '%c' | PAG: %i | OFFSET: %i | Size: %i:\n", pcb->nivelDelStack, unaVariable->identificador, unaVariable->posicion.pagina, unaVariable->posicion.offset, unaVariable->posicion.size);
 	return direccionReal;
 
@@ -345,6 +351,11 @@ char* leerEnMemoria(posicionEnMemoria posicion)
 
 void escribirEnMemoria(posicionEnMemoria posicion, char* valor)
 {
+	if(estado == STKOF)
+	{
+		log_error(logFile, "[ESCRIBIR EN MEMORIA]: STACK OVERFLOW -> NO SE ESCRIBE NADA");
+		return;
+	}
 	log_info(logFile, "[ESCRIBIR EN MEMORIA]: PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %s\n", posicion.pagina, posicion.offset, posicion.size, valor);
 	int limiteStack = pcb->cantPaginasCodigo+stackSize;
 	int total = posicion.offset + posicion.size;
@@ -362,26 +373,27 @@ void escribirEnMemoria(posicionEnMemoria posicion, char* valor)
 		int segundoSize;
 		segundoSize = total-tamanioPagina;
 		posicion.size -= segundoSize;
-		int valorAEnviar;
+	/*	int valorAEnviar;
 		int* a = &valor;
-		char* puntero = (char*)a;
-		memcpy(&valorAEnviar, puntero, posicion.size);
-		puntero += posicion.size;
+		char* puntero = (char*)a;*/
+	/*	memcpy(&valorAEnviar,valor, posicion.size);
+		puntero += posicion.size;*/
 		log_info(logFile, "[ESCRIBIR EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
-		enviarPedidoEscrituraMemoria(posicion, valorAEnviar);
+		enviarPedidoEscrituraMemoria(posicion, valor);
+		valor += posicion.size;
 		posicion.pagina++;
 		posicion.offset = 0;
 		posicion.size = segundoSize;
-		memcpy(&valorAEnviar, puntero, posicion.size);
+		//memcpy(&valorAEnviar, puntero, posicion.size);
 		log_info(logFile, "[ESCRIBIR EN MEMORIA - PEDIDO PARTIDO]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
-	/*	if(posicion.pagina >= limiteStack)
+		if(posicion.pagina >= limiteStack)
 		{
 			log_error(logFile, "[ESCRIBIR EN MEMORIA]: STACK OVER FLOW PAPU - PROGRAMA ABORTADO");
 			estado = STKOF;
 			return;
-		}*/
+		}
 
-		enviarPedidoEscrituraMemoria(posicion, valorAEnviar);
+		enviarPedidoEscrituraMemoria(posicion, valor);
 
 	}
 }
@@ -474,6 +486,12 @@ void irAlLabel(t_nombre_etiqueta nombre){
 	log_info(logFile, "[IR A LABEL - STACK LEVEL: %i]\n", pcb->nivelDelStack);
 	t_puntero_instruccion instruccionParaPCB;
 	instruccionParaPCB = metadata_buscar_etiqueta(nombre, pcb->indiceEtiqueta, pcb->sizeIndiceEtiquetas);
+	if(instruccionParaPCB == -1)
+	{
+		log_error(logFile, "[IR A LABEL]: MOSTRO ESTE SCRIPT ESTA ROTISIMO. SALU2");
+		estado = ABORTADO;
+		return;
+	}
 	pcb->programCounter = instruccionParaPCB-1;
 	log_info(logFile, "[IR A LABEL - STACK LEVEL: %i]: '%s' | PC: %i\n", pcb->nivelDelStack, nombre, pcb->programCounter);
 }
