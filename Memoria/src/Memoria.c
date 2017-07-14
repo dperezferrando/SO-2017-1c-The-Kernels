@@ -602,7 +602,6 @@ char* leerDondeCorresponda(int pid, posicionEnMemoria* posicion)
 void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
 {
 	pthread_mutex_lock(&cacheSem);
-	char* linea;
 	if(config->entradas_cache > 0 && existeEnCache(pid, pedido->posicion.pagina))
 	{
 		printf("[CACHE]: EXISTE EN CACHE PAGINA: %i\n", pedido->posicion.pagina);
@@ -616,8 +615,11 @@ void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
 		usleep(1000*config->retardo_memoria);
 		pthread_mutex_unlock(&retardoSem);
 		puts("[CACHE]: SLEEP LISTO, SOLICITO Y AGREGO A CACHE");
-		if(!escribirBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor))
-			puts("[CACHE]: ERROR (ESTO DEBERIA SER UNREACHABLE, SI LO VES SE ROMPIO TODO)");
+		int estado = escribirBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor);
+		if(estado == 0)
+			puts("[CACHE]: OFFSET MAYOR A MARCO (ESTO DEBERIA SER UNREACHABLE, SI LO VES SE ROMPIO TODO)");
+		else if(estado == -1)
+			puts( "[CACHE]: NO EXISTE LA PAGINA EN MEMORIA - POSIBLEMENTE EL PROCESO HAYA SIDO AJUSTICIADO");
 		else
 		{
 			puts("[CACHE]: SE ESCRIBIO EN MEMORIA - AGREGANDO A CACHE LA PAGINA");
@@ -689,12 +691,17 @@ entradaTabla* obtenerEntradaDe(int pid, int pagina)
 	entradaTabla* pointer = obtenerEntradaAproximada(pid, pagina);
 	while((pointer->pid != pid || pointer->pagina != pagina) && frameValido(pointer->frame))
 		pointer++;
-	return pointer;
+	if(pointer->pid != pid || pointer->pagina != pagina)
+		return NULL;
+	else
+		return pointer;
 }
 
 char* obtenerPosicionAOperar(int pid, int pagina, int offset)
 {
 	entradaTabla* pointer = obtenerEntradaDe(pid, pagina);
+	if(pointer == NULL)
+		return NULL;
 	pthread_mutex_lock(&memoriaSem);
 	char* punteroAFrame = memoria + (pointer->frame*config->marco_size)+offset;
 	pthread_mutex_unlock(&memoriaSem);
@@ -716,6 +723,8 @@ int escribirBytes(int pid, int pagina, int offset, int tamanio, void* buffer)
 	if(tamanio+offset > config->marco_size)
 		return 0;
 	char* punteroAFrame = obtenerPosicionAOperar(pid, pagina, offset);
+	if(punteroAFrame == NULL)
+		return -1;
 	pthread_mutex_lock(&memoriaSem);
 	memcpy(punteroAFrame, buffer, tamanio);
 	pthread_mutex_unlock(&memoriaSem);
