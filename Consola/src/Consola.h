@@ -177,3 +177,4 @@ void desconectarPrograma(Programa* programa);
 void mensajeCerrandoProcesos();
 void realizarDesconexion();
 void informarDesconexion();
+bool esUnArchivo(char*);

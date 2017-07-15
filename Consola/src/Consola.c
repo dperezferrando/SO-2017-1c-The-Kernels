@@ -26,23 +26,23 @@ void atenderPedidos() {
 }
 
 void finalizarProceso() {
-	//desconectar();
-	//enviarAlKernel(&nada, FINALIZAR);
-	//sem_wait(&finalizacionHiloReceptor);
 	liberar(config);
 	close(kernel);
 	destruirListaDeProgramas();
+	mensajeCerrandoProcesos();
+	//sleep(1);
+	mensajeConsolaDesconectada();
 }
 
 void atenderInstrucciones() {
 	Instruccion instruccion;
 	instruccion.comando = 0;
-	while(instruccion.comando != DISCONNECT) {
+	while(instruccion.comando != EXIT) {
 		instruccion = obtenerInstruccion();
 		switch(instruccion.comando) {
 			case RUN: iniciar(instruccion.argumento); break;
 			case CLOSE: cerrar(instruccion.argumento); break;
-			case DISCONNECT: desconectar(); break;
+			case EXIT: desconectar(); break;
 			case CLEAR: limpiar(); break;
 			case LIST: mostrarLista(); break;
 			case HELP: mensajeAyuda(); break;
@@ -82,10 +82,7 @@ void desbloquearHilos() {
 
 void desconectar() {
 	enviarAlKernel(&nada, ABORTAR_PROCESO);
-	puts("esperando para morir");
 	sem_wait(&finalizacionHiloReceptor);
-	puts("pase la finalizacion");
-
 }
 
 
@@ -94,8 +91,6 @@ void abortar() {
 		sem_post(&destruccionMensaje);
 	else {
 	desbloquearHilos();
-	mensajeConsolaDesconectada();
-	mensajeIngresar();
 	}
 }
 
@@ -133,7 +128,7 @@ void iniciarPrograma(Programa* programa) {
 void hiloPrograma(Programa* programa) {
 	pthread_detach(pthread_self());
 	FILE* archivo = abrirArchivo(programa->path);
-	if(archivoValido(archivo)) {
+	if(archivoValido(archivo) && esUnArchivo(programa->path)) {
 		enviarArchivoAlKernel(archivo);
 		sem_wait(&nuevoMensaje);
 		sem_wait(&mutexMensaje);
@@ -151,8 +146,10 @@ void hiloPrograma(Programa* programa) {
 			pthread_exit(NULL);
 		}
 	}
-	else
+	else {
 		mensajeErrorArchivo();
+		free(programa);
+	}
 }
 
 void esperarMensajes(Programa* programa) {
@@ -164,7 +161,7 @@ void esperarMensajes(Programa* programa) {
 			case NUEVO_MENSAJE:
 				imprimirMensaje(programa->pid, mensaje->data); programa->impresiones++; sem_post(&mutexMensaje); sem_post(&destruccionMensaje);
 				break;
-			case CERRAR_PROCESO: sem_post(&mutexMensaje);cerrarPrograma(programa); estado = DESACTIVADO; break;
+			case CERRAR_PROCESO: sem_post(&mutexMensaje);cerrarPrograma(programa); mensajeIngresar(); estado = DESACTIVADO; break;
 			case ABORTAR_PROCESO: sem_post(&mutexMensaje); desconectarPrograma(programa); estado = DESACTIVADO; break;
 		}
 	}
@@ -212,8 +209,6 @@ void escuchandoKernel() {
 			mensaje->data = realloc(mensaje->data, len);
 			memcpy(mensaje->data, msg, len);
 			free(msg);
-			//imprimirMensaje((char*)mensaje->data);
-			//			sem_post(&destruccionMensaje);
 			programa = buscarProgramaPorPidNumerico(pid);
 			sem_post(&programa->semaforo);
 
@@ -226,7 +221,7 @@ void escuchandoKernel() {
 			sem_post(&mutexLista);
 			sem_post(&programa->semaforo);
 			break;
-		case ABORTAR_PROCESO:puts("entre a abortar"); abortar(); estado =DESACTIVADO; break;//puts("paso desactivado"); printf("estado %i\n", estado);  break;
+		case ABORTAR_PROCESO: abortar(); estado =DESACTIVADO; break;
 		case SIN_ESPACIO: sem_post(&nuevoMensaje); break;
 		case FINALIZAR: estado = DESACTIVADO; sem_post(&destruccionMensaje) ;break;
 		case ERROR: finalizarPorDesconexion();
@@ -237,7 +232,6 @@ void escuchandoKernel() {
 		sem_post(&mutexControl);
 	}
 	sem_post(&finalizacionHiloReceptor);
-	puts("MURIO HILO");
 }
 
 
@@ -382,8 +376,6 @@ int identificarComando(char* comando) {
 		return RUN;
 	else if(sonIguales(comando, C_CLOSE))
 		return CLOSE;
-	else if(sonIguales(comando, C_DISCONNECT))
-		return DISCONNECT;
 	else if(sonIguales(comando, C_EXIT))
 		return EXIT;
 	else if(sonIguales(comando, C_CLEAR))
@@ -448,9 +440,11 @@ void imprimirMensaje(int pid, char* data) {
 
 void mensajeInicioPrograma(int pid) {
 	sem_wait(&mutexOutput);
+	puts("------------------------------------------------------------");
 	printf("PID RECIBIDO: %i\n", pid);
 	puts("ESPERANDO IMPRESIONES POR PANTALLA...");
 	puts("------------------------------------------------------------");
+	mensajeIngresar();
 	sem_post(&destruccionMensaje);
 	sem_post(&mutexOutput);
 }
@@ -480,7 +474,7 @@ char* leerArchivo(FILE* archivo) {
 void enviarArchivoAlKernel(FILE* archivo) {
 	char* texto = leerArchivo(archivo);
 	cerrarArchivo(archivo);
-	mensajeContenidoArchivo(texto);
+	//mensajeContenidoArchivo(texto);
 	lSend(kernel, texto, 1, strlen(texto));
 	free(texto);
 }
@@ -569,10 +563,14 @@ void imprimirConfig(configFile* config) {
 	sem_post(&mutexOutput);
 }
 
+bool esUnArchivo(char* c) {
+	return string_contains(c, ".");
+}
+
 //-----------------------------------MENSAJES CONSOLA-----------------------------------
 
 void mensajeIngresar() {
-	printf("Consola: ");
+	puts("INGRESE UN COMANDO:");
 }
 
 void mensajeErrorComando() {
@@ -643,6 +641,7 @@ void mensajeNoHayProcesos() {
 	puts("------------------------------------------------------------");
 	puts("NO HAY PROCESOS EN EJECUCION");
 	puts("------------------------------------------------------------");
+	mensajeIngresar();
 	sem_post(&mutexOutput);
 }
 
@@ -670,10 +669,9 @@ void mensajeAyuda() {
 	puts("------------------------------------------------------------");
 	puts("RUN <RUTA_ARCHIVO> ---> INICIA UN PROCESO");
 	puts("CLOSE <ID_PROCESO> ---> FINALIZA UN PROCESO");
-	puts("DISCONNECT -----------> DESCONECTA TODOS LOS PROCESOS");
 	puts("CLEAR ----------------> LIMPIA LA PANTALLA");
 	puts("LIST -----------------> MUESTRA LOS PROCESOS EN EJECUCION");
-	puts("EXIT -----------------> SALIR DEL PROGRAMA");
+	puts("EXIT -----------------> DESCONECTA LA CONSOLA");
 	puts("------------------------------------------------------------");
 	mensajeIngresar();
 	sem_post(&mutexOutput);
@@ -690,6 +688,7 @@ void mensajeEspera() {
 
 void mensajeNoHayEspacio() {
 	sem_wait(&mutexOutput);
+	puts("------------------------------------------------------------");
 	puts("ERROR: NO HAY ESPACIO DISPONIBLE EN MEMORIA");
 	puts("------------------------------------------------------------");
 	sem_post(&mutexOutput);
