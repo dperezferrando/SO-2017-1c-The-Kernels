@@ -58,7 +58,7 @@ void matarDesdeProcessControl(ProcessControl*);
 void storeVariable(PageOwnership*, char*, int);
 void handleSockets(connHandle*, socketHandler);
 
-
+int semaforoValido(char* sem);
 void* getMemoryPage(int, int);
 void* defragging(int, int , t_list*);
 void* serializarScript(int, int, int, int*, void*);

@@ -111,7 +111,9 @@ t_list* listaDeColasSemaforos;
 t_list* tablaGlobalFS;
 t_list* tablasDeProcesosFS;
 t_list* globalVariables;
+t_list* nombresSem;
 t_log* logFile;
+
 
 configFile* config;
 

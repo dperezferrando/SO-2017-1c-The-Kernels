@@ -45,6 +45,8 @@ imprimirConfig(config);
 
 
 
+
+
 configFile* readConfigFile(t_config* configHandler)//la unica manera de generalizar esto es muy chota y seria incluyendo el tipo de dato ademas del nombre en un array
 {
 	configFile* config = malloc(sizeof(configFile));

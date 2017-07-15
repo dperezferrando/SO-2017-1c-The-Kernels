@@ -205,6 +205,13 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 	memcpy(data + sizeof(int) + len, &valor, sizeof(int));
 	memcpy(data + sizeof(int)*2 + len, &pcb->pid, sizeof(int));
 	lSend(kernel, data, ASIGNARCOMPARTIDA, size);
+	Mensaje* respuesta = lRecv(kernel);
+	if(respuesta->header.tipoOperacion == -3)
+	{
+		estado = ABORTADO;
+		log_error(logFile, "[ASIGNAR COMPARTIDA]: VARIABLE INVALIDA");
+	}
+	destruirMensaje(respuesta);
 	free(data);
 /*	Mensaje* respuesta = lRecv(kernel);
 	int valorAsignado;
@@ -226,8 +233,17 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida nombre){
 	lSend(kernel, data, OBTENERCOMPARTIDA, size);
 	Mensaje* respuesta = lRecv(kernel);
 	int valor;
-	memcpy(&valor, respuesta->data, sizeof(int));
-	log_info(logFile, "[VALOR COMPARTIDA]: EL VALOR DE %s es: %i\n", nombre, valor);
+	if(respuesta->header.tipoOperacion == -3)
+	{
+		estado = ABORTADO;
+		log_error(logFile, "[VALOR COMPARTIDA]: VARIABLE INVALIDA");
+	}
+	else
+	{
+
+		memcpy(&valor, respuesta->data, sizeof(int));
+		log_info(logFile, "[VALOR COMPARTIDA]: EL VALOR DE %s es: %i\n", nombre, valor);
+	}
 	destruirMensaje(respuesta);
 	free(data);
 	return valor;
@@ -570,13 +586,21 @@ void wait(t_nombre_semaforo nombre){
 	//El kernel me responde si tengo que bloquear
 	Mensaje *m = lRecv(kernel);
 	//Bloqueado = 3, No bloqueado = 0
-	int bloqueado = m->header.tipoOperacion;
-	if(bloqueado == BLOQUEADO){
-		log_info(logFile, "[WAIT - PROCESO BLOQUEADO POR SEMAFORO]");
-		//Envio el pid al kernel para que lo guarde en la cola del semaforo
-	//	lSend(kernel, &pcb->pid, WAIT, sizeof(int));
-		//Para salir del while
-		estado = BLOQUEADO;
+	if(m->header.tipoOperacion == -3)
+	{
+		estado = ABORTADO;
+		log_error(logFile, "[WAIT] SEMAFORO INVALIDO");
+	}
+	else
+	{
+		int bloqueado = m->header.tipoOperacion;
+		if(bloqueado == BLOQUEADO){
+			log_info(logFile, "[WAIT - PROCESO BLOQUEADO POR SEMAFORO]");
+			//Envio el pid al kernel para que lo guarde en la cola del semaforo
+		//	lSend(kernel, &pcb->pid, WAIT, sizeof(int));
+			//Para salir del while
+			estado = BLOQUEADO;
+		}
 	}
 	free(sem.data);
 	destruirMensaje(m);
@@ -585,7 +609,14 @@ void wait(t_nombre_semaforo nombre){
 void signalSem(t_nombre_semaforo nombre){
 	serializado sem = serializarSemaforo(nombre);
 	lSend(kernel, sem.data, SIGNAL, sem.size);
+	Mensaje* respuesta = lRecv(kernel);
+	if(respuesta->header.tipoOperacion == -3)
+	{
+		estado = ABORTADO;
+		log_error(logFile, "[SIGNAL] SEMAFORO INVALIDO");
+	}
 	free(sem.data);
+	destruirMensaje(respuesta);
 }
 
 serializado serializarSemaforo(char* nombre)
