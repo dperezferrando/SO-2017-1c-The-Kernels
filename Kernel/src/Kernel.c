@@ -22,8 +22,6 @@ int main(int argc, char** argsv) {
 
 	puts("!!!Hello Kernel!!!\n"); /* prints !!!Hello World!!! */
 	config = configurate(RUTA, readConfigFile, keys);
-	nombresSem = list_create();
-	agregarSemsAlista();
 	levantarLog();
 	initializeGlobalVariables();
 	if(argc > 1 && strcmp(argsv[1],"-test")==0){
@@ -53,19 +51,6 @@ int main(int argc, char** argsv) {
 	return 0;
 }
 
-void agregarSemsAlista()
-{
-	int i = 0;
-	while(config->SEM_IDS[i] != NULL)
-	{
-		int size = strlen(config->SEM_IDS[i])+1;
-		char* nombre = malloc(size);
-		memcpy(nombre, config->SEM_IDS[i], size);
-		list_add(nombresSem, nombre);
-		i++;
-	}
-}
-
 void levantarLog()
 {
 	if(fopen(config->log, "r") != NULL)
@@ -82,7 +67,6 @@ void morirDecentemente()
 	destruirListaDeColasSemaforos();
 	destruirCapaMemoria();
 	destruirVariablesGlobales();
-	list_destroy_and_destroy_elements(nombresSem, free);
 }
 
 void destruirVariableGlobal(GlobalVariable* gb)
@@ -144,5 +128,3 @@ void initializeGlobalVariables(){
 		list_add(globalVariables,gb);
 	}
 }
-
-

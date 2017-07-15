@@ -707,13 +707,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			memcpy(nombre,mensaje->data+sizeof(int)*2,len);
 			sumarSyscall(pid);
 			GlobalVariable * gb= findGlobalVariable(nombre);
-			if(gb == NULL)
-			{
-				lSend(socket, NULL, -3, 0);
-				matarCuandoCorresponda(pid, -20);
-			}
-			else
-				lSend(socket,&gb->value,104,sizeof(int));
+			lSend(socket,&gb->value,104,sizeof(int));
 			free(nombre);
 			break;
 		}
@@ -730,16 +724,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			memcpy(&pid, mensaje->data+sizeof(int)*2 + len, sizeof(int));
 			sumarSyscall(pid);
 			GlobalVariable * gb= findGlobalVariable(nombre);
-			if(gb == NULL)
-			{
-				lSend(socket, NULL, -3, 0);
-				matarCuandoCorresponda(pid, -20);
-			}
-			else
-			{
-				lSend(socket, NULL, 104, 0);
-				gb->value= newValue;
-			}
+			gb->value= newValue;
 			free(nombre);
 			break;
 		}
@@ -805,13 +790,8 @@ void recibirDeCPU(int socket, connHandle* master)
 			char* sem = malloc(len);
 			memcpy(sem, mensaje->data+sizeof(int)*2,len);
 			sumarSyscall(*pid);
-			if(!semaforoValido(sem))
-			{
-				log_info(logFile, "SEMAFORO INVALIDO");
-				lSend(socket, NULL, -3, 0);
-				matarCuandoCorresponda(*pid, -20);
-			}
-			else if(obtenerValorSemaforo(sem) <= 0) {
+
+			if(obtenerValorSemaforo(sem) <= 0) {
 
 				//Aviso a CPU que hay bloqueo
 				lSend(socket, mensaje->data, 3, sizeof(int));
@@ -835,24 +815,16 @@ void recibirDeCPU(int socket, connHandle* master)
 			memcpy(&len, mensaje->data+sizeof(int), sizeof(int));
 			char* sem = malloc(len);
 			memcpy(sem, mensaje->data+sizeof(int)*2,len);
+			int pos = obtenerPosicionSemaforo(sem);
 			sumarSyscall(pid);
-			if(!semaforoValido(sem))
-			{
-				lSend(socket, NULL, -3, 0);
-				log_info(logFile, "SEMAFORO INVALIDO");
-				matarCuandoCorresponda(pid, -20);
-			}
-			else
-			{
-				lSend(socket, NULL, 104, 0);
-				int pos = obtenerPosicionSemaforo(sem);
-				if(laColaDelSemaforoEstaVacia(pos))
-					signalSemaforo(sem);
-				else {
-					int pidDesbloq = quitarDeColaDelSemaforo(sem);
-					fromBlockedToReady(pidDesbloq);
 
-				}
+
+			if(laColaDelSemaforoEstaVacia(pos))
+				signalSemaforo(sem);
+			else {
+				int pidDesbloq = quitarDeColaDelSemaforo(sem);
+				fromBlockedToReady(pidDesbloq);
+
 			}
 			free(sem);
 			break;
@@ -1005,15 +977,6 @@ void recibirDeCPU(int socket, connHandle* master)
 	}
 	destruirMensaje(mensaje);
 
-}
-
-int semaforoValido(char* sem)
-{
-	bool mismoSem(char* unSem)
-	{
-		return !strcmp(sem, unSem);
-	}
-	return list_find(nombresSem, mismoSem) != NULL;
 }
 
 void killCPUOwnedProcess(socket){
