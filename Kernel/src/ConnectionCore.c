@@ -929,7 +929,7 @@ void recibirDeCPU(int socket, connHandle* master)
 				lSend(socket, NULL, -3 ,0);
 				matarCuandoCorresponda(info.pid, -2);
 			}
-			else if(estado == -2)
+			else if(estado == -4)
 			{
 				log_info(logFile,"EL FILESYSTEM TUVO UN ERROR (POSIBLEMENTE NO TIENE ESPACIO)");
 				lSend(socket, NULL, -3, 0);
@@ -960,6 +960,12 @@ void recibirDeCPU(int socket, connHandle* master)
 				log_info(logFile,"CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
 				lSend(socket, NULL, -3 ,0);
 				matarCuandoCorresponda(info.pid, -2);
+			}
+			else if(data == -2)
+			{
+				log_info(logFile,"EL FILESYSTEM TUVO UN ERROR (POSIBLEMENTE NO TIENE ESPACIO)");
+				lSend(socket, NULL, -3, 0);
+				matarCuandoCorresponda(info.pid, -20);
 			}
 			else
 			{

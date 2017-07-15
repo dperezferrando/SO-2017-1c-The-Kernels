@@ -212,9 +212,9 @@ void esperarOperacion()
 				if(crearArchivo(path) == -1){
 					lSend(conexion, NULL, -4, 0);
 					puts("CREACION FALLO");
-					free(path);
-					break;
 				}
+				else
+					lSend(conexion, NULL, 104, 0);
 				free(path);
 				break;
 			}

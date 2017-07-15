@@ -733,7 +733,7 @@ t_descriptor_archivo abrir(t_direccion_archivo ruta , t_banderas flags){
 	lSend(kernel, rutaYFlagsSerializados.data, ABRIR_ARCHIVO, rutaYFlagsSerializados.size);
 	Mensaje* mensaje = lRecv(kernel);
 	if (mensaje->header.tipoOperacion == -3) {
-		log_error(logFile, "[ABRIR ARCHIVO]: NO EXISTE ARCHIVO");
+		log_error(logFile, "[ABRIR ARCHIVO]: NO EXISTE ARCHIVO Y/O NO HAY ESPACIO EN DISCO");
 		estado = ABORTADO;
 		fileDescriptor = -1;
 	}

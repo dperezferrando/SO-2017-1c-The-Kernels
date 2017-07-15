@@ -78,7 +78,18 @@ entradaTablaGlobalFS* agregarEntradaGlobal(char* ruta, char* permisos)
 		else
 		{
 			if(strstr(permisos, "c"))
+			{
 				lSend(conexionFS, ruta, 4, strlen(ruta));
+				Mensaje* respuesta = lRecv(conexionFS);
+				if(respuesta->header.tipoOperacion == -4)
+				{
+					destruirMensaje(respuesta);
+					return NULL;
+				}
+				destruirMensaje(respuesta);
+
+			}
+
 		}
 	}
 	entradaTablaGlobalFS* entrada = malloc(sizeof(entradaTablaGlobalFS));
@@ -153,6 +164,8 @@ char* leerArchivo(fileInfo info)
 	lSend(conexionFS, pedidoLectura.data, 2, pedidoLectura.size);
 	free(pedidoLectura.data);
 	Mensaje* respuesta = lRecv(conexionFS);
+	if(respuesta->header.tipoOperacion == -4)
+		return -2;
 	char* data = malloc(respuesta->header.tamanio);
 	memcpy(data, respuesta->data, respuesta->header.tamanio);
 	destruirMensaje(respuesta);
