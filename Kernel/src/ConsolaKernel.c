@@ -241,7 +241,7 @@ char* leerCaracteresEntrantes() {
 	cadena[i] = '\0';
 	return cadena;
 }
-
+//a
 void mostrarTablaDeArchivosProceso(int pid)
 {
 	tablaDeProceso* tabla = encontrarTablaDelProceso(pid);
