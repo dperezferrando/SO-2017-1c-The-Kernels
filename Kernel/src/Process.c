@@ -78,8 +78,10 @@ void killProcess(int PID,int exitCode){
 	_modifyExitCode(PID,exitCode);
 	informarMemoryLeaks(PID);
 	freeProcessPages(PID);
-	if(checkMultiprog() && queue_size(colaNew) >0)
+	if(checkMultiprog() && queue_size(colaNew) >0){
 		readyProcess();
+		//executeProcess(); no corresponde
+	}
 
 }
 
@@ -129,6 +131,7 @@ void newProcess(PCB* pcb, int consola, char* script, int tamanioScript)
 	pc->pid= pcb->pid;
 	pc->state= 0;
 	pc->consola = consola;
+	pc->CPU= -1;
 	pc->toBeKilled = 0;
 	pc->script = malloc(tamanioScript);
 	pc->rafagasEj = 0;
@@ -193,6 +196,8 @@ int executeProcess(){
 			memcpy(buff, &quantumSleep, sizeof(int));
 			memcpy(buff+sizeof(int), pcbSerializado.data, pcbSerializado.size);
 			lSend(CPU, buff, 1, pcbSerializado.size + sizeof(int));
+			ProcessControl* pc = PIDFind(pcb->pid);
+			pc->CPU= CPU;
 			puts("PCB ENVIADO");
 			free(pcbSerializado.data);
 			free(buff);
@@ -203,6 +208,10 @@ int executeProcess(){
 
 
 void cpuReturnsProcessTo(PCB* newPCB, int state){
+	ProcessControl* pc = PIDFind(newPCB->pid);
+	pthread_mutex_lock(&mProcess);
+	pc->CPU=-1;
+	pthread_mutex_unlock(&mProcess);
 	switch(state){
 		case 1:
 			fromExecuteToReady(newPCB->pid);

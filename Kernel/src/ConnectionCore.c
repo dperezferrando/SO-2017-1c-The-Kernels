@@ -646,8 +646,10 @@ void recibirDeCPU(int socket, connHandle* master)
 	{
 		case -1:
 			printf("SE DESCONECTA CPU SOCKET: %i\n", socket);
+			killCPUOwnedProcess(socket);
 			closeHandle(socket, master);
 			removerCPUDeCola(socket);
+			readyProcess();
 			break;
 		case 1:
 			pcb = recibirPCB(mensaje);
@@ -970,6 +972,20 @@ void recibirDeCPU(int socket, connHandle* master)
 	}
 	destruirMensaje(mensaje);
 
+}
+
+void killCPUOwnedProcess(socket){
+	bool CPUFind(ProcessControl* pc){
+		return pc->CPU==socket;
+	}
+	int i;
+	pthread_mutex_lock(&mProcess);
+	t_list* toKill= list_filter(process,&CPUFind);
+	pthread_mutex_unlock(&mProcess);
+	for(i=0;i<list_size(toKill);i++){
+		ProcessControl* pc= list_get(toKill,i);
+		killProcess(pc->pid,-20);
+	}
 }
 
 void sumarSyscall(int pid)

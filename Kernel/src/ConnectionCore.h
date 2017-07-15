@@ -42,18 +42,19 @@ bool isListener(int, connHandle);
 bool _usedFragment(HeapMetadata*);
 PageOwnership* pageToStore(MemoryRequest mr);
 
-void mostrarMetadata(HeapMetadata* hm);
-void matarDesdeProcessControl(ProcessControl*);
 void aceptarNuevoCPU(int);
 void enviarInformacion(int);
+void killCPUOwnedProcess(int);
 void closeHandle(int, connHandle*);
 void recibirDeCPU(int, connHandle*);
 void matarCuandoCorresponda(int, int);
+void mostrarMetadata(HeapMetadata* hm);
 void recibirDeConsola(int, connHandle*);
 void defragPage(t_list*, int, int, int);
 void _modifyMemoryPage(int,int,int,void*);
 void calculateFreeSpace(t_list*,int,void*);
 void initializePageOwnership(PageOwnership*);
+void matarDesdeProcessControl(ProcessControl*);
 void storeVariable(PageOwnership*, char*, int);
 void handleSockets(connHandle*, socketHandler);
 

@@ -24,6 +24,7 @@ struct ProcessControl{
 	int state; //0-> new, 1->ready, 2->execute, 3-> blocked, 4-> suspended, 9-> killed, //NULL-> no fue aceptado todavia//
 	int consola;
 	int toBeKilled; // 0 = NO otro numero = EXIT CODE
+	int CPU;
 	char* script;
 	int tamanioScript;
 	int rafagasEj;
