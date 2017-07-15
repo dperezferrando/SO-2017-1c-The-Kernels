@@ -68,7 +68,8 @@ void killProcess(int PID,int exitCode){
 		lSend(pc->consola, &PID, -2, sizeof(int));
 	else // Si murio por otra razon le aviso tambien a memoria
 	{
-		lSend(pc->consola, &PID, 9, sizeof(int));
+		if(exitCode == -7)
+			lSend(pc->consola, &PID, 9, sizeof(int));
 		lSend(conexionMemoria, &PID, 9, sizeof(int));
 	}
 	//Verifica si esta en alguna de cola de algun semaoforo

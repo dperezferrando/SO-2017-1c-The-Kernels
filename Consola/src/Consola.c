@@ -26,9 +26,9 @@ void atenderPedidos() {
 }
 
 void finalizarProceso() {
-	desconectar();
-	enviarAlKernel(&nada, FINALIZAR);
-	sem_wait(&finalizacionHiloReceptor);
+	//desconectar();
+	//enviarAlKernel(&nada, FINALIZAR);
+	//sem_wait(&finalizacionHiloReceptor);
 	liberar(config);
 	close(kernel);
 	destruirListaDeProgramas();
@@ -37,7 +37,7 @@ void finalizarProceso() {
 void atenderInstrucciones() {
 	Instruccion instruccion;
 	instruccion.comando = 0;
-	while(instruccion.comando != EXIT) {
+	while(instruccion.comando != DISCONNECT) {
 		instruccion = obtenerInstruccion();
 		switch(instruccion.comando) {
 			case RUN: iniciar(instruccion.argumento); break;
@@ -82,6 +82,10 @@ void desbloquearHilos() {
 
 void desconectar() {
 	enviarAlKernel(&nada, ABORTAR_PROCESO);
+	puts("esperando para morir");
+	sem_wait(&finalizacionHiloReceptor);
+	puts("pase la finalizacion");
+
 }
 
 
@@ -222,7 +226,7 @@ void escuchandoKernel() {
 			sem_post(&mutexLista);
 			sem_post(&programa->semaforo);
 			break;
-		case ABORTAR_PROCESO: abortar(); break;
+		case ABORTAR_PROCESO:puts("entre a abortar"); abortar(); estado =DESACTIVADO; break;//puts("paso desactivado"); printf("estado %i\n", estado);  break;
 		case SIN_ESPACIO: sem_post(&nuevoMensaje); break;
 		case FINALIZAR: estado = DESACTIVADO; sem_post(&destruccionMensaje) ;break;
 		case ERROR: finalizarPorDesconexion();
@@ -233,6 +237,7 @@ void escuchandoKernel() {
 		sem_post(&mutexControl);
 	}
 	sem_post(&finalizacionHiloReceptor);
+	puts("MURIO HILO");
 }
 
 
