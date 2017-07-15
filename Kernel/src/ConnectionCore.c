@@ -710,7 +710,13 @@ void recibirDeCPU(int socket, connHandle* master)
 			memcpy(nombre,mensaje->data+sizeof(int)*2,len);
 			sumarSyscall(pid);
 			GlobalVariable * gb= findGlobalVariable(nombre);
-			lSend(socket,&gb->value,104,sizeof(int));
+			if(gb == NULL)
+			{
+				lSend(socket, NULL, -3, 0);
+				matarCuandoCorresponda(pid, -20);
+			}
+			else
+				lSend(socket,&gb->value,104,sizeof(int));
 			free(nombre);
 			break;
 		}
@@ -727,7 +733,16 @@ void recibirDeCPU(int socket, connHandle* master)
 			memcpy(&pid, mensaje->data+sizeof(int)*2 + len, sizeof(int));
 			sumarSyscall(pid);
 			GlobalVariable * gb= findGlobalVariable(nombre);
-			gb->value= newValue;
+			if(gb == NULL)
+			{
+				lSend(socket, NULL, -3, 0);
+				matarCuandoCorresponda(pid, -20);
+			}
+			else
+			{
+				lSend(socket, NULL, 104, 0);
+				gb->value= newValue;
+			}
 			free(nombre);
 			break;
 		}
@@ -794,7 +809,14 @@ void recibirDeCPU(int socket, connHandle* master)
 			memcpy(sem, mensaje->data+sizeof(int)*2,len);
 			puts("OBTENER VALOR");
 			sumarSyscall(*pid);
-			if(obtenerValorSemaforo(sem) <= 0) {
+			int valor = obtenerValorSemaforo(sem);
+			if(valor == 5000)
+			{
+				printf("SEMAFORO INVALIDO");
+				lSend(socket, NULL, -3, 0);
+				matarCuandoCorresponda(*pid, -20);
+			}
+			else if(valor <= 0) {
 				//Aviso a CPU que hay bloqueo
 				lSend(socket, mensaje->data, 3, sizeof(int));
 				//CPU me envia el pid a bloquearse
@@ -819,11 +841,21 @@ void recibirDeCPU(int socket, connHandle* master)
 			memcpy(sem, mensaje->data+sizeof(int)*2,len);
 			int pos = obtenerPosicionSemaforo(sem);
 			sumarSyscall(pid);
-			if(laColaDelSemaforoEstaVacia(pos))
-				signalSemaforo(sem);
-			else {
-				int pidDesbloq = quitarDeColaDelSemaforo(sem);
-				fromBlockedToReady(pidDesbloq);
+			if(pos == -1)
+			{
+				lSend(socket, NULL, -3, 0);
+				puts("SEMAFORO INVALIDO");
+				matarCuandoCorresponda(pid, -20);
+			}
+			else
+			{
+				lSend(socket, NULL, 104, 0);
+				if(laColaDelSemaforoEstaVacia(pos))
+					signalSemaforo(sem);
+				else {
+					int pidDesbloq = quitarDeColaDelSemaforo(sem);
+					fromBlockedToReady(pidDesbloq);
+				}
 			}
 			free(sem);
 			break;
@@ -1110,13 +1142,28 @@ GlobalVariable* findGlobalVariable(char* nombre){
 
 //Obtiene la posicion en SEM_IDS a partir del nombre del semaforo
 int obtenerPosicionSemaforo(char* c) {
-	int i;
-	for(i=0; !sonIguales(c, config->SEM_IDS[i]); i++);
-	return i;
+	int i = 0;
+	int ok = 0;
+	//for(i=0; (config->SEM_IDS[i] != NULL && !sonIguales(c, config->SEM_IDS[i])); i++);
+	while(config->SEM_IDS[i] != NULL)
+	{
+		if(sonIguales(c, config->SEM_IDS[i]))
+		{
+			ok = 1;
+			break;
+		}
+		i++;
+	}
+	if(ok == 1)
+		return i;
+	else
+		return -1;
 }
 
 int obtenerValorSemaforo(char* c) {
 	int pos = obtenerPosicionSemaforo(c);
+	if(pos == -1)
+		return 5000;
 	char* valor = config->SEM_INIT[pos];
 	//Convierto el string a int
 	return atoi(valor);
