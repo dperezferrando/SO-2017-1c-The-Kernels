@@ -11,6 +11,9 @@ int main(int argc, char** argsv){
 	puts("bitmap levantado");
 	levantarBloquesEnUso();
 	puts("bitmap al dia");
+	//testxd();
+	//testxd2();
+	//testxd3();
 	//testsmuycabeitas();
 	kernel = getBindedSocket(config->ip_propia, config->puerto);
 	lListen(kernel, 5);
@@ -819,7 +822,7 @@ int addbloque(char* path){
 			bloque++;
 			valor = bitarray_test_bit(Ebitarray, bloque);
 		}
-	if(bloque>cantBloq){
+	if(bloque>=cantBloq){
 		return-1;
 	}
 	bitarray_set_bit(Ebitarray,bloque);
@@ -1438,3 +1441,21 @@ testsmuycabezitas(){ //no se rian los estoy haciendo asi para comitearselos rapi
 		borrarArchivo("tests/ParaEscribir.bin");
 		//test13
 }
+
+int testxd(){
+			int res=crearArchivo("tests/meme.bin");
+			if(res==-1){
+				puts("BIEN");
+			}
+			else puts("MAL");
+		}
+int testxd2(){
+			int res=escribirArchivo("tests/meme.bin",0,8,"xxxxxxxx");
+		}
+int testxd3(){
+			int res=escribirArchivo("tests/meme.bin",8,8,"xxxxxxxx");
+			if(res==-1){
+				puts("BIEN");
+			}
+			else puts("MAL");
+		}
