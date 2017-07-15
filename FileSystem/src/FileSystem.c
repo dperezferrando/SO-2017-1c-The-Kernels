@@ -137,7 +137,8 @@ void esperarOperacion()
 				char* buffer = leerArchivo(path,offset,size);
 				// ESTE CHEQUEO NO SE QUE ES PERO CAPAZ NO ES NECESARIO, POR AHORA EL KERNEL LO IGNORA
 				if(buffer=="-1"){
-					lSend(conexion, 0, -4, sizeof(int));
+					lSend(conexion, NULL, -4, 0);
+					puts("LECTURA FALLO");
 					free(buffer);
 					break;
 				}
@@ -167,6 +168,7 @@ void esperarOperacion()
 				free(buffer);
 				if(result==-1){
 					lSend(conexion, NULL, -4, 0);
+					puts("ESCRITURA FALLO");
 					break;
 				}
 				else
@@ -204,9 +206,14 @@ void esperarOperacion()
 				// CREAR ARCHIVO
 				puts("CREAR ARCHIVO");
 				char* path = agregarBarraCero(mensaje->data, mensaje->header.tamanio);
-				if(crearArchivo(path) == -1)
-					puts("ALGO FALLO");
+				if(crearArchivo(path) == -1){
+					lSend(conexion, NULL, -4, 0);
+					puts("CREACION FALLO");
+					free(path);
+					break;
+				}
 				free(path);
+				break;
 			}
 		}
 		destruirMensaje(mensaje);
