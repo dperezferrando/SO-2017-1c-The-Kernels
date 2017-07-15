@@ -246,6 +246,7 @@ PCB* fromNewToReady(){
 	if(!enviarScriptAMemoria(pcb, pc->script, pc->tamanioScript))
 	{
 		puts("NO HAY ESPACIO");
+		if(!test)lSend(pc->consola, &pcb->pid, -2, sizeof(int));
 		killProcess(pcb->pid, -1);
 	}
 	else

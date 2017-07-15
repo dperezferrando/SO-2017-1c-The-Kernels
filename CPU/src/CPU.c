@@ -42,7 +42,6 @@ int main(int argc, char** argsv) {
 				else
 					estado = KILLED;
 			}
-			puts("---------------------------------------------------------------------------------------------------------------");
 			usleep(quantumSleep*1000);
 		}
 		log_info(logFile, "[PCB EXPULSADO]: PID: %i | ESTADO: %i\n", pcb->pid, estado);

@@ -62,8 +62,10 @@ void recibirDeConsola(int socket, connHandle* master)
 			script[mensaje->header.tamanio] = '\0';
 			PCB* pcb = createProcess(script, tamanioScript);
 			newProcess(pcb, socket, script, tamanioScript);
-			if(readyProcess() == -1)
+			if(readyProcess() == -1) {
 				puts("SE ALCANZO EL LIMITE DE MULTIPROGRAMACION - QUEDA EN NEW");
+				lSend(socket, mensaje->data, -3, mensaje->header.tamanio);
+			}
 			free(script);
 			break;
 		}

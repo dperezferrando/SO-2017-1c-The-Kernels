@@ -29,7 +29,7 @@ void finalizarProceso() {
 	liberar(config);
 	close(kernel);
 	destruirListaDeProgramas();
-	mensajeCerrandoProcesos();
+	//mensajeCerrandoProcesos();
 	//sleep(1);
 	mensajeConsolaDesconectada();
 }
@@ -143,7 +143,6 @@ void hiloPrograma(Programa* programa) {
 			mensajeNoHayEspacio();
 			sem_post(&destruccionMensaje);
 			free(programa);
-			pthread_exit(NULL);
 		}
 	}
 	else {
@@ -223,6 +222,7 @@ void escuchandoKernel() {
 			break;
 		case ABORTAR_PROCESO: abortar(); estado =DESACTIVADO; break;
 		case SIN_ESPACIO: sem_post(&nuevoMensaje); break;
+		case LIMITE_MULTIPROGRAMACION : mensajeMultiprogramacion(); sem_post(&destruccionMensaje); break;
 		case FINALIZAR: estado = DESACTIVADO; sem_post(&destruccionMensaje) ;break;
 		case ERROR: finalizarPorDesconexion();
 		}
@@ -601,6 +601,15 @@ void mensajeConsolaDesconectada() {
 	sem_post(&mutexOutput);
 }
 
+void mensajeMultiprogramacion() {
+	sem_wait(&mutexOutput);
+	puts("-----------------------------------------------------------");
+	puts("SE ALCANZO EL LIMITE DE MULTIPROGRAMACION, ESPERANDO PID...");
+	puts("-----------------------------------------------------------");
+	mensajeIngresar();
+	sem_post(&mutexOutput);
+}
+
 void mensajeErrorConexion() {
 	sem_wait(&mutexOutput);
 	puts("------------------------------------------------------------");
@@ -641,7 +650,6 @@ void mensajeNoHayProcesos() {
 	puts("------------------------------------------------------------");
 	puts("NO HAY PROCESOS EN EJECUCION");
 	puts("------------------------------------------------------------");
-	mensajeIngresar();
 	sem_post(&mutexOutput);
 }
 
