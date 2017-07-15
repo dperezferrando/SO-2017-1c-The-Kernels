@@ -68,7 +68,8 @@ void killProcess(int PID,int exitCode){
 		lSend(pc->consola, &PID, -2, sizeof(int));
 	else // Si murio por otra razon le aviso tambien a memoria
 	{
-		lSend(pc->consola, &PID, 9, sizeof(int));
+		if(exitCode == -7)
+			lSend(pc->consola, &PID, 9, sizeof(int));
 		lSend(conexionMemoria, &PID, 9, sizeof(int));
 	}
 	//Verifica si esta en alguna de cola de algun semaoforo
@@ -245,6 +246,7 @@ PCB* fromNewToReady(){
 	if(!enviarScriptAMemoria(pcb, pc->script, pc->tamanioScript))
 	{
 		puts("NO HAY ESPACIO");
+		if(!test)lSend(pc->consola, &pcb->pid, -2, sizeof(int));
 		killProcess(pcb->pid, -1);
 	}
 	else

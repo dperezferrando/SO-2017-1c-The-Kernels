@@ -41,6 +41,7 @@
 
 //Conexion consola-kernel
 #define SIN_ESPACIO -2
+#define LIMITE_MULTIPROGRAMACION -3
 #define NUEVO_MENSAJE 1
 #define NUEVO_PID 2
 #define ABORTAR_PROCESO 3
@@ -177,3 +178,5 @@ void desconectarPrograma(Programa* programa);
 void mensajeCerrandoProcesos();
 void realizarDesconexion();
 void informarDesconexion();
+bool esUnArchivo(char*);
+void mensajeMultiprogramacion();
