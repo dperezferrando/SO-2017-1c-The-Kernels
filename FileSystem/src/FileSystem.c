@@ -385,7 +385,11 @@ int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
 	if (bloquesDelArchivo->tamanio < bloqueLogico + 1){
 		free(bloquesDelArchivo);
 		//free(bloquesGG);
-		addbloque(path);
+		int res =addbloque(path);
+		if (res==-1){
+			return -1;
+			free (path);
+		}
 		bloquesDelArchivo = getbloques(path);
 	}
 	int bloqueFisico = bloquesDelArchivo->bloques[bloqueLogico];
@@ -415,7 +419,13 @@ int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
 		if(cantBloquesSig==0){
 			free(bloquesDelArchivo);
 			//free(bloquesGG);
-			addbloque(path);
+			int res =addbloque(path);
+			if (res==-1){
+				fclose(bloque);
+				free(rutaBloqueFisico);
+				free(path);
+				return -1;
+			}
 			bloquesDelArchivo = getbloques(path);
 		}
 	    bloqueLogico += 1;
@@ -516,7 +526,10 @@ int escribirArchivoV(char* pathRelativa, int offset, int size, char* buffer){
 			int SizeActual= size-DispBloque;
 			int* bloquesN;
 			while(SizeActual>0){
-				addbloque(path);
+				int res = addbloque(path);
+				if(res==-1){
+					return -1;
+				}
 				bloqsN= getbloques(path);
 				bloquesN=bloqsN->bloques;
 				int cantbloquesN=bloqsN->tamanio;
@@ -595,7 +608,10 @@ int escribirArchivoV(char* pathRelativa, int offset, int size, char* buffer){
 	}
 	int blqsadd = 0;
 	while(Actualsize>newEspacio){
-		addbloque(path);
+		int res=addbloque(path);
+		if(res==-1){
+			return -1;
+		}
 		newEspacio= newEspacio + tamBloq;
 		blqsadd++;
 	}
@@ -1275,8 +1291,12 @@ testsmuycabezitas(){ //no se rian los estoy haciendo asi para comitearselos rapi
 		 crearArchivo("tests/MeCreo.bin");
 		 int i;
 		 int cont=0;
+		 int res;
 		 for(i=0;i<34;i++){
-		 addbloque("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Archivos/tests/MeCreo.bin");
+			 res = addbloque("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Archivos/tests/MeCreo.bin");
+			 if (res==-1){
+				 return -1;
+			 }
 		 }
 		 bloqs=getbloques("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Archivos/tests/MeCreo.bin");
 		 bloques = bloqs->bloques;
