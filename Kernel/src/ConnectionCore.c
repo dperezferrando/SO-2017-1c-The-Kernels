@@ -699,7 +699,7 @@ void recibirDeCPU(int socket, connHandle* master)
 		case 200:
 		{
 			//obtener valor variable compartida
-			puts("CPU PIDE VALOR DE VARIABLE");
+			log_info(logFile,"CPU PIDE VALOR DE VARIABLE");
 			int pid, len;
 			memcpy(&pid, mensaje->data, sizeof(int));
 			memcpy(&len, mensaje->data+sizeof(int), sizeof(int));
@@ -720,7 +720,7 @@ void recibirDeCPU(int socket, connHandle* master)
 		case 201:
 		{
 			//asignar valor variable compartida
-			puts("CPU QUIERE ASIGNAR VARIABLE");
+			log_info(logFile,"CPU QUIERE ASIGNAR VARIABLE");
 			int len=0, pid;
 			memcpy(&len,mensaje->data,sizeof(int));
 			char* nombre= malloc(len);
