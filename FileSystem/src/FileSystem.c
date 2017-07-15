@@ -260,11 +260,6 @@ int validarBloque(char* pathRelativa){
 
 int crearArchivo(char* pathRelativa){
 	char* path = string_from_format("%s%s", ruta_Arch, pathRelativa);
-	FILE *arch;
-	arch = fopen (path,"w");
-	if (arch==NULL){
-		return -1;
-	}
 	//funcion tomar siguiente bloque de bitmap
 	int bloque=0;
 	int valor= bitarray_test_bit(Ebitarray, bloque);
@@ -272,7 +267,7 @@ int crearArchivo(char* pathRelativa){
 		bloque++;
 		valor = bitarray_test_bit(Ebitarray, bloque);
 	}
-	if(bloque>cantBloq){
+	if(bloque>=cantBloq){
 		return-1;
 	}
 	bitarray_set_bit(Ebitarray,bloque);
@@ -292,6 +287,11 @@ int crearArchivo(char* pathRelativa){
 	blq = open (ruta_Blq, O_CREAT, S_IRUSR|S_IWUSR);
 	close(blq);
 	//funcion tomar siguiente bloque de bitmap
+	FILE *arch;
+	arch = fopen (path,"w");
+	if (arch==NULL){
+		return -1;
+	}
 	char stamanio[11]="TAMANIO=0\n";
 	char* sbloques = NULL;
 	sbloques = malloc(sizeof(char)*(strlen(Sbloque)+11));
