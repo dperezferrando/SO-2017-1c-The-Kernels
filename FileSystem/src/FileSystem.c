@@ -14,7 +14,9 @@ int main(int argc, char** argsv){
 	//testxd();
 	//testxd2();
 	//testxd3();
-	//testsmuycabeitas();
+	//testsmuycabezitas();
+	//testllenarbitmap();
+	//testllenarbitmap2();
 	kernel = getBindedSocket(config->ip_propia, config->puerto);
 	lListen(kernel, 5);
 	puts("ESPERANDO AL KERNEL");
@@ -25,6 +27,7 @@ int main(int argc, char** argsv){
 	free(metad);
 	//free(bloquesGG);
 	//config_destroy(configHandler);
+	//free(configHandler);
 	destruirBitmap();
 	puts("fin");
 	return EXIT_SUCCESS;
@@ -251,6 +254,7 @@ int validarBloque(char* pathRelativa){
 	FILE *blq;
 	blq = fopen (path,"r");
 	if (blq==NULL){
+		free(path);
 		return -1;
 	}
 	fclose(blq);
@@ -278,6 +282,7 @@ int crearArchivo(char* pathRelativa){
 		valor = bitarray_test_bit(Ebitarray, bloque);
 	}
 	if(bloque>=cantBloq){
+		free(path);
 		return-1;
 	}
 	bitarray_set_bit(Ebitarray,bloque);
@@ -300,6 +305,9 @@ int crearArchivo(char* pathRelativa){
 	FILE *arch;
 	arch = fopen (path,"w");
 	if (arch==NULL){
+		free(path);
+		free(ruta_Blq);
+		free(Sbloque);
 		return -1;
 	}
 	char stamanio[11]="TAMANIO=0\n";
@@ -325,6 +333,8 @@ char* leerArchivo(char* pathRelativa, int offset, int size){
 	char* buffer=NULL;
 	int tam = getTamanio(path);
 	if(tam < (offset+size)){
+		free(path);
+		free(buffer);
 		return "-1";
 	}
 	bloques* bloqs;
@@ -386,19 +396,26 @@ int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
 	char* path = string_from_format("%s%s", ruta_Arch, pathRelativa);
 	int tamanioArchivo = getTamanio(path);
 	if (offset>tamanioArchivo+1||offset<0){
+		free(path);
 		return -1;
 	}
 	int bloqueLogico = floor((double)offset/(double)metad->tamanio_Bloques);
+	/*if(offset%metad->tamanio_Bloques==0&&offset!=0){
+		bloqueLogico++;
+	}*/
 	int bloquesAnteriores = floor((double)offset/(double)metad->tamanio_Bloques);
 	bloques* bloquesDelArchivo = getbloques(path);
 	int cantBloquesSig= bloquesDelArchivo->tamanio - (bloqueLogico+1);
+	if(cantBloquesSig<0){
+		cantBloquesSig=0;
+	}
 	if (bloquesDelArchivo->tamanio < bloqueLogico + 1){
 		free(bloquesDelArchivo);
 		//free(bloquesGG);
 		int res =addbloque(path);
 		if (res==-1){
-			return -1;
 			free (path);
+			return -1;
 		}
 		bloquesDelArchivo = getbloques(path);
 	}
@@ -412,13 +429,14 @@ int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
 		sizeASumar=0;
 	}
 	int sizeDispEnBloque = metad->tamanio_Bloques - offsetDentroDelBloque;
+
 	char* rutaBloqueFisico = rutabloque(bloqueFisico);
 	FILE* bloque = fopen(rutaBloqueFisico, "r+");
 	fseek(bloque, offsetDentroDelBloque,SEEK_SET);
 	if(size>sizeDispEnBloque){
 		fwrite(buffer, sizeof(char), sizeDispEnBloque, bloque);
 		size -= sizeDispEnBloque;
-		buffer -= sizeDispEnBloque;
+		buffer += sizeDispEnBloque;
 		//char* nBuffer = buffer - sizeDispEnBloque;
 		falta=1;
 	}
@@ -431,13 +449,11 @@ int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
 			//free(bloquesGG);
 			int res =addbloque(path);
 			if (res==-1){
-				fclose(bloque);
-				free(rutaBloqueFisico);
-				free(path);
 				return -1;
 			}
 			bloquesDelArchivo = getbloques(path);
 		}
+		sizeDispEnBloque = metad->tamanio_Bloques;
 	    bloqueLogico += 1;
 	    bloqueFisico = bloquesDelArchivo->bloques[bloqueLogico];
 	    rutaBloqueFisico = rutabloque(bloqueFisico);
@@ -461,7 +477,7 @@ int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
 	return 1;
 }
 
-int escribirArchivoV(char* pathRelativa, int offset, int size, char* buffer){
+/*int escribirArchivoV(char* pathRelativa, int offset, int size, char* buffer){
 	char* path = string_from_format("%s%s", ruta_Arch, pathRelativa);
 	FILE* blq;
 	FILE* blqt;
@@ -480,9 +496,9 @@ int escribirArchivoV(char* pathRelativa, int offset, int size, char* buffer){
 	int bloqueInicio = bloques[posBloqueInicio-1];
 	if(bloqueInicio==bloques[cantbloques-1]){ //Es el ultimo bloque
 		int usadoBloque =tamBloq-(cantbloques*tamBloq - Tam) ;
-		/*if(usadoBloque<0){
+		if(usadoBloque<0){
 			usadoBloque=0;
-		}*/
+		}
 		if (offset>usadoBloque){
 			return -1;
 		}
@@ -681,7 +697,7 @@ int escribirArchivoV(char* pathRelativa, int offset, int size, char* buffer){
 	free(bloqs);
 	free(bloqsv);
 	return 0;
-}
+}*/
 											/////////////////////////////
 
 int borrarArchivo(char* pathRelativa){
@@ -738,8 +754,10 @@ bloques* getbloques(char* path){
 	cont=0;
 	while(sBloques[cont]!=NULL){
 		bloques[cont]=atoi(sBloques[cont]);
+		//printf("%d\n",bloques[cont]);
 		cont++;
 		}
+	//puts("///////////////////");
 	/*int i;
 	for(i=0;i<=cont;i++){
 		bloqs->bloques[i]=bloques[i];
@@ -1063,6 +1081,8 @@ int levantarBloquesEnUso(){
 	  FILE *bM;
 	  bM = open(ruta_BitM, O_RDWR);
 	  if(bM == NULL){
+		  puts("FALLO CREACION BITMAP");
+		fclose(dp);
 	  	return -1;
 	  }
 
@@ -1269,10 +1289,10 @@ testsmuycabezitas(){ //no se rian los estoy haciendo asi para comitearselos rapi
 
 		//test3 crear
 		crearArchivo("tests/MeCreo.bin");
-		bloqs=getbloques("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Archivos/tests/MeCreo.bin");
+		bloqs=getbloques("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Archivos/tests/MeCreo.bin");
 		bloques = bloqs->bloques;
 		char* rutablq = rutabloque(bloques[0]);
-		char* puntaux = rutablq + 57;
+		char* puntaux = rutablq + 68;
 		//free (bloques);
 		if (validarArchivo("tests/MeCreo.bin")==0){
 			if (validarBloque(puntaux)==0){
@@ -1303,18 +1323,18 @@ testsmuycabezitas(){ //no se rian los estoy haciendo asi para comitearselos rapi
 		 int cont=0;
 		 int res;
 		 for(i=0;i<34;i++){
-			 res = addbloque("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Archivos/tests/MeCreo.bin");
+			 res = addbloque("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Archivos/tests/MeCreo.bin");
 			 if (res==-1){
 				 return -1;
 			 }
 		 }
-		 bloqs=getbloques("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Archivos/tests/MeCreo.bin");
+		 bloqs=getbloques("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Archivos/tests/MeCreo.bin");
 		 bloques = bloqs->bloques;
 		 if (validarArchivo("tests/MeCreo.bin")==0){
 			 int j;
 			 for(j=0;j<=34;j++){
 				char* rutablq = rutabloque(bloques[j]);
-				char* puntaux = rutablq + 57;
+				char* puntaux = rutablq + 68;
 				if (validarBloque(puntaux)==0){
 					cont++;
 				}
@@ -1332,8 +1352,8 @@ testsmuycabezitas(){ //no se rian los estoy haciendo asi para comitearselos rapi
 		//test5
 
 		//test6 quitar un bloque
-		 quitarUltimoBloque("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Archivos/tests/MeCreo.bin");
-		 bloqs=getbloques("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Archivos/tests/MeCreo.bin");
+		 quitarUltimoBloque("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Archivos/tests/MeCreo.bin");
+		 bloqs=getbloques("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Archivos/tests/MeCreo.bin");
 		 bloques = bloqs->bloques;
 		 if(bloqs->tamanio==34){
 			 puts("piola test6");
@@ -1346,7 +1366,7 @@ testsmuycabezitas(){ //no se rian los estoy haciendo asi para comitearselos rapi
 
 		//test7 borrar archivo con muchos bloques
 		 cont=0;
-		 bloqs=getbloques("/home/utnso/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Archivos/tests/MeCreo.bin");
+		 bloqs=getbloques("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/mnt/FS_SADICA/Archivos/tests/MeCreo.bin");
 		 bloques = bloqs->bloques;
 		 borrarArchivo("tests/MeCreo.bin");
 		 if (validarArchivo("tests/MeCreo.bin")==0){
@@ -1375,7 +1395,7 @@ testsmuycabezitas(){ //no se rian los estoy haciendo asi para comitearselos rapi
 	}
 		//test7
 
-		//test8 //Leer
+		//test8 //Leer (((PARA FUNCIONAR REQUIERE QUE EXISTA EL BLOQUE 0.bin con "hola")))
 		char* buffer=leerArchivo("tests/leeme.bin",0,4);
 		char *hola="hola";
 		if(*buffer==*hola){
@@ -1394,7 +1414,7 @@ testsmuycabezitas(){ //no se rian los estoy haciendo asi para comitearselos rapi
 		free(buffer);
 		//test9
 
-		//test10 //Crea,escribe,lee(luego lo borra)
+		//test10 //Crea,escribe,lee(luego lo borra) (((PARA FUNCIONAR REQUIERE QUE EXISTA EL BLOQUE 1.bin con "xxxxxhola")))
 		crearArchivo("tests/ParaEscribir.bin");
 		escribirArchivo("tests/ParaEscribir.bin",0,5,"piola");
 		buffer=leerArchivo("tests/ParaEscribir.bin",0,5);
@@ -1466,3 +1486,33 @@ int testxd3(){
 			}
 			else puts("MAL");
 		}
+
+int testllenarbitmap(){
+	int i;
+	crearArchivo("tests/llenador.bin");
+	for(i=0;i<metad->cantidad_Bloques;i++){
+		escribirArchivo("tests/llenador.bin",0+i*64,64,"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+	}
+	puts ("LLENO");
+	int res=escribirArchivo("tests/llenador.bin",metad->cantidad_Bloques*64,1,"x");
+	if(res==-1){
+		puts("no puedo seguir escribiendo, bien");
+	}
+	else puts("ERROR");
+	int res2=crearArchivo("tests/noentro.bin");
+	if(res==-1){
+		puts("no puedo crear uno nuevo, bien");
+	}
+	else puts("ERROR");
+}
+
+int testllenarbitmap2(){
+	int i;
+	crearArchivo("tests/llenador.bin");
+	for(i=0;i<metad->cantidad_Bloques;i++){
+		int res=escribirArchivo("tests/llenador.bin",0+i*65,65,"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+		if(res==-1){
+			puts("se lleno");
+		}
+	}
+}
