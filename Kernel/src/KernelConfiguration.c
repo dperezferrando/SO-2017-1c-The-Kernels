@@ -63,6 +63,7 @@ configFile* readConfigFile(t_config* configHandler)//la unica manera de generali
 	config->SHARED_VARS= config_get_array_value(configHandler, "SHARED_VARS");
 	config->STACK_SIZE=config_get_int_value(configHandler, "STACK_SIZE");
 	strcpy(config->IP_PROPIA, config_get_string_value(configHandler, "IP_PROPIA"));
+	strcpy(config->log, config_get_string_value(configHandler, "LOG"));
 	config_destroy(configHandler);
 	imprimirConfig(config);
 	return config;

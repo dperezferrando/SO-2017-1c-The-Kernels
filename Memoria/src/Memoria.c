@@ -21,6 +21,7 @@ pthread_t conexionKernel, esperarCPUS, consolaMemoria;
 pthread_mutex_t memoriaSem;
 pthread_mutex_t cacheSem;
 pthread_mutex_t retardoSem;
+t_log* logFile;
 
 
 
@@ -28,6 +29,7 @@ pthread_mutex_t retardoSem;
 int main(int argc, char** argsv) {
 
 	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/Memoria/Debug/memoria.conf", leerArchivoConfig, keys);
+	levantarLog();
 	arrancarMemoria();
 	levantarSockets();
 	puts("[MEMORIA]: ESPERANDO AL KERNEL");
@@ -43,12 +45,19 @@ int main(int argc, char** argsv) {
 	return EXIT_SUCCESS;
 }
 
+void levantarLog()
+{
+	if(fopen(config->log, "r") != NULL)
+		remove(config->log);
+	logFile = log_create(config->log, "MEMORIA", 0, 1);
+}
+
 void arrancarMemoria()
 {
 	memoria = malloc(config->marco_size*config->marcos);
 	if(memoria == NULL)
 	{
-		puts("[ERROR]: CAPO, una cosa nomas queria decirte: tu pc no tiene RAM, malloc fallo, salu2");
+		log_info(logFile,"[ERROR]: CAPO, una cosa nomas queria decirte: tu pc no tiene RAM, malloc fallo, salu2");
 		exit(EXIT_FAILURE);
 	}
 	entradaTabla* pointer = (entradaTabla*)memoria;
@@ -105,7 +114,7 @@ void levantarSockets()
 
 void conexion_kernel(int conexion)
 {
-	puts("[MEMORIA]: KERNEL CONECTADO - ESPERANDO MENSAJE <3");
+	puts("[MEMORIA]: KERNEL CONECTADO - ESPERANDO MENSAJES <3");
 	while(1)
 	{
 		Mensaje* mensaje = lRecv(conexion);
@@ -127,7 +136,7 @@ void conexion_kernel(int conexion)
 					lSend(conexion, NULL,-2,0);
 					break;
 				}
-				printf("[ARRANCAR PROCESO]: PID: %i | Paginas: %i\n", pid, cantidadPaginas);
+				log_info(logFile,"[ARRANCAR PROCESO]: PID: %i | Paginas: %i\n", pid, cantidadPaginas);
 				lSend(conexion, NULL, 104,0);
 				inicializarPrograma(pid, cantidadPaginas, script, mensaje->header.tamanio);
 				free(script);
@@ -136,7 +145,7 @@ void conexion_kernel(int conexion)
 			case 2:
 			{
 				// ESCRIBIR EN MEMORIA
-				puts("[HEAP]: KERNEL PIDE ESCRIBIR");
+				log_info(logFile,"[HEAP]: KERNEL PIDE ESCRIBIR");
 				int pid;
 				pedidoEscrituraDelKernel* pedido = malloc(sizeof(pedidoEscrituraMemoria));
 				memcpy(&pid,mensaje->data,sizeof(int));
@@ -145,7 +154,7 @@ void conexion_kernel(int conexion)
 				memcpy(&pedido->posicion.size,mensaje->data+(sizeof(int)*3),sizeof(int));
 				pedido->data = malloc(pedido->posicion.size);
 				memcpy(pedido->data, mensaje->data+(sizeof(int)*4),pedido->posicion.size);
-				printf("[HEAP]: KERNEL PIDE ESCRIBIR PID: %i | PAG: %i | OFFSET: %i | SIZE: %i\n", pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
+				log_info(logFile,"[HEAP]: KERNEL PIDE ESCRIBIR PID: %i | PAG: %i | OFFSET: %i | SIZE: %i\n", pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
 				escribirDondeCorresponda(pid, pedido);
 
 				free(pedido);
@@ -157,17 +166,17 @@ void conexion_kernel(int conexion)
 
 				int pid;
 				memcpy(&pid, mensaje->data, sizeof(int));
-				printf("[HEAP]: KERNEL PIDE PAGINA PARA PID: %i\n", pid);
+				log_info(logFile,"[HEAP]: KERNEL PIDE PAGINA PARA PID: %i\n", pid);
 				if(!sePuedenAsignarPaginas(pid, 1))
 				{
 					lSend(conexion, NULL,-2,0);
 					break;
 				}
 				int paginaAsignada = damePaginaHeap(pid);
-				printf("[HEAP]: PAGINA ASIGNADA: %i\n", paginaAsignada);
+				log_info(logFile,"[HEAP]: PAGINA ASIGNADA: %i\n", paginaAsignada);
 				lSend(conexion, &paginaAsignada, 104,sizeof(int));
 				crearEntradas(pid, 1, paginaAsignada);
-				printf("[OTORGAR PAGINAS HEAP]: PID: %i | Paginas: %i\n", pid, 1);
+				log_info(logFile,"[OTORGAR PAGINAS HEAP]: PID: %i | Paginas: %i\n", pid, 1);
 				//https://github.com/sisoputnfrba/foro/issues/652
 				break;
 
@@ -205,7 +214,7 @@ void conexion_kernel(int conexion)
 				// FINALIZAR PROCESO
 				int pid;
 				memcpy(&pid, mensaje->data, sizeof(int));
-				printf("[AJUSTICIANDO PROCESO]: PID: %i\n", pid);
+				log_info(logFile,"[AJUSTICIANDO PROCESO]: PID: %i\n", pid);
 				finalizarPrograma(pid);
 			}
 		}
@@ -385,7 +394,7 @@ void recibir_comandos()
 	{
 		char* entrada = leerCaracteresEntrantes();
 		char** comando = string_split(entrada, " ");
-		printf("COMANDO: %s ARG: %s\n", comando[0], comando[1]);
+		log_info(logFile,"COMANDO: %s ARG: %s\n", comando[0], comando[1]);
 		if(!strcmp(comando[0], "dump"))
 		{
 			if(comando[1] == NULL)
@@ -436,6 +445,8 @@ void recibir_comandos()
 				printf("[TAMANIO PROCESO]: PID %i: %i\n", pid, cantPaginas);
 			}
 		}
+		else
+			puts("COMANDO INVALIDO");
 		free(comando[0]);
 		free(comando[1]);
 		free(comando);
@@ -520,7 +531,7 @@ void esperar_cpus()
 	while(1)
 	{
 		int conexion = lAccept(cpu, CPU_ID);
-		printf("[MEMORIA]: NUEVA CONEXION CPU\n");
+		log_info(logFile,"[MEMORIA]: NUEVA CONEXION CPU\n");
 		pthread_t conexionCPU;
 		pthread_create(&conexionCPU, NULL, (void *) conexion_cpu, conexion);
 
@@ -533,19 +544,19 @@ void conexion_cpu(int conexion)
 	int conectado = 1;
 	while(conectado)
 	{
-		printf("[MEMORIA]: PROCESANDO CPU SOCKET: %i\n", conexion);
+		log_info(logFile,"[MEMORIA]: PROCESANDO CPU SOCKET: %i\n", conexion);
 		Mensaje* mensaje = lRecv(conexion);
 		int pidActual;
 		switch(mensaje->header.tipoOperacion)
 		{
 			case -1:
-				printf("[CPU %i]: DESCONEXION ABRUPTA\n", conexion);
+				log_info(logFile,"[CPU %i]: DESCONEXION ABRUPTA\n", conexion);
 				conectado = 0;
 				break;
 
 			case 1:
 				memcpy(&pidActual, mensaje->data, sizeof(int));
-				printf("[CPU %i]: CAMBIO A PROCESO PID: %i\n", conexion, pidActual); // TESTING
+				log_info(logFile,"[CPU %i]: CAMBIO A PROCESO PID: %i\n", conexion, pidActual); // TESTING
 
 				break;
 
@@ -557,7 +568,7 @@ void conexion_cpu(int conexion)
 				if(!pedidoValido(pidActual, posicion))
 					lSend(conexion, NULL, -5, 0);
 				else {
-					printf("[CPU %i]: LEER PAG: %i | OFFSET: %i | SIZE: %i\n", conexion, posicion->pagina, posicion->offset, posicion->size);
+					log_info(logFile,"[CPU %i]: LEER PAG: %i | OFFSET: %i | SIZE: %i\n", conexion, posicion->pagina, posicion->offset, posicion->size);
 					char* linea = leerDondeCorresponda(pidActual, posicion);
 					lSend(conexion, linea, 2, posicion->size);
 					free(linea);
@@ -577,7 +588,7 @@ void conexion_cpu(int conexion)
 					lSend(conexion, NULL, -5, 0);
 				else
 				{
-					printf("[CPU %i]: GUARDAR INFO EN PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %s\n", conexion, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor);
+					log_info(logFile,"[CPU %i]: GUARDAR INFO EN PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %s\n", conexion, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor);
 					escribirDondeCorresponda(pidActual, pedido);
 					lSend(conexion,NULL, 104, 0);
 				}
@@ -587,7 +598,7 @@ void conexion_cpu(int conexion)
 			}
 
 			case 4:
-				printf("[CPU %i]: EL CPU SE TOMA EL PALO\n", conexion);
+				log_info(logFile,"[CPU %i]: EL CPU SE TOMA EL PALO\n", conexion);
 				conectado = 0;
 				break;
 
@@ -611,16 +622,16 @@ char* leerDondeCorresponda(int pid, posicionEnMemoria* posicion)
 	char* linea;
 	if(config->entradas_cache > 0 && existeEnCache(pid, posicion->pagina))
 	{
-		puts("[CACHE]: EXISTE EN CACHE");
+		log_info(logFile,"[CACHE]: EXISTE EN CACHE");
 		linea = solicitarBytesACache(pid, posicion->pagina, posicion->offset, posicion->size);
 	}
 	else
 	{
-		puts("[CACHE]: NO EXISTE EN CACHE - RETARDO");
+		log_info(logFile,"[CACHE]: NO EXISTE EN CACHE - RETARDO");
 		pthread_mutex_lock(&retardoSem);
 		usleep(1000*config->retardo_memoria);
 		pthread_mutex_unlock(&retardoSem);
-		puts("[CACHE]: SLEEP LISTO, SOLICITO Y AGREGO A CACHE");
+		log_info(logFile,"[CACHE]: SLEEP LISTO, SOLICITO Y AGREGO A CACHE");
 		linea = solicitarBytes(pid, posicion->pagina, posicion->offset, posicion->size);
 		if(config->entradas_cache != 0)
 			agregarACache(pid, posicion->pagina);
@@ -634,25 +645,25 @@ void escribirDondeCorresponda(int pid, pedidoEscrituraMemoria* pedido)
 	pthread_mutex_lock(&cacheSem);
 	if(config->entradas_cache > 0 && existeEnCache(pid, pedido->posicion.pagina))
 	{
-		printf("[CACHE]: EXISTE EN CACHE PAGINA: %i\n", pedido->posicion.pagina);
+		log_info(logFile,"[CACHE]: EXISTE EN CACHE PAGINA: %i\n", pedido->posicion.pagina);
 		escribirBytesCache(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor);
 	//	linea = solicitarBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
 	}
 	else
 	{
-		puts("[CACHE]: NO EXISTE EN CACHE - RETARDO");
+		log_info(logFile,"[CACHE]: NO EXISTE EN CACHE - RETARDO");
 		pthread_mutex_lock(&retardoSem);
 		usleep(1000*config->retardo_memoria);
 		pthread_mutex_unlock(&retardoSem);
-		puts("[CACHE]: SLEEP LISTO, SOLICITO Y AGREGO A CACHE");
+		log_info(logFile,"[CACHE]: SLEEP LISTO, SOLICITO Y AGREGO A CACHE");
 		int estado = escribirBytes(pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor);
 		if(estado == 0)
-			puts("[CACHE]: OFFSET MAYOR A MARCO (ESTO DEBERIA SER UNREACHABLE, SI LO VES SE ROMPIO TODO)");
+			log_info(logFile,"[CACHE]: OFFSET MAYOR A MARCO (ESTO DEBERIA SER UNREACHABLE, SI LO VES SE ROMPIO TODO)");
 		else if(estado == -1)
-			puts( "[CACHE]: NO EXISTE LA PAGINA EN MEMORIA - POSIBLEMENTE EL PROCESO HAYA SIDO AJUSTICIADO");
+			log_info(logFile, "[CACHE]: NO EXISTE LA PAGINA EN MEMORIA - POSIBLEMENTE EL PROCESO HAYA SIDO AJUSTICIADO");
 		else
 		{
-			puts("[CACHE]: SE ESCRIBIO EN MEMORIA - AGREGANDO A CACHE LA PAGINA");
+			log_info(logFile,"[CACHE]: SE ESCRIBIO EN MEMORIA - AGREGANDO A CACHE LA PAGINA");
 			if(config->entradas_cache != 0)
 			{
 				agregarACache(pid, pedido->posicion.pagina);
@@ -822,7 +833,7 @@ void crearEntradas(int pid, int cantidadPaginas, int paginaInicial)
 			pointer++;
 		if(pointer->frame < 0 || pointer->frame >= config->marcos)
 		{
-			puts("NULL");
+			log_info(logFile,"NULL");
 			pointer = (entradaTabla*)memoria+cantPaginasAdmin;
 		}
 
@@ -870,6 +881,7 @@ configFile* leerArchivoConfig(t_config* configHandler)
 	strcpy(config->reemplazo_cache,config_get_string_value(configHandler, "REEMPLAZO_CACHE"));
 	config->retardo_memoria = config_get_int_value(configHandler, "RETARDO_MEMORIA");
 	strcpy(config->ip_propia, config_get_string_value(configHandler, "IP_PROPIA"));
+	strcpy(config->log, config_get_string_value(configHandler, "LOG"));
 	config_destroy(configHandler);
 	imprimirConfig(config);
 	if(config->entradas_cache > 0 && config->cache_x_proc == 0)

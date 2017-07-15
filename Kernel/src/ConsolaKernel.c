@@ -139,6 +139,27 @@ void recibir_comandos()
 
 				}
 			}
+			else if(!strcmp(comando[0], "mostrarPCB"))
+			{
+				if(comando[1]!=NULL)
+				{
+					int pid = atoi(comando[1]);
+					//0-> new, 1->ready, 2->execute, 3-> blocked, 4-> suspended, 9-> killed,
+						bool mismoPID(PCB* pcb)
+						{
+							return pcb->pid == pid;
+						}
+						pthread_mutex_lock(&mColaFinished);
+						PCB* pcb = list_find(colaFinished->elements, mismoPID);
+						pthread_mutex_unlock(&mColaFinished);
+						// SOLO LOS EXIT PARA SALIR DEL PASO
+						if(pcb == NULL)
+							puts("NO ESTA EN FINISHED");
+						else
+							mostrarPCB(pcb);
+
+				}
+			}
 			else if(!strcmp(comando[0], "kill"))
 			{
 				if(comando[1]!=NULL){
@@ -177,6 +198,14 @@ void recibir_comandos()
 		}
 	}
 
+}
+
+void mostrarPCB(PCB* pcb)
+{
+	puts("----------------PCB----------------");
+	printf("PID: %i | EXIT CODE: %i\n", pcb->pid, pcb->exitCode);
+	mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
+	puts("----------------PCB----------------");
 }
 
 void enviarTodosLosNewAReady()

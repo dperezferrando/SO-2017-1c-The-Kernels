@@ -6,11 +6,12 @@
 #include <commons/collections/list.h>
 #include <commons/string.h>
 #include <pthread.h>
+#include <commons/log.h>
 #include "../../ConfigLibrary/src/Configuration.c"
 #include "../../SocketLibrary/src/SocketLibrary.c"
 
 #define CONFIG_FILE "memoria.conf"
-const char* keys[10] = {"PUERTO_KERNEL", "PUERTO_CPU", "MARCOS", "MARCO_SIZE", "ENTRADAS_CACHE", "CACHE_X_PROC", "REEMPLAZO_CACHE", "RETARDO_MEMORIA","IP_PROPIA" ,"NULL"};
+const char* keys[11] = {"PUERTO_KERNEL", "PUERTO_CPU", "MARCOS", "MARCO_SIZE", "ENTRADAS_CACHE", "CACHE_X_PROC", "REEMPLAZO_CACHE", "RETARDO_MEMORIA","IP_PROPIA", "LOG" ,"NULL"};
 
 typedef struct {
 	char puerto_kernel[5];
@@ -22,6 +23,7 @@ typedef struct {
 	char reemplazo_cache[4];
 	int retardo_memoria;
 	char ip_propia[16];
+	char log[100];
 } configFile;
 
 typedef struct entradaTabla {

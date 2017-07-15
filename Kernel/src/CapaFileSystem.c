@@ -231,7 +231,7 @@ void imprimirPorPantalla(fileInfo info, char* data)
 	memcpy(impresion+sizeof(int)*2, data, len);
 
 	ProcessControl* pc= PIDFind(info.pid);
-	printf("[IMPRIMIR]: PID %i IMPRIMIE: %s\n", pc->pid, data);
+	log_info(logFile,"[IMPRIMIR]: PID %i IMPRIMIE: %s\n", pc->pid, data);
 	lSend(pc->consola, impresion, 1, size);
 	free(impresion);
 
