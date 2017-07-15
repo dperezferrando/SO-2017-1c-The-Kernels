@@ -14,9 +14,8 @@ void handleSockets(connHandle* master, socketHandler result){
 			}
 			else if(p==master->listenCPU)
 			{
-				puts("ENTRA CPU");
 				int unCPU = lAccept(p, CPU_ID);
-				printf("CPU LISTO: SOCKET: %i", unCPU);
+				log_info(logFile,"CPU LISTO: SOCKET: %i", unCPU);
 				addReadSocket(unCPU,&(master->cpu));
 				aceptarNuevoCPU(unCPU);
 			}
@@ -45,13 +44,13 @@ void handleSockets(connHandle* master, socketHandler result){
 
 void recibirDeConsola(int socket, connHandle* master)
 {
-	puts("CONSOLA");
+
 	Mensaje* mensaje = lRecv(socket);
 
 	switch(mensaje->header.tipoOperacion)
 	{
 		case -1:
-			puts("SE DECONECTA UNA CONSOLA");
+			log_info(logFile,"SE DECONECTA UNA CONSOLA");
 			closeHandle(socket, master);
 			break;
 		case 1:
@@ -63,7 +62,7 @@ void recibirDeConsola(int socket, connHandle* master)
 			PCB* pcb = createProcess(script, tamanioScript);
 			newProcess(pcb, socket, script, tamanioScript);
 			if(readyProcess() == -1) {
-				puts("SE ALCANZO EL LIMITE DE MULTIPROGRAMACION - QUEDA EN NEW");
+				log_info(logFile,"SE ALCANZO EL LIMITE DE MULTIPROGRAMACION - QUEDA EN NEW");
 				lSend(socket, mensaje->data, -3, mensaje->header.tamanio);
 			}
 			free(script);
@@ -163,7 +162,7 @@ void* serializeMemReq(MemoryRequest mr, int idPage, int offset){
 }
 void mostrarMetadata(HeapMetadata* hm)
 {
-	printf("ISFREE: %i SIZE:%i\n", hm->isFree, hm->size);
+	log_info(logFile,"ISFREE: %i SIZE:%i\n", hm->isFree, hm->size);
 }
 int memoryRequest(MemoryRequest mr, int* offset, PageOwnership* po){
 	int operation;
@@ -256,9 +255,7 @@ int grabarPedido(PageOwnership* po, MemoryRequest mr, int* offset){
 	}
 	else{
 		//
-		puts("ANTES");
-		list_iterate(paginaExistente->occSpaces, mostrarMetadata);
-		puts("------");
+
 		*offset= occupyPageSize(paginaExistente,hm);//guarda el heapMetadata correspondiente en el PageOwnership
 		memcpy(po, paginaExistente, sizeof(PageOwnership));
 		return 0;
@@ -639,13 +636,12 @@ int _usedFragments(t_list* page){
 
 void recibirDeCPU(int socket, connHandle* master)
 {
-	puts("CPU");
 	PCB* pcb;
 	Mensaje* mensaje = lRecv(socket);
 	switch(mensaje->header.tipoOperacion)
 	{
 		case -1:
-			printf("SE DESCONECTA CPU SOCKET: %i\n", socket);
+			log_info(logFile,"SE DESCONECTA CPU SOCKET: %i\n", socket);
 			killCPUOwnedProcess(socket);
 			closeHandle(socket, master);
 			removerCPUDeCola(socket);
@@ -653,8 +649,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			break;
 		case 1:
 			pcb = recibirPCB(mensaje);
-			puts("SE TERMINO LA EJECUCION DE UN PROCESO. SE DEBERIA ENVIAR A COLA FINALIZADO EL PCB");
-			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
+			log_info(logFile,"SE TERMINO LA EJECUCION DE UN PROCESO. SE ENVIA A COLA FINALIZADO EL PCB");
 			cpuReturnsProcessTo(pcb, 9);
 			killProcess(pcb->pid,0);
 			pushearAColaCPUS(socket);
@@ -662,7 +657,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			break;
 		case 2:
 			pcb = recibirPCB(mensaje);
-			puts("VUELVE PCB POR FIN DE Q");
+			log_info(logFile,"VUELVE PCB POR FIN DE Q");
 			cpuReturnsProcessTo(pcb,1);
 			matarSiCorresponde(pcb->pid);
 			pushearAColaCPUS(socket);
@@ -670,7 +665,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			break;
 		case 3:
 			pcb = recibirPCB(mensaje);
-			puts("VUELVE PCB POR BLOQUEO");
+			log_info(logFile,"VUELVE PCB POR BLOQUEO");
 			cpuReturnsProcessTo(pcb,3);
 			matarSiCorresponde(pcb->pid);
 			pushearAColaCPUS(socket);
@@ -678,7 +673,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			break;
 		case 4:
 			pcb = recibirPCB(mensaje);
-			puts("PROGRAMA ABORTADO POR STACK OVERFLOW");
+			log_info(logFile,"PROGRAMA ABORTADO POR EXCEPCION MEMORIA");
 			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
 			cpuReturnsProcessTo(pcb, 9);
 			killProcess(pcb->pid, -5);
@@ -687,7 +682,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			break;
 		case 5:
 			pcb = recibirPCB(mensaje);
-			puts("PROGRAMA ABORTADO POR PROBLEMAS EN SYSCALL");
+			log_info(logFile,"PROGRAMA ABORTADO POR PROBLEMAS EN SYSCALL");
 			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
 			cpuReturnsProcessTo(pcb, 9);
 			matarSiCorresponde(pcb->pid);
@@ -696,7 +691,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			break;
 		case 6: // EL CPU DEVUELVE PCB POR FIN DE Q PERO A SU VEZ SE DESCONECTA EL CPU (SIGUSR1)
 			pcb = recibirPCB(mensaje);
-			puts("VUELVE PCB POR FIN DE Q [SIGUSR1]");
+			log_info(logFile,"VUELVE PCB POR FIN DE Q [SIGUSR1]");
 			cpuReturnsProcessTo(pcb,1);
 			matarSiCorresponde(pcb->pid);
 			executeProcess();
@@ -704,7 +699,7 @@ void recibirDeCPU(int socket, connHandle* master)
 		case 200:
 		{
 			//obtener valor variable compartida
-			puts("CPU PIDE VALOR DE VARIABLE");
+			log_info(logFile,"CPU PIDE VALOR DE VARIABLE");
 			int pid, len;
 			memcpy(&pid, mensaje->data, sizeof(int));
 			memcpy(&len, mensaje->data+sizeof(int), sizeof(int));
@@ -725,7 +720,7 @@ void recibirDeCPU(int socket, connHandle* master)
 		case 201:
 		{
 			//asignar valor variable compartida
-			puts("CPU QUIERE ASIGNAR VARIABLE");
+			log_info(logFile,"CPU QUIERE ASIGNAR VARIABLE");
 			int len=0, pid;
 			memcpy(&len,mensaje->data,sizeof(int));
 			char* nombre= malloc(len);
@@ -751,21 +746,21 @@ void recibirDeCPU(int socket, connHandle* master)
 		case 204:
 		{
 			// RESERVAR HEAP
-			puts("CPU PIDE HEAP");
+			log_info(logFile,"CPU PIDE HEAP");
 			MemoryRequest mr = deserializeMemReq(mensaje->data);
 			sumarSyscall(mr.pid);
 			PageOwnership* po= malloc(sizeof(PageOwnership));
 			int* offset = malloc(sizeof(int));
 			int res= memoryRequest(mr,offset,po);
 			if( res== -1){
-				puts("PEDIDO MAYOR QUE EL TAMAÑO DE UNA PAGINA");
+				log_info(logFile,"PEDIDO MAYOR QUE EL TAMAÑO DE UNA PAGINA");
 				matarCuandoCorresponda(mr.pid,-8);
 				lSend(socket, NULL, -2, 0);
 				//free(po);
 				break;
 			}
 			else if (res == -2){
-				puts("NO HAY ESPACIO DEBE FINALIZAR PROCESO");
+				log_info(logFile,"NO HAY ESPACIO DEBE FINALIZAR PROCESO");
 				matarCuandoCorresponda(mr.pid,-9);
 				lSend(socket, NULL, -2, 0);
 				//free(po);
@@ -786,7 +781,7 @@ void recibirDeCPU(int socket, connHandle* master)
 		case 205:
 		{
 			// LIBERAR HEAP
-			puts("CPU QUIERE LIBERAR HEAP");
+			log_info(logFile,"CPU QUIERE LIBERAR HEAP");
 			int pid, page, offset;
 			memcpy(&pid,mensaje->data,sizeof(int));
 			memcpy(&page,mensaje->data+sizeof(int),sizeof(int));
@@ -801,7 +796,7 @@ void recibirDeCPU(int socket, connHandle* master)
 		}
 		case 202:
 		{
-			puts("PROCESO UTILIZA WAIT");
+			log_info(logFile,"PROCESO UTILIZA WAIT");
 
 			int len;
 			int* pid = malloc(sizeof(int));
@@ -809,12 +804,11 @@ void recibirDeCPU(int socket, connHandle* master)
 			memcpy(&len, mensaje->data+sizeof(int), sizeof(int));
 			char* sem = malloc(len);
 			memcpy(sem, mensaje->data+sizeof(int)*2,len);
-			puts("OBTENER VALOR");
 			sumarSyscall(*pid);
 			int valor = obtenerValorSemaforo(sem);
 			if(valor == 5000)
 			{
-				printf("SEMAFORO INVALIDO");
+				log_info(logFile,"SEMAFORO INVALIDO");
 				lSend(socket, NULL, -3, 0);
 				matarCuandoCorresponda(*pid, -20);
 			}
@@ -835,7 +829,7 @@ void recibirDeCPU(int socket, connHandle* master)
 
 		case 203:
 		{
-			puts("PROCESO UTILIZA SIGNAL");
+			log_info(logFile,"PROCESO UTILIZA SIGNAL");
 			int len, pid;
 			memcpy(&pid, mensaje->data, sizeof(int));
 			memcpy(&len, mensaje->data+sizeof(int), sizeof(int));
@@ -846,7 +840,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			if(pos == -1)
 			{
 				lSend(socket, NULL, -3, 0);
-				puts("SEMAFORO INVALIDO");
+				log_info(logFile,"SEMAFORO INVALIDO");
 				matarCuandoCorresponda(pid, -20);
 			}
 			else
@@ -872,7 +866,7 @@ void recibirDeCPU(int socket, connHandle* master)
 				lSend(socket, &fd, 104, sizeof(int));
 			else
 			{
-				puts("EL PROGRAMA QUISO ABRIR UN ARCHIVO QUE NO EXISTE SIN FLAG 'C'");
+				log_info(logFile,"EL PROGRAMA QUISO ABRIR UN ARCHIVO QUE NO EXISTE SIN FLAG 'C'");
 				lSend(socket, NULL, -3, 0);
 				matarCuandoCorresponda(rp.pid, -2);
 			}
@@ -890,13 +884,13 @@ void recibirDeCPU(int socket, connHandle* master)
 			int estado = borrarArchivo(pid,fd);
 			if(estado == -1)
 			{
-				puts("NO SE PUEDE BORRAR, HAY OTROS PROCESOS USANDOLO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				log_info(logFile,"NO SE PUEDE BORRAR, HAY OTROS PROCESOS USANDOLO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
 				matarCuandoCorresponda(pid, -20);
 				lSend(socket, NULL, -3, 0);
 			}
 			else if(estado == 0)
 			{
-				puts("CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				log_info(logFile,"CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
 				lSend(socket, NULL, -3, 0);
 				matarCuandoCorresponda(pid, -2);
 			}
@@ -915,7 +909,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			sumarSyscall(pid);
 			if(!cerrarArchivo(pid, fd))
 			{
-				puts("CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				log_info(logFile,"CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
 				lSend(socket, NULL, -3, 0);
 				matarCuandoCorresponda(pid, -2);
 			}
@@ -932,7 +926,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			sumarSyscall(info.pid);
 			if(!moverCursorArchivo(info))
 			{
-				puts("CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				log_info(logFile,"CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
 				lSend(socket, NULL, -3, 0);
 				matarCuandoCorresponda(info.pid, -2);
 			}
@@ -947,24 +941,24 @@ void recibirDeCPU(int socket, connHandle* master)
 			fileInfo info;
 			char* data = deserializarPedidoEscritura(mensaje->data,&info);
 			sumarSyscall(info.pid);
-			printf("[ESCRITURA]: PID: %i | FD: %i | TAMANIO: %i\n", info.pid, info.fd, info.tamanio);
+			log_info(logFile,"[ESCRITURA]: PID: %i | FD: %i | TAMANIO: %i\n", info.pid, info.fd, info.tamanio);
 			int estado = escribirArchivo(info, data);
 			if(estado == -1)
 			{
-				puts("CPU NO TIENE PERMISO DE ESCRITURA DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				log_info(logFile,"CPU NO TIENE PERMISO DE ESCRITURA DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
 				lSend(socket, NULL, -3 ,0);
 				matarCuandoCorresponda(info.pid, -4);
 
 			}
 			else if(estado == 0)
 			{
-				puts("CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				log_info(logFile,"CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
 				lSend(socket, NULL, -3 ,0);
 				matarCuandoCorresponda(info.pid, -2);
 			}
 			else if(estado == -2)
 			{
-				puts("EL FILESYSTEM TUVO UN ERROR (POSIBLEMENTE NO TIENE ESPACIO)");
+				log_info(logFile,"EL FILESYSTEM TUVO UN ERROR (POSIBLEMENTE NO TIENE ESPACIO)");
 				lSend(socket, NULL, -3, 0);
 				matarCuandoCorresponda(info.pid, -20);
 			}
@@ -976,7 +970,7 @@ void recibirDeCPU(int socket, connHandle* master)
 
 		case 211: // LEER ARCHIVO
 		{
-			puts("CPU QUIERE LEER");
+			log_info(logFile,"CPU QUIERE LEER");
 
 			fileInfo info;
 			memcpy(&info, mensaje->data, sizeof(fileInfo));
@@ -984,13 +978,13 @@ void recibirDeCPU(int socket, connHandle* master)
 			char* data = leerArchivo(info);
 			if(data == NULL)
 			{
-				puts("CPU NO PUEDE LEER, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				log_info(logFile,"CPU NO PUEDE LEER, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
 				lSend(socket, NULL, -3 ,0);
 				matarCuandoCorresponda(info.pid, -3);
 			}
 			else if(data == -1)
 			{
-				puts("CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				log_info(logFile,"CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
 				lSend(socket, NULL, -3 ,0);
 				matarCuandoCorresponda(info.pid, -2);
 			}
@@ -1056,10 +1050,10 @@ char* deserializarPedidoEscritura(char* serializado, fileInfo* info)
 
 void aceptarNuevoCPU(int unCPU)
 {
-	puts("NUEVO CPU");
+	log_info(logFile,"NUEVO CPU");
 	queue_push(colaCPUS, (int*)unCPU);
 	enviarInformacion(unCPU);
-	puts("AGREGADO CPU A COLA");
+	log_info(logFile,"AGREGADO CPU A COLA");
 	executeProcess();
 
 }
@@ -1101,7 +1095,7 @@ PCB* recibirPCB(Mensaje* mensaje){
 	PCB* pcb = deserializarPCB(mensaje->data);
 	ProcessControl* pc = PIDFind(pcb->pid);
 	pc->rafagasEj = pcb->rafagasTotales;
-	printf("RECIBIDO PCB: PID: %i\n", pcb->pid);
+	log_info(logFile,"RECIBIDO PCB: PID: %i\n", pcb->pid);
 	return pcb;
 }
 
@@ -1189,7 +1183,7 @@ void enviarAColaDelSemaforo(char* c, int* pid) {
 	int pos = obtenerPosicionSemaforo(c);
 	t_queue* colaDelSemaforo = (t_queue*)list_get(listaDeColasSemaforos, pos);
 	queue_push(colaDelSemaforo, pid);
-	printf("EL SEMAFORO %s BLOQUEO EL PROCESO %i\n",config->SEM_IDS[pos], *pid);
+	log_info(logFile,"EL SEMAFORO %s BLOQUEO EL PROCESO %i\n",config->SEM_IDS[pos], *pid);
 }
 
 int quitarDeColaDelSemaforo(char* c) {
@@ -1197,7 +1191,7 @@ int quitarDeColaDelSemaforo(char* c) {
 	//int* pid = queue_peek(list_get(listaDeColasSemaforos, pos));
 	int* punteroPid = queue_pop(list_get(listaDeColasSemaforos, pos));
 	int pid = *punteroPid;
-	printf("EL SEMAFORO %s DESBLOQUEO EL PROCESO %i\n",config->SEM_IDS[pos], pid);
+	log_info(logFile,"EL SEMAFORO %s DESBLOQUEO EL PROCESO %i\n",config->SEM_IDS[pos], pid);
 	free(punteroPid);
 	return pid;
 }
@@ -1212,7 +1206,7 @@ void operarSemaforo(char* c, int num) {
 	//Lo guardo en su posicion pero antes lo vuelvo a convertir a string que trucazo no
 	config->SEM_INIT[pos] = string_itoa(nuevoValor);
 	char* nV= string_itoa(nuevoValor);
-	printf("SEMAFORO %s CAMBIO SU VALOR A: %s\n",semaforo, nV);
+	log_info(logFile,"SEMAFORO %s CAMBIO SU VALOR A: %s\n",semaforo, nV);
 	free(nV);
 }
 
@@ -1277,7 +1271,7 @@ void quitarDeColaDelSemaforoPorKill(int pid) {
 	}
 	t_queue* cola  = buscarColaContenedora(pid);
 	if(cola != NULL) {
-		printf("QUITANDO EL PROCESO% i DE LA COLA DEL SEMAFORO POR KILL\n", *(int*)(list_remove_by_condition(cola->elements, buscarPorPID)));
+		log_info(logFile,"QUITANDO EL PROCESO% i DE LA COLA DEL SEMAFORO POR KILL\n", *(int*)(list_remove_by_condition(cola->elements, buscarPorPID)));
 	}
 }
 

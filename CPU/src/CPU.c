@@ -48,7 +48,6 @@ int main(int argc, char** argsv) {
 		serializado pcbSerializado = serializarPCB(pcb);
 		lSend(kernel, pcbSerializado.data, estado, pcbSerializado.size);
 		free(pcbSerializado.data);
-
 		destruirPCB(pcb);
 	}
 	free(config);

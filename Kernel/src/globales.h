@@ -11,6 +11,7 @@
 #include "SocketLibrary.h"
 #include <sys/types.h>
 #include <sys/inotify.h>
+#include <commons/log.h>
 
 #define RUTA "/home/utnso/Escritorio/tp-2017-1c-The-Kernels/Kernel/Debug/config.conf"
 //#define RUTA "/home/utnso/workspace/tp-2017-1c-The-Kernels/Kernel/Debug/config.conf"
@@ -110,6 +111,7 @@ t_list* listaDeColasSemaforos;
 t_list* tablaGlobalFS;
 t_list* tablasDeProcesosFS;
 t_list* globalVariables;
+t_log* logFile;
 
 configFile* config;
 

@@ -154,7 +154,7 @@ void recibir_comandos()
 						pthread_mutex_unlock(&mColaFinished);
 						// SOLO LOS EXIT PARA SALIR DEL PASO
 						if(pcb == NULL)
-							puts("NO ESTA EN FINISHED);
+							puts("NO ESTA EN FINISHED");
 						else
 							mostrarPCB(pcb);
 

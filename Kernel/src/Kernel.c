@@ -15,13 +15,14 @@
 #include "KernelConfiguration.h"
 #include "ConsolaKernel.h"
 #include "KernelTest.h"
-const char* keys[16] = {"PUERTO_PROG", "PUERTO_CPU", "IP_MEMORIA", "PUERTO_MEMORIA", "IP_FS", "PUERTO_FS", "QUANTUM", "QUANTUM_SLEEP", "ALGORITMO", "GRADO_MULTIPROG", "SEM_IDS", "SEM_INIT", "SHARED_VARS", "STACK_SIZE","IP_PROPIA","NULL"};
+const char* keys[17] = {"PUERTO_PROG", "PUERTO_CPU", "IP_MEMORIA", "PUERTO_MEMORIA", "IP_FS", "PUERTO_FS", "QUANTUM", "QUANTUM_SLEEP", "ALGORITMO", "GRADO_MULTIPROG", "SEM_IDS", "SEM_INIT", "SHARED_VARS", "STACK_SIZE","IP_PROPIA", "LOG","NULL"};
 
 
 int main(int argc, char** argsv) {
 
 	puts("!!!Hello Kernel!!!\n"); /* prints !!!Hello World!!! */
 	config = configurate(RUTA, readConfigFile, keys);
+	levantarLog();
 	initializeGlobalVariables();
 	if(argc > 1 && strcmp(argsv[1],"-test")==0){
 		test=1;
@@ -48,6 +49,13 @@ int main(int argc, char** argsv) {
 	pthread_join(consolaKernel, NULL);
 	morirDecentemente();
 	return 0;
+}
+
+void levantarLog()
+{
+	if(fopen(config->log, "r") != NULL)
+		remove(config->log);
+	logFile = log_create(config->log, "KERNEL", 0, 1);
 }
 
 void morirDecentemente()

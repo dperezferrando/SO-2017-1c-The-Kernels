@@ -68,7 +68,7 @@ void killProcess(int PID,int exitCode){
 		lSend(pc->consola, &PID, -2, sizeof(int));
 	else // Si murio por otra razon le aviso tambien a memoria
 	{
-		if(exitCode == -7)
+		if(exitCode != -6)
 			lSend(pc->consola, &PID, 9, sizeof(int));
 		lSend(conexionMemoria, &PID, 9, sizeof(int));
 	}
@@ -93,27 +93,28 @@ void informarMemoryLeaks(int pid)
 
 	t_list* paginas= list_filter(ownedPages, &PIDFind);
 	int size = list_size(paginas);
-	printf("PAGINAS SIZE: %i\n", size);
+	log_info(logFile,"PAGINAS SIZE: %i\n", size);
 	if(size == 0)
-		printf("EL PROCESO PID: %i LIBERO TODO SU HEAP\n");
+		log_info(logFile,"EL PROCESO PID: %i LIBERO TODO SU HEAP\n");
 	else
 	{
-		puts("---------------------------------------------------------");
-		printf("EL PROCESO PID: %i NO LIBERO LA SIGUIENTE MEMORIA:\n", pid);
+		log_info(logFile,"---------------------------------------------------------");
+		log_info(logFile,"EL PROCESO PID: %i NO LIBERO LA SIGUIENTE MEMORIA:\n", pid);
 		list_iterate(paginas, &mostrarPaginaHeap);
-		puts("LIBERANDO MEMORIA...");
-		puts("---------------------------------------------------------");
+		log_info(logFile,"LIBERANDO MEMORIA...");
+		log_info(logFile,"---------------------------------------------------------");
 
 	}
 	list_destroy(paginas);
 
 }
 
+
 void mostrarPaginaHeap(PageOwnership* po)
 {
-	printf("PAGINA: %i\n", po->idpage);
+	log_info(logFile,"PAGINA: %i\n", po->idpage);
 	list_iterate(po->occSpaces, &mostrarMetadata);
-	puts("------------------------------------------");
+	log_info(logFile,"------------------------------------------");
 }
 
 
@@ -198,7 +199,6 @@ int executeProcess(){
 			lSend(CPU, buff, 1, pcbSerializado.size + sizeof(int));
 			ProcessControl* pc = PIDFind(pcb->pid);
 			pc->CPU= CPU;
-			puts("PCB ENVIADO");
 			free(pcbSerializado.data);
 			free(buff);
 		}
@@ -254,7 +254,7 @@ PCB* fromNewToReady(){
 	ProcessControl* pc = PIDFind(pcb->pid);
 	if(!enviarScriptAMemoria(pcb, pc->script, pc->tamanioScript))
 	{
-		puts("NO HAY ESPACIO");
+		log_info(logFile,"NO HAY ESPACIO");
 		if(!test)lSend(pc->consola, &pcb->pid, -2, sizeof(int));
 		killProcess(pcb->pid, -1);
 	}
@@ -472,7 +472,7 @@ void freePage(PageOwnership* po, int index, int avisoAMemoria){
 	memcpy(msg,&po->pid,sizeof(int));
 	memcpy(msg+sizeof(int),&po->idpage,sizeof(int));
 	if(!test && avisoAMemoria)lSend(conexionMemoria,msg,4,sizeof(int)*2);
-	printf("SE LIBERO PID %i, PAGE %i\n",po->pid,po->idpage);
+	log_info(logFile,"SE LIBERO PID %i, PAGE %i\n",po->pid,po->idpage);
 	list_remove_and_destroy_element(ownedPages,index,&destroyPageOwnership);
 	free(msg);
 }
