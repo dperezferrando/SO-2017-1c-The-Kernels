@@ -11,6 +11,9 @@ int main(int argc, char** argsv){
 	puts("bitmap levantado");
 	levantarBloquesEnUso();
 	puts("bitmap al dia");
+	//testxd();
+	//testxd2();
+	//testxd3();
 	//testsmuycabeitas();
 	kernel = getBindedSocket(config->ip_propia, config->puerto);
 	lListen(kernel, 5);
@@ -134,7 +137,8 @@ void esperarOperacion()
 				char* buffer = leerArchivo(path,offset,size);
 				// ESTE CHEQUEO NO SE QUE ES PERO CAPAZ NO ES NECESARIO, POR AHORA EL KERNEL LO IGNORA
 				if(buffer=="-1"){
-					lSend(conexion, 0, -4, sizeof(int));
+					lSend(conexion, NULL, -4, 0);
+					puts("LECTURA FALLO");
 					free(buffer);
 					break;
 				}
@@ -164,6 +168,7 @@ void esperarOperacion()
 				free(buffer);
 				if(result==-1){
 					lSend(conexion, NULL, -4, 0);
+					puts("ESCRITURA FALLO");
 					break;
 				}
 				else
@@ -201,9 +206,14 @@ void esperarOperacion()
 				// CREAR ARCHIVO
 				puts("CREAR ARCHIVO");
 				char* path = agregarBarraCero(mensaje->data, mensaje->header.tamanio);
-				if(crearArchivo(path) == -1)
-					puts("ALGO FALLO");
+				if(crearArchivo(path) == -1){
+					lSend(conexion, NULL, -4, 0);
+					puts("CREACION FALLO");
+					free(path);
+					break;
+				}
 				free(path);
+				break;
 			}
 		}
 		destruirMensaje(mensaje);
@@ -260,11 +270,6 @@ int validarBloque(char* pathRelativa){
 
 int crearArchivo(char* pathRelativa){
 	char* path = string_from_format("%s%s", ruta_Arch, pathRelativa);
-	FILE *arch;
-	arch = fopen (path,"w");
-	if (arch==NULL){
-		return -1;
-	}
 	//funcion tomar siguiente bloque de bitmap
 	int bloque=0;
 	int valor= bitarray_test_bit(Ebitarray, bloque);
@@ -272,7 +277,7 @@ int crearArchivo(char* pathRelativa){
 		bloque++;
 		valor = bitarray_test_bit(Ebitarray, bloque);
 	}
-	if(bloque>cantBloq){
+	if(bloque>=cantBloq){
 		return-1;
 	}
 	bitarray_set_bit(Ebitarray,bloque);
@@ -292,6 +297,11 @@ int crearArchivo(char* pathRelativa){
 	blq = open (ruta_Blq, O_CREAT, S_IRUSR|S_IWUSR);
 	close(blq);
 	//funcion tomar siguiente bloque de bitmap
+	FILE *arch;
+	arch = fopen (path,"w");
+	if (arch==NULL){
+		return -1;
+	}
 	char stamanio[11]="TAMANIO=0\n";
 	char* sbloques = NULL;
 	sbloques = malloc(sizeof(char)*(strlen(Sbloque)+11));
@@ -819,7 +829,7 @@ int addbloque(char* path){
 			bloque++;
 			valor = bitarray_test_bit(Ebitarray, bloque);
 		}
-	if(bloque>cantBloq){
+	if(bloque>=cantBloq){
 		return-1;
 	}
 	bitarray_set_bit(Ebitarray,bloque);
@@ -1438,3 +1448,21 @@ testsmuycabezitas(){ //no se rian los estoy haciendo asi para comitearselos rapi
 		borrarArchivo("tests/ParaEscribir.bin");
 		//test13
 }
+
+int testxd(){
+			int res=crearArchivo("tests/meme.bin");
+			if(res==-1){
+				puts("BIEN");
+			}
+			else puts("MAL");
+		}
+int testxd2(){
+			int res=escribirArchivo("tests/meme.bin",0,8,"xxxxxxxx");
+		}
+int testxd3(){
+			int res=escribirArchivo("tests/meme.bin",8,8,"xxxxxxxx");
+			if(res==-1){
+				puts("BIEN");
+			}
+			else puts("MAL");
+		}
