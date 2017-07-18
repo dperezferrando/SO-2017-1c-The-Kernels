@@ -674,7 +674,6 @@ void recibirDeCPU(int socket, connHandle* master)
 		case 4:
 			pcb = recibirPCB(mensaje);
 			log_info(logFile,"PROGRAMA ABORTADO POR EXCEPCION MEMORIA");
-			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
 			cpuReturnsProcessTo(pcb, 9);
 			killProcess(pcb->pid, -5);
 			pushearAColaCPUS(socket);
@@ -683,7 +682,6 @@ void recibirDeCPU(int socket, connHandle* master)
 		case 5:
 			pcb = recibirPCB(mensaje);
 			log_info(logFile,"PROGRAMA ABORTADO POR PROBLEMAS EN SYSCALL");
-			mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
 			cpuReturnsProcessTo(pcb, 9);
 			matarSiCorresponde(pcb->pid);
 			pushearAColaCPUS(socket);
@@ -781,7 +779,7 @@ void recibirDeCPU(int socket, connHandle* master)
 		}
 		case 202:
 		{
-			log_info(logFile,"PROCESO UTILIZA WAIT");
+			// WAIT
 
 			int len;
 			int* pid = malloc(sizeof(int));
@@ -789,43 +787,62 @@ void recibirDeCPU(int socket, connHandle* master)
 			memcpy(&len, mensaje->data+sizeof(int), sizeof(int));
 			char* sem = malloc(len);
 			memcpy(sem, mensaje->data+sizeof(int)*2,len);
+			log_info(logFile,"[SEMAFORO]: PID: %i UTILIZA WAIT EN: %s", *pid, sem);
 			sumarSyscall(*pid);
-
-			if(obtenerValorSemaforo(sem) <= 0) {
+			int valorActual = obtenerValorSemaforo(sem);
+			log_info(logFile, "[SEMAFORO]: EL VALOR ACTUAL DE %s ES: %i", sem, valorActual);
+			if(valorActual <= 0) {
 
 				//Aviso a CPU que hay bloqueo
 				lSend(socket, mensaje->data, 3, sizeof(int));
 				//CPU me envia el pid a bloquearse
 				//Envio el pid a la cola del semaforo
+				log_info(logFile, "[SEMAFORO]: SE BLOQUEA EL PROCESO PID: %i",*pid);
 				enviarAColaDelSemaforo(sem, pid);
 			} else {
 				//Aviso a CPU que no hay bloqueo
+				log_info(logFile, "[SEMAFORO]: NO HAY BLOQUEO");
 				lSend(socket, mensaje->data, 0, sizeof(int));
-				waitSemaforo(sem);
+
+
 			}
+			waitSemaforo(sem);
+			int nuevoValor = obtenerValorSemaforo(sem);
+			log_info(logFile, "[SEMAFORO]: NUEVO VALOR DE %s: %i", sem, nuevoValor);
 			free(sem);
 			break;
 		}
 
 		case 203:
 		{
-			log_info(logFile,"PROCESO UTILIZA SIGNAL");
+			// SIGNAL
 			int len, pid;
 			memcpy(&pid, mensaje->data, sizeof(int));
 			memcpy(&len, mensaje->data+sizeof(int), sizeof(int));
 			char* sem = malloc(len);
 			memcpy(sem, mensaje->data+sizeof(int)*2,len);
+			log_info(logFile,"[SEMAFORO]: PID %i UTILIZA SIGNAL EN: %s", pid, sem);
 			int pos = obtenerPosicionSemaforo(sem);
 			sumarSyscall(pid);
-
-
+			int valorActual = obtenerValorSemaforo(sem);
+			log_info(logFile, "[SEMAFORO]: EL VALOR ACTUAL DE %s ES: %i", sem, valorActual);
 			if(laColaDelSemaforoEstaVacia(pos))
-				signalSemaforo(sem);
+			{
+				log_info(logFile,"[SEMAFORO]: LA COLA DE %s ESTA VACIA", sem);
+
+			}
 			else {
 				int pidDesbloq = quitarDeColaDelSemaforo(sem);
+				log_info(logFile, "[SEMAFORO]: SEMAFORO %s DESBLOQUEA EL PID: %i", sem, pidDesbloq);
+				pthread_mutex_lock(&mListaBlocked);
+				list_iterate(blockedList, mostrarPID);
+				pthread_mutex_unlock(&mListaBlocked);
 				fromBlockedToReady(pidDesbloq);
 
 			}
+			signalSemaforo(sem);
+			int nuevoValor = obtenerValorSemaforo(sem);
+			log_info(logFile, "[SEMAFORO]: NUEVO VALOR DE %s: %i", sem, nuevoValor);
 			free(sem);
 			break;
 		}
@@ -978,6 +995,12 @@ void recibirDeCPU(int socket, connHandle* master)
 	destruirMensaje(mensaje);
 
 }
+
+void mostrarPID(PCB* pcb)
+{
+	printf("PID: %i\n", pcb->pid);
+}
+
 
 void killCPUOwnedProcess(socket){
 	bool CPUFind(ProcessControl* pc){
@@ -1147,7 +1170,6 @@ void enviarAColaDelSemaforo(char* c, int* pid) {
 	int pos = obtenerPosicionSemaforo(c);
 	t_queue* colaDelSemaforo = (t_queue*)list_get(listaDeColasSemaforos, pos);
 	queue_push(colaDelSemaforo, pid);
-	log_info(logFile,"EL SEMAFORO %s BLOQUEO EL PROCESO %i\n",config->SEM_IDS[pos], *pid);
 }
 
 int quitarDeColaDelSemaforo(char* c) {

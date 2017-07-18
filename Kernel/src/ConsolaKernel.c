@@ -228,10 +228,6 @@ void enviarTodosLosReadyAExecute()
 		executeProcess();
 }
 
-void mostrarPID(PCB* pcb)
-{
-	printf("PID: %i\n", pcb->pid);
-}
 
 char* leerCaracteresEntrantes() {
 	int i, caracterLeido;

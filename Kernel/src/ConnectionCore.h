@@ -42,6 +42,7 @@ bool isListener(int, connHandle);
 bool _usedFragment(HeapMetadata*);
 PageOwnership* pageToStore(MemoryRequest mr);
 
+void mostrarPID(PCB* pcb);
 void aceptarNuevoCPU(int);
 void enviarInformacion(int);
 void killCPUOwnedProcess(int);

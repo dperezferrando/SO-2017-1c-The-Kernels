@@ -588,7 +588,7 @@ void conexion_cpu(int conexion)
 					lSend(conexion, NULL, -5, 0);
 				else
 				{
-					log_info(logFile,"[CPU %i]: GUARDAR INFO EN PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %s\n", conexion, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size, pedido->valor);
+					log_info(logFile,"[CPU %i]: GUARDAR INFO EN PAG: %i | OFFSET: %i | SIZE: %i\n", conexion, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
 					escribirDondeCorresponda(pidActual, pedido);
 					lSend(conexion,NULL, 104, 0);
 				}

@@ -29,6 +29,12 @@ int main(int argc, char** argsv) {
 		{
 
 			char* linea = pedirInstruccionAMemoria(pcb, tamanioPagina);
+			if(linea == NULL)
+			{
+				log_error(logFile, "[PEDIR INSTRUCCION NRO %i]: ALGO SALIO MAL. PUEDE QUE MEMORIA HAYA MUERTO", pcb->programCounter);
+				toBeKilled = 1;
+				break;
+			}
 			log_info(logFile, "[PEDIR INSTRUCCION NRO %i | RAFAGA: %i]: %s\n",  pcb->programCounter, rafagas, linea);
 			analizadorLinea(linea, &primitivas, &primitivas_kernel);//aca supuestamente leakea
 			free(linea);
@@ -389,7 +395,7 @@ void escribirEnMemoria(posicionEnMemoria posicion, char* valor)
 		log_error(logFile, "[ESCRIBIR EN MEMORIA]: PROGRAMA ABORTADO -> NO SE ESCRIBE NADA");
 		return;
 	}
-	log_info(logFile, "[ESCRIBIR EN MEMORIA]: PAG: %i | OFFSET: %i | SIZE: %i | VALOR: %s\n", posicion.pagina, posicion.offset, posicion.size, valor);
+	log_info(logFile, "[ESCRIBIR EN MEMORIA]: PAG: %i | OFFSET: %i | SIZE: %i\n", posicion.pagina, posicion.offset, posicion.size);
 	int limiteStack = pcb->cantPaginasCodigo+stackSize;
 	int total = posicion.offset + posicion.size;
 	/*if(posicion.pagina >= limiteStack)
@@ -468,7 +474,7 @@ char* enviarPedidoLecturaMemoria(posicionEnMemoria posicion)
 {
 	lSend(memoria, &posicion, LEER, sizeof(posicionEnMemoria));
 	Mensaje* respuesta = lRecv(memoria);
-	if(respuesta->header.tipoOperacion == -5)
+	if(respuesta->header.tipoOperacion == -5 || respuesta->header.tipoOperacion == -1)
 		return NULL;
 	char* data = malloc(respuesta->header.tamanio+1);
 	memcpy(data, respuesta->data, respuesta->header.tamanio);
