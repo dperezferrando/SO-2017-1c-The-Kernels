@@ -1,4 +1,5 @@
 begin
+!puto = 3
 variables a, b, c
 a = 5
 b = 3

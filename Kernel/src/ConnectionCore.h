@@ -75,6 +75,7 @@ GlobalVariable* findGlobalVariable(char* );
 //Para semaforos
 int sonIguales(char* s1, char* s2);
 int obtenerPosicionSemaforo(char* c);
+Semaforo* encontrarSemaforo(char* semaforo);
 int obtenerValorSemaforo(char* c);
 void enviarAColaDelSemaforo(char* c, int* pid);
 int quitarDeColaDelSemaforo(char* c);

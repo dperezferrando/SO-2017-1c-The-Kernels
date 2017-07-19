@@ -710,6 +710,14 @@ void recibirDeCPU(int socket, connHandle* master)
 			memcpy(&len, mensaje->data+sizeof(int), sizeof(int));
 			char* nombre= malloc(len);
 			memcpy(nombre,mensaje->data+sizeof(int)*2,len);
+			if(findGlobalVariable(nombre) == NULL)
+			{
+				log_error(logFile, "[VAR GLOBAL]: LA VARIABLE %s NO EXISTE", nombre);
+				free(nombre);
+				lSend(socket, NULL, -3, 0);
+				matarCuandoCorresponda(pid, -20);
+				break;
+			}
 			log_info(logFile,"[VAR GLOBAL]: PROCESO PID %i PIDE VALOR DE VARIABLE %s", pid, nombre);
 			sumarSyscall(pid);
 			GlobalVariable * gb= findGlobalVariable(nombre);
@@ -727,10 +735,19 @@ void recibirDeCPU(int socket, connHandle* master)
 			int newValue= 0;
 			memcpy(&newValue,mensaje->data+sizeof(int) + len,sizeof(int));
 			memcpy(&pid, mensaje->data+sizeof(int)*2 + len, sizeof(int));
+			if(findGlobalVariable(nombre) == NULL)
+			{
+				log_error(logFile, "[VAR GLOBAL]: LA VARIABLE %s NO EXISTE", nombre);
+				free(nombre);
+				lSend(socket, NULL, -3, 0);
+				matarCuandoCorresponda(pid, -20);
+				break;
+			}
 			log_info(logFile,"[VAR GLOBAL]: PROCESO PID %i QUIERE ASIGNAR VARIABLE %s", pid, nombre);
 			sumarSyscall(pid);
 			GlobalVariable * gb= findGlobalVariable(nombre);
 			gb->value= newValue;
+			lSend(socket, NULL, 104, 0);
 			free(nombre);
 			break;
 		}
@@ -796,6 +813,14 @@ void recibirDeCPU(int socket, connHandle* master)
 			memcpy(&len, mensaje->data+sizeof(int), sizeof(int));
 			char* sem = malloc(len);
 			memcpy(sem, mensaje->data+sizeof(int)*2,len);
+			if(encontrarSemaforo(sem) == NULL)
+			{
+				log_error(logFile,"[SEMAFORO]: PID: %i UTILIZA WAIT EN SEMAFORO INEXISTENTE: %s", pid, sem);
+				lSend(socket, NULL, -3, 0);
+				matarCuandoCorresponda(pid, -20);
+				free(sem);
+				break;
+			}
 			log_info(logFile,"[SEMAFORO]: PID: %i UTILIZA WAIT EN: %s", pid, sem);
 			sumarSyscall(pid);
 			int valorActual = obtenerValorSemaforo(sem);
@@ -812,7 +837,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			} else {
 				//Aviso a CPU que no hay bloqueo
 				log_info(logFile, "[SEMAFORO]: NO HAY BLOQUEO");
-				lSend(socket, mensaje->data, 0, sizeof(int));
+				lSend(socket, mensaje->data, 104, sizeof(int));
 
 			}
 			waitSemaforo(sem);
@@ -830,25 +855,27 @@ void recibirDeCPU(int socket, connHandle* master)
 			memcpy(&len, mensaje->data+sizeof(int), sizeof(int));
 			char* sem = malloc(len);
 			memcpy(sem, mensaje->data+sizeof(int)*2,len);
+			if(encontrarSemaforo(sem) == NULL)
+			{
+				log_error(logFile,"[SEMAFORO]: PID: %i UTILIZA SIGNAL EN SEMAFORO INEXISTENTE: %s", pid, sem);
+				lSend(socket, NULL, -3, 0);
+				matarCuandoCorresponda(pid, -20);
+				free(sem);
+				break;
+			}
 			log_info(logFile,"[SEMAFORO]: PID %i UTILIZA SIGNAL EN: %s", pid, sem);
 			sumarSyscall(pid);
 			int valorActual = obtenerValorSemaforo(sem);
 			log_info(logFile, "[SEMAFORO]: EL VALOR ACTUAL DE %s ES: %i", sem, valorActual);
 			if(laColaDelSemaforoEstaVacia(sem))
-			{
 				log_info(logFile,"[SEMAFORO]: LA COLA DE %s ESTA VACIA", sem);
-
-
-			}
 			else {
 				int pidDesbloq = quitarDeColaDelSemaforo(sem);
 				log_info(logFile, "[SEMAFORO]: SEMAFORO %s DESBLOQUEA EL PID: %i", sem, pidDesbloq);
 				desbloquearCuandoCorresponda(pidDesbloq);
-
-
 			}
-
 			signalSemaforo(sem);
+			lSend(socket, NULL, 104, 0);
 			int nuevoValor = obtenerValorSemaforo(sem);
 			log_info(logFile, "[SEMAFORO]: NUEVO VALOR DE %s: %i", sem, nuevoValor);
 			free(sem);

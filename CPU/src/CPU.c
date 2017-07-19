@@ -163,6 +163,8 @@ void imprimir(configFile* c){
 
 // FUNCIONES ANSISOP PARSER
 t_puntero definirVariable(t_nombre_variable identificador){
+	if(estado != OK)
+		return -1;
 	int limiteStack = pcb->cantPaginasCodigo+stackSize;
 	log_info(logFile, "[DEFINIR VARIABLE - STACK LEVEL: %i]: '%c'\n", pcb->nivelDelStack, identificador);
 	posicionEnMemoria unaPosicion = calcularPosicion(pcb->nivelDelStack);
@@ -185,6 +187,8 @@ t_puntero definirVariable(t_nombre_variable identificador){
 }
 
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador){
+	if(estado != OK)
+		return -1;
 	log_info(logFile, "[OBTENER POSICION VARIABLE - STACK LEVEL: %i]: '%c'\n", pcb->nivelDelStack, identificador);
 	t_list* lista;
 	if(isalpha(identificador))
@@ -202,6 +206,8 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador){
 }
 
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor){
+	if(estado != OK)
+		return -1;
 	log_info(logFile, "[ASIGNAR COMPARTIDA]: VAR: %s | VALOR: %i\n", variable, valor);
 	int len = strlen(variable)+1;
 	int size = len + sizeof(int)*3;
@@ -212,16 +218,22 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 	memcpy(data + sizeof(int)*2 + len, &pcb->pid, sizeof(int));
 	lSend(kernel, data, ASIGNARCOMPARTIDA, size);
 	free(data);
-/*	Mensaje* respuesta = lRecv(kernel);
-	int valorAsignado;
-	memcpy(&valorAsignado, respuesta->data, sizeof(int));*/
-//	destruirMensaje(respuesta);
+	Mensaje* respuesta = lRecv(kernel);
+	if(respuesta->header.tipoOperacion == -3)
+	{
+		log_error(logFile, "[VALOR COMPARTIDA]: NO EXISTE LA VARIABLE %s", variable);
+		estado = ABORTADO;
+		destruirMensaje(respuesta);
+		return 0;
+	}
+	destruirMensaje(respuesta);
 	return valor;
 
 }
 
 t_valor_variable obtenerValorCompartida(t_nombre_compartida nombre){
-
+	if(estado != OK)
+		return -1;
 	log_info(logFile, "[VALOR COMPARTIDA]: SE PIDE EL VALOR DE: %s\n", nombre);
 	int len = strlen(nombre)+1;
 	int size = len + sizeof(int)*2;
@@ -230,17 +242,26 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida nombre){
 	memcpy(data+sizeof(int), &len, sizeof(int));
 	memcpy(data+sizeof(int)*2, nombre, len);
 	lSend(kernel, data, OBTENERCOMPARTIDA, size);
+	free(data);
 	Mensaje* respuesta = lRecv(kernel);
+	if(respuesta->header.tipoOperacion == -3)
+	{
+		log_error(logFile, "[VALOR COMPARTIDA]: NO EXISTE LA VARIABLE %s", nombre);
+		estado = ABORTADO;
+		destruirMensaje(respuesta);
+		return 0;
+	}
 	int valor;
 	memcpy(&valor, respuesta->data, sizeof(int));
 	log_info(logFile, "[VALOR COMPARTIDA]: EL VALOR DE %s es: %i\n", nombre, valor);
 	destruirMensaje(respuesta);
-	free(data);
 	return valor;
 }
 
 void asignar(t_puntero direccionReal, t_valor_variable valor)
 {
+	if(estado != OK)
+		return;
 	log_info(logFile, "[ASIGNAR VARIABLE - STACK LEVEL: %i]\n", pcb->nivelDelStack);
 	posicionEnMemoria posicion = convertirADireccionLogica(direccionReal);
 	char* aux = malloc(posicion.size);
@@ -516,6 +537,8 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta)
 
 t_valor_variable dereferenciar(t_puntero posicion)
 {
+	if(estado != OK)
+		return -1;
 	log_info(logFile, "[DEREFERENCIAR - STACK LEVEL: %i]\n", pcb->nivelDelStack);
 	posicionEnMemoria direccionLogica = convertirADireccionLogica(posicion);
 	char* info = leerEnMemoria(direccionLogica);
@@ -531,6 +554,8 @@ t_valor_variable dereferenciar(t_puntero posicion)
 
 void finalizar(void)
 {
+	if(estado != OK)
+		return;
 	log_info(logFile, "[FINALIZAR - STACK LEVEL: %i]\n", pcb->nivelDelStack);
 	if(pcb->nivelDelStack == 0)
 		estado = TERMINO;
@@ -546,6 +571,8 @@ void finalizar(void)
 
 }
 void irAlLabel(t_nombre_etiqueta nombre){
+	if(estado != OK)
+		return;
 	log_info(logFile, "[IR A LABEL - STACK LEVEL: %i]\n", pcb->nivelDelStack);
 	t_puntero_instruccion instruccionParaPCB;
 	instruccionParaPCB = metadata_buscar_etiqueta(nombre, pcb->indiceEtiqueta, pcb->sizeIndiceEtiquetas);
@@ -560,6 +587,8 @@ void irAlLabel(t_nombre_etiqueta nombre){
 }
 
 void retornar(t_valor_variable valorDeRetorno){
+	if(estado != OK)
+		return;
 	log_info(logFile, "[RETORNAR - STACK LEVEL: %i]\n", pcb->nivelDelStack);
 	t_puntero dirReal = convertirADireccionReal(pcb->indiceStack[pcb->nivelDelStack].variableDeRetorno.posicion);
 	asignar(dirReal,valorDeRetorno);
@@ -569,29 +598,49 @@ void retornar(t_valor_variable valorDeRetorno){
 	//PRIMITIVAS ANSISOP KERNEL
 
 void wait(t_nombre_semaforo nombre){
-
+	if(estado != OK)
+		return;
 	serializado sem = serializarSemaforo(nombre);
 	//Envio el nombre del semaforo, uso string_substring_until porque el parser agarra el nombre con el /n
 	lSend(kernel, sem.data, WAIT, sem.size);
+	free(sem.data);
 	//El kernel me responde si tengo que bloquear
 	Mensaje *m = lRecv(kernel);
 	//Bloqueado = 3, No bloqueado = 0
+	if(m->header.tipoOperacion == -3)
+	{
+		log_error(logFile, "[WAIT] SEMAFORO INVALIDO");
+		estado = ABORTADO;
+		destruirMensaje(m);
+		return;
+	}
 	int bloqueado = m->header.tipoOperacion;
 	if(bloqueado == BLOQUEADO){
-		log_info(logFile, "[WAIT - PROCESO BLOQUEADO POR SEMAFORO]");
+		log_info(logFile, "[WAIT] PROCESO BLOQUEADO POR SEMAFORO");
 		//Envio el pid al kernel para que lo guarde en la cola del semaforo
 	//	lSend(kernel, &pcb->pid, WAIT, sizeof(int));
 		//Para salir del while
 		estado = BLOQUEADO;
 	}
-	free(sem.data);
 	destruirMensaje(m);
 }
 
 void signalSem(t_nombre_semaforo nombre){
+	if(estado != OK)
+		return;
 	serializado sem = serializarSemaforo(nombre);
 	lSend(kernel, sem.data, SIGNAL, sem.size);
 	free(sem.data);
+	Mensaje* m = lRecv(kernel);
+	if(m->header.tipoOperacion == -3)
+	{
+		log_error(logFile, "[SIGNAL] SEMAFORO INVALIDO");
+		estado = ABORTADO;
+		destruirMensaje(m);
+		return;
+	}
+	destruirMensaje(m);
+
 }
 
 serializado serializarSemaforo(char* nombre)
@@ -607,7 +656,8 @@ serializado serializarSemaforo(char* nombre)
 }
 
 t_puntero reservar(t_valor_variable nroBytes){
-
+	if(estado != OK)
+		return -1;
 	log_info(logFile, "[HEAP]: SE QUIEREN RESERVAR %i BYTES", nroBytes);
 	serializado pedido = serializarPedido(nroBytes);
 	lSend(kernel, pedido.data, RESERVAR_MEMORIA_HEAP, pedido.size);
@@ -644,7 +694,8 @@ serializado serializarPedido(int num)
 
 
 void liberar(t_puntero puntero ){
-
+	if(estado != OK)
+		return;
 	log_info(logFile, "[HEAP]: SE LIBERA UN PUNTERO");
 	posicionEnMemoria posicion = convertirADireccionLogica(puntero);
 	int size = sizeof(int)*3;
@@ -732,6 +783,8 @@ void deserializarRutaPermisos(void* data, int* pid, char* ruta, char* permisos) 
 }
 
 t_descriptor_archivo abrir(t_direccion_archivo ruta , t_banderas flags){
+	if(estado != OK)
+		return -1;
 	t_descriptor_archivo fileDescriptor;
 	serializado rutaYFlagsSerializados;
 	char* cadenaFlags = flagsDecentes(flags);
@@ -755,6 +808,8 @@ t_descriptor_archivo abrir(t_direccion_archivo ruta , t_banderas flags){
 
 
 void borrar(t_descriptor_archivo fileDescriptor){
+	if(estado != OK)
+		return;
 	fileInfo fi;
 	fi.fd = fileDescriptor;
 	fi.pid = pcb->pid;
@@ -770,6 +825,8 @@ void borrar(t_descriptor_archivo fileDescriptor){
 }
 
 void cerrar(t_descriptor_archivo fileDescriptor) {
+	if(estado != OK)
+		return;
 	fileInfo fi;
 	fi.fd = fileDescriptor;
 	fi.pid = pcb->pid;
@@ -785,6 +842,8 @@ void cerrar(t_descriptor_archivo fileDescriptor) {
 }
 
 void moverCursor(t_descriptor_archivo fileDescriptor, t_valor_variable cursor){
+	if(estado != OK)
+		return;
 	fileInfo fi;
 	fi.fd = fileDescriptor;
 	fi.pid = pcb->pid;
@@ -802,6 +861,8 @@ void moverCursor(t_descriptor_archivo fileDescriptor, t_valor_variable cursor){
 
 
 void escribir(t_descriptor_archivo fileDescriptor, void* info, t_valor_variable tamanio){
+	if(estado != OK)
+		return;
 	fileInfo fi;
  	 fi.fd = fileDescriptor;
  	 fi.pid = pcb->pid;
@@ -822,6 +883,8 @@ void escribir(t_descriptor_archivo fileDescriptor, void* info, t_valor_variable 
 }
 
 void leer(t_descriptor_archivo fileDescriptor, t_puntero info, t_valor_variable tamanio){
+	if(estado != OK)
+		return;
 	fileInfo fi;
 	fi.fd = fileDescriptor;
 	fi.pid = pcb->pid;
