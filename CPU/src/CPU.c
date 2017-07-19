@@ -14,6 +14,7 @@ int main(int argc, char** argsv) {
 	levantarLog();
 	toBeKilled = 0;
 	signal(SIGUSR1, sig_handler);
+	signal(SIGINT, sig_handler);
 	iniciarConexiones();
 	while(toBeKilled == 0) // EN UN FUTURO ESTO SE CAMBIA POR EL ENVIO DE LA SEÑAL SIGUSR1
 	{
@@ -43,13 +44,15 @@ int main(int argc, char** argsv) {
 			rafagas++;
 			if(quantum != 0 && rafagas == quantum && estado == OK)
 			{
-				if(toBeKilled == 0)
+				//if(toBeKilled == 0)
 					estado = EXPULSADO;
-				else
-					estado = KILLED;
+			//	else
+				//	estado = KILLED;
 			}
 			usleep(quantumSleep*1000);
 		}
+		if(estado == EXPULSADO && toBeKilled == 1)
+			estado = KILLED;
 		log_info(logFile, "[PCB EXPULSADO]: PID: %i | ESTADO: %i\n", pcb->pid, estado);
 		serializado pcbSerializado = serializarPCB(pcb);
 		lSend(kernel, pcbSerializado.data, estado, pcbSerializado.size);
@@ -66,7 +69,7 @@ int main(int argc, char** argsv) {
 
 void sig_handler(int signo)
 {
-  if (signo == SIGUSR1)
+  if (signo == SIGUSR1 || signo == SIGINT)
   {
 	  log_warning(logFile, "[SEÑAL DE DESCONEXION] NOS VIMOS PAPUS");
 	  toBeKilled = 1;

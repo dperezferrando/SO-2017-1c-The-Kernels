@@ -647,7 +647,7 @@ void recibirDeCPU(int socket, connHandle* master)
 	{
 		case -1:
 			log_warning(logFile,"[KERNEL]: SE DESCONECTA CPU SOCKET: %i\n", socket);
-			killCPUOwnedProcess(socket);
+		//	killCPUOwnedProcess(socket);
 			closeHandle(socket, master);
 			removerCPUDeCola(socket);
 			readyProcess();
@@ -701,7 +701,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			break;
 		case 6: // EL CPU DEVUELVE PCB POR FIN DE Q PERO A SU VEZ SE DESCONECTA EL CPU (SIGUSR1)
 			pcb = recibirPCB(mensaje);
-			log_warning(logFile,"[PLANIFICACION]: VUELVE PROCESO PID %i POR FIN DE QUANTUM  [SIGUSR1]");
+			log_warning(logFile,"[PLANIFICACION]: VUELVE PROCESO PID %i POR FIN DE QUANTUM  [SIGUSR1/CTRl + C]");
 			cpuReturnsProcessTo(pcb,1);
 			matarSiCorresponde(pcb->pid);
 			executeProcess();
