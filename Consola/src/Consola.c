@@ -11,12 +11,19 @@
 #include "Consola.h"
 
 int main(void) {
+	signal(SIGINT, handleExit);
 	iniciarSemaforosDeControl();
 	leerArchivoDeConfiguracion();
 	conectarConKernel();
 	atenderPedidos();
 	finalizarProceso();
 	return EXIT_SUCCESS;
+}
+
+void handleExit(int sig)
+{
+	desconectar();
+	puts("\nAbortaste la consola papu...apreta enter para salir");
 }
 
 void atenderPedidos() {
@@ -37,7 +44,7 @@ void finalizarProceso() {
 void atenderInstrucciones() {
 	Instruccion instruccion;
 	instruccion.comando = 0;
-	while(instruccion.comando != EXIT) {
+	while(morir == 0) {
 		instruccion = obtenerInstruccion();
 		switch(instruccion.comando) {
 			case RUN: iniciar(instruccion.argumento); break;
@@ -81,6 +88,7 @@ void desbloquearHilos() {
 }
 
 void desconectar() {
+	morir = 1;
 	enviarAlKernel(&nada, ABORTAR_PROCESO);
 	sem_wait(&finalizacionHiloReceptor);
 }

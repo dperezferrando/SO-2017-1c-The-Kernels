@@ -67,6 +67,7 @@ void morirDecentemente()
 	destruirListaDeColasSemaforos();
 	destruirCapaMemoria();
 	destruirVariablesGlobales();
+	log_destroy(logFile);
 }
 
 void destruirVariableGlobal(GlobalVariable* gb)

@@ -10,6 +10,8 @@ void handleSockets(connHandle* master, socketHandler result){
 		{
 			if(p==master->listenConsola){
 				int unaConsola = lAccept(p, CONSOLA_ID);
+				if(morir == 1)
+					break;
 				log_info(logFile,"[KERNEL]: NUEVA CONSOLA: SOCKET: %i", unaConsola);
 				addReadSocket(unaConsola,&(master->consola));
 			}
@@ -81,6 +83,8 @@ void recibirDeConsola(int socket, connHandle* master)
 			list_iterate(procesosDeLaConsola, matarDesdeProcessControl);
 			lSend(socket, mensaje->data, 3, sizeof(int));
 			list_destroy(procesosDeLaConsola);
+			log_info(logFile,"[KERNEL]: SE DECONECTA CONSOLA SOCKET %i", socket);
+			closeHandle(socket, master);
 			break;
 		}
 
@@ -689,7 +693,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			break;
 		case 5:
 			pcb = recibirPCB(mensaje);
-			log_error(logFile,"[PLANIFICACION]: PROCESO PID %i ABORTADO - ERROR EN SYSCALL U OTRA RAZON (VER EXIT CODE)");
+			log_error(logFile,"[PLANIFICACION]: PROCESO PID %i ABORTADO - ERROR EN SYSCALL U OTRA RAZON (VER EXIT CODE)", pcb->pid);
 			cpuReturnsProcessTo(pcb, 9);
 			matarSiCorresponde(pcb->pid);
 			pushearAColaCPUS(socket);
@@ -764,14 +768,16 @@ void recibirDeCPU(int socket, connHandle* master)
 				log_error(logFile,"[HEAP]: PID %i - PEDIDO MAYOR QUE EL TAMAÑO DE UNA PAGINA", mr.pid);
 				matarCuandoCorresponda(mr.pid,-8);
 				lSend(socket, NULL, -2, 0);
-				//free(po);
+				free(offset);
+				free(po);
 				break;
 			}
 			else if (res == -2){
 				log_error(logFile,"[HEAP]: PID %i - NO HAY ESPACIO EN MEMORIA", mr.pid);
 				matarCuandoCorresponda(mr.pid,-9);
 				lSend(socket, NULL, -2, 0);
-				//free(po);
+				free(offset);
+				free(po);
 				break;
 			}
 			*offset = (*offset)+sizeof(HeapMetadata);

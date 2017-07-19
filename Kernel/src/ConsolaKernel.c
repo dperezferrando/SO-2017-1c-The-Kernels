@@ -188,6 +188,7 @@ void recibir_comandos()
 			else if(!strcmp(comando[0], "exit"))
 			{
 				morir = 1;
+				getConnectedSocket(config->IP_PROPIA, config->PUERTO_PROG, CONSOLA_ID);
 			}
 			else
 				puts("COMANDO INVALIDO");

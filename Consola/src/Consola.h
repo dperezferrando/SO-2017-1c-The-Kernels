@@ -14,6 +14,7 @@
 #include <commons/collections/list.h>
 #include "../../ConfigLibrary/src/Configuration.c"
 #include "../../SocketLibrary/src/SocketLibrary.c"
+#include  <signal.h>
 
 //------------------------------CONSTANTES------------------------------
 
@@ -85,7 +86,7 @@ t_list* listaDeProgramas; //Lista de los programas
 const char* keys[3] = { "IP_KERNEL", "PUERTO_KERNEL", "NULL" }; //Campos del archivo de configuracion
 int nada = 0; //Cuando no tengo nada que enviarle al kernel
 Mensaje* mensaje = NULL; //Para que pueden acceder al mensaje mis hermosos hilos
-
+int morir = 0;
 //------------------------------SEMAFOROS------------------------------
 
 sem_t nuevoMensaje;
@@ -99,6 +100,7 @@ sem_t mutexOutput;
 
 //------------------------------FUNCIONES------------------------------
 
+void handleExit(int sig);
 void leerArchivoDeConfiguracion();
 void conectarConKernel();
 void atenderPedidos();
