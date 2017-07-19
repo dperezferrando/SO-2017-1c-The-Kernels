@@ -106,14 +106,16 @@ void destruirListaProcesos()
 	list_destroy_and_destroy_elements(process, destruirProcessControl);
 }
 
-void destruirColaSemaforo(t_queue* cola)
+void destruirSemaforo(Semaforo* sem)
 {
-	queue_destroy_and_destroy_elements(cola, free);
+	free(sem->nombre);
+	queue_destroy_and_destroy_elements(sem->cola, free);
+	free(sem);
 }
 
 void destruirListaDeColasSemaforos()
 {
-	list_destroy_and_destroy_elements(listaDeColasSemaforos, destruirColaSemaforo);
+	list_destroy_and_destroy_elements(listaDeColasSemaforos, destruirSemaforo);
 }
 
 void initializeGlobalVariables(){

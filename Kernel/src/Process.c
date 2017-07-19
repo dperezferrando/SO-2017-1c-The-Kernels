@@ -73,7 +73,7 @@ void killProcess(int PID,int exitCode){
 		lSend(conexionMemoria, &PID, 9, sizeof(int));
 	}
 	//Verifica si esta en alguna de cola de algun semaoforo
-	quitarDeColaDelSemaforoPorKill(PID);
+	quitarDeSemaforosPorKill(PID);
 	eliminarEntradasDelProceso(PID);
 	_modifyExitCode(PID,exitCode);
 	informarMemoryLeaks(PID);
@@ -82,6 +82,7 @@ void killProcess(int PID,int exitCode){
 		readyProcess();
 		//executeProcess(); no corresponde
 	}
+	log_warning(logFile, "[KILL]: EL PROCESO PID %i FUE AJUSTICIADO", PID);
 
 }
 
@@ -93,16 +94,16 @@ void informarMemoryLeaks(int pid)
 
 	t_list* paginas= list_filter(ownedPages, &PIDFind);
 	int size = list_size(paginas);
-	log_info(logFile,"PAGINAS SIZE: %i\n", size);
+	log_info(logFile,"[HEAP]: PAGINAS HEAP DEL PROCESO PID %i ANTES DE MORIR: %i\n", pid, size);
 	if(size == 0)
-		log_info(logFile,"EL PROCESO PID: %i LIBERO TODO SU HEAP\n");
+		log_info(logFile,"EL PROCESO PID: %i LIBERO TODO SU HEAP O NUNCA TUVO\n", pid);
 	else
 	{
-		log_info(logFile,"---------------------------------------------------------");
-		log_info(logFile,"EL PROCESO PID: %i NO LIBERO LA SIGUIENTE MEMORIA:\n", pid);
+		log_warning(logFile,"---------------------------------------------------------");
+		log_warning(logFile,"EL PROCESO PID: %i NO LIBERO LA SIGUIENTE MEMORIA:\n", pid);
 		list_iterate(paginas, &mostrarPaginaHeap);
-		log_info(logFile,"LIBERANDO MEMORIA...");
-		log_info(logFile,"---------------------------------------------------------");
+		log_warning(logFile,"LIBERANDO MEMORIA...");
+		log_warning(logFile,"---------------------------------------------------------");
 
 	}
 	list_destroy(paginas);
@@ -112,9 +113,8 @@ void informarMemoryLeaks(int pid)
 
 void mostrarPaginaHeap(PageOwnership* po)
 {
-	log_info(logFile,"PAGINA: %i\n", po->idpage);
+	log_warning(logFile,"PAGINA: %i\n", po->idpage);
 	list_iterate(po->occSpaces, &mostrarMetadata);
-	log_info(logFile,"------------------------------------------");
 }
 
 
@@ -145,6 +145,7 @@ void newProcess(PCB* pcb, int consola, char* script, int tamanioScript)
 	pc->heapPages = 0;
 	memcpy(pc->script, script, tamanioScript);
 	pc->tamanioScript = tamanioScript;
+	pc->toBeSignaled = 0;
 	list_add(process,pc);
 }
 
@@ -234,7 +235,6 @@ void cpuReturnsProcessTo(PCB* newPCB, int state){
 
 
 
-//aaaaaa
 PCB* fromNewToReady(){
 
 	pthread_mutex_lock(&mTogglePlanif);
@@ -252,9 +252,10 @@ PCB* fromNewToReady(){
 	if(pcb == NULL)
 		return NULL;
 	ProcessControl* pc = PIDFind(pcb->pid);
+	log_warning(logFile, "[PLANIFICACION]: PID %i DE NEW A READY", pcb->pid);
 	if(!enviarScriptAMemoria(pcb, pc->script, pc->tamanioScript))
 	{
-		log_info(logFile,"NO HAY ESPACIO");
+		log_error(logFile,"[PLANIFICACION]: NO HAY ESPACIO PARA EL PROCESO PID %i", pcb->pid);
 		if(!test)lSend(pc->consola, &pcb->pid, -2, sizeof(int));
 		killProcess(pcb->pid, -1);
 	}
@@ -272,6 +273,7 @@ PCB* fromBlockedToReady(int pid){
 	bool toggle= togglePlanif;
 	pthread_mutex_unlock(&mTogglePlanif);
 	if(toggle)return NULL;
+	log_warning(logFile, "[PLANIFICACION]: PID %i DE BLOCKED A READY",pid);
 	return _fromListToQueue(blockedList,colaReady,pid,1);
 //	pthread_mutex_unlock(&mColaReady);
 //	pthread_mutex_unlock(&mListaBlocked);
@@ -281,6 +283,7 @@ PCB* fromBlockedToReady(int pid){
 PCB* fromExecuteToReady(int pid){
 //	pthread_mutex_lock(&mListaExec);
 //	pthread_mutex_lock(&mColaReady);
+	log_warning(logFile, "[PLANIFICACION]: PID %i DE EJECUCION A READY", pid);
 	return _fromListToQueue(executeList,colaReady,pid,1);
 //	pthread_mutex_unlock(&mColaReady);
 //	pthread_mutex_unlock(&mListaExec);
@@ -289,6 +292,7 @@ PCB* fromExecuteToReady(int pid){
 PCB* fromExecuteToBlocked(int pid){
 //	pthread_mutex_lock(&mListaExec);
 //	pthread_mutex_lock(&mListaBlocked);
+	log_warning(logFile, "[PLANIFICACION]: PID %i DE EJECUCION A BLOCKED", pid);
 	return _fromListToList(executeList,blockedList,pid,3);
 //	pthread_mutex_unlock(&mListaBlocked);
 //	pthread_mutex_unlock(&mListaExec);
@@ -302,7 +306,7 @@ PCB* fromReadyToExecute(){
 	pthread_mutex_unlock(&mTogglePlanif);
 
 	if(toggle)return NULL;
-
+	log_warning(logFile, "[PLANIFICACION]: SE ENVIA UN PROCESO NEW A EJECUTAR");
 //	pthread_mutex_lock(&mColaReady);
 //	pthread_mutex_lock(&mListaExec);
 	return _fromQueueToList(colaReady,executeList,2);
@@ -314,6 +318,7 @@ PCB* fromReadyToExecute(){
 PCB* fromExecuteToFinished(int pid){
 //	pthread_mutex_lock(&mColaFinished);
 //	pthread_mutex_lock(&mListaExec);
+	log_warning(logFile, "[PLANIFICACION]: PID %i DE EJECUCION A FINISHED", pid);
 	return _fromListToQueue(executeList,colaFinished,pid,9);
 //	pthread_mutex_unlock(&mListaExec);
 //	pthread_mutex_unlock(&mColaFinished);
@@ -327,7 +332,7 @@ PCB* fromReadyToFinished(int pid){
 	pthread_mutex_unlock(&mTogglePlanif);
 
 	if(toggle)return NULL;
-
+	log_warning(logFile, "[PLANIFICACION]: PID %i DE READY A FINISHED", pid);
 //	pthread_mutex_lock(&mColaFinished);
 //	pthread_mutex_lock(&mColaReady);
 	return _fromListToQueue(colaReady->elements,colaFinished,pid,9);
@@ -339,6 +344,7 @@ PCB* fromReadyToFinished(int pid){
 PCB* fromBlockedToFinished(int pid){
 //	pthread_mutex_lock(&mColaFinished);
 //	pthread_mutex_lock(&mListaBlocked);
+	log_warning(logFile, "[PLANIFICACION]: PID %i DE BLOCKED A FINISHED", pid);
 	return _fromListToQueue(blockedList,colaFinished,pid,9);
 //	pthread_mutex_unlock(&mListaBlocked);
 //	pthread_mutex_unlock(&mColaFinished);
@@ -362,8 +368,13 @@ PCB* _fromQueueToList(t_queue* fromQueue, t_list* toList, int newState){
 
 PCB* _fromListToQueue(t_list* fromList, t_queue* toQueue, int PID, int newState){
 	PCB* pcb= removePcbFromList(PID,fromList);
-	_processChangeStateToQueue(toQueue,pcb,newState);
-	return pcb;
+	if(pcb == NULL)
+		return NULL;
+	else
+	{
+		_processChangeStateToQueue(toQueue,pcb,newState);
+		return pcb;
+	}
 }
 
 PCB* _fromListToList(t_list* fromList, t_list* toList, int PID, int newState){
@@ -472,7 +483,7 @@ void freePage(PageOwnership* po, int index, int avisoAMemoria){
 	memcpy(msg,&po->pid,sizeof(int));
 	memcpy(msg+sizeof(int),&po->idpage,sizeof(int));
 	if(!test && avisoAMemoria)lSend(conexionMemoria,msg,4,sizeof(int)*2);
-	log_info(logFile,"SE LIBERO PID %i, PAGE %i\n",po->pid,po->idpage);
+	log_info(logFile,"[HEAP]: SE LIBERO PID %i, PAGINA %i\n",po->pid,po->idpage);
 	list_remove_and_destroy_element(ownedPages,index,&destroyPageOwnership);
 	free(msg);
 }

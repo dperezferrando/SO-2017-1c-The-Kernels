@@ -35,6 +35,7 @@ struct ProcessControl{
 	int freedBytes;
 	int cantAlocar;
 	int cantFree;
+	int toBeSignaled; // para fixear el pequeño gap (menos de un segundo) entre que el PCB todavia no volvio pero ya hicieron un signal al unico semaforo existente
 } typedef ProcessControl;
 
 struct MemoryRequest{
@@ -77,6 +78,12 @@ struct GlobalVariable{
 	char* name;
 	int value;
 } typedef GlobalVariable;
+
+struct Semaforo {
+	char* nombre;
+	int valor;
+	t_queue* cola;
+} typedef Semaforo;
 
 struct tablaDeProceso // Lista de tablas de proceso (que a su vez son una lista)
 {

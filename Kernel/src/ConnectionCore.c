@@ -10,12 +10,13 @@ void handleSockets(connHandle* master, socketHandler result){
 		{
 			if(p==master->listenConsola){
 				int unaConsola = lAccept(p, CONSOLA_ID);
+				log_info(logFile,"[KERNEL]: NUEVA CONSOLA: SOCKET: %i", unaConsola);
 				addReadSocket(unaConsola,&(master->consola));
 			}
 			else if(p==master->listenCPU)
 			{
 				int unCPU = lAccept(p, CPU_ID);
-				log_info(logFile,"CPU LISTO: SOCKET: %i", unCPU);
+				log_info(logFile,"[KERNEL]: NUEVO CPU: SOCKET: %i", unCPU);
 				addReadSocket(unCPU,&(master->cpu));
 				aceptarNuevoCPU(unCPU);
 			}
@@ -50,7 +51,7 @@ void recibirDeConsola(int socket, connHandle* master)
 	switch(mensaje->header.tipoOperacion)
 	{
 		case -1:
-			log_info(logFile,"SE DECONECTA UNA CONSOLA");
+			log_info(logFile,"[KERNEL]: SE DECONECTA CONSOLA SOCKET %i", socket);
 			closeHandle(socket, master);
 			break;
 		case 1:
@@ -62,7 +63,7 @@ void recibirDeConsola(int socket, connHandle* master)
 			PCB* pcb = createProcess(script, tamanioScript);
 			newProcess(pcb, socket, script, tamanioScript);
 			if(readyProcess() == -1) {
-				log_info(logFile,"SE ALCANZO EL LIMITE DE MULTIPROGRAMACION - QUEDA EN NEW");
+				log_info(logFile,"[PLANIFICACION]: SE ALCANZO EL LIMITE DE MULTIPROGRAMACION - QUEDA EN NEW");
 				lSend(socket, mensaje->data, -3, mensaje->header.tamanio);
 			}
 			free(script);
@@ -162,7 +163,7 @@ void* serializeMemReq(MemoryRequest mr, int idPage, int offset){
 }
 void mostrarMetadata(HeapMetadata* hm)
 {
-	log_info(logFile,"ISFREE: %i SIZE:%i\n", hm->isFree, hm->size);
+	log_info(logFile,"[HEAP METADATA]: ISFREE: %i SIZE:%i\n", hm->isFree, hm->size);
 }
 int memoryRequest(MemoryRequest mr, int* offset, PageOwnership* po){
 	int operation;
@@ -641,7 +642,7 @@ void recibirDeCPU(int socket, connHandle* master)
 	switch(mensaje->header.tipoOperacion)
 	{
 		case -1:
-			log_info(logFile,"SE DESCONECTA CPU SOCKET: %i\n", socket);
+			log_warning(logFile,"[KERNEL]: SE DESCONECTA CPU SOCKET: %i\n", socket);
 			killCPUOwnedProcess(socket);
 			closeHandle(socket, master);
 			removerCPUDeCola(socket);
@@ -649,7 +650,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			break;
 		case 1:
 			pcb = recibirPCB(mensaje);
-			log_info(logFile,"SE TERMINO LA EJECUCION DE UN PROCESO. SE ENVIA A COLA FINALIZADO EL PCB");
+			log_warning(logFile,"[PLANIFICACION]: SE TERMINO LA EJECUCION NORMAL DEL PROCESO %i.", pcb->pid);
 			cpuReturnsProcessTo(pcb, 9);
 			killProcess(pcb->pid,0);
 			pushearAColaCPUS(socket);
@@ -657,7 +658,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			break;
 		case 2:
 			pcb = recibirPCB(mensaje);
-			log_info(logFile,"VUELVE PCB POR FIN DE Q");
+			log_warning(logFile,"[PLANIFICACION]: VUELVE PCB PID %i POR FIN DE QUANTUM", pcb->pid);
 			cpuReturnsProcessTo(pcb,1);
 			matarSiCorresponde(pcb->pid);
 			pushearAColaCPUS(socket);
@@ -665,15 +666,22 @@ void recibirDeCPU(int socket, connHandle* master)
 			break;
 		case 3:
 			pcb = recibirPCB(mensaje);
-			log_info(logFile,"VUELVE PCB POR BLOQUEO");
-			cpuReturnsProcessTo(pcb,3);
+			log_warning(logFile,"[PLANIFICACION]: VUELVE PCB PID %i POR BLOQUEO", pcb->pid);
+			ProcessControl* pc = PIDFind(pcb->pid);
+			if(pc->toBeSignaled == 1)
+			{
+				cpuReturnsProcessTo(pcb,1);
+				pc->toBeSignaled = 0;
+			}
+			else
+				cpuReturnsProcessTo(pcb,3);
 			matarSiCorresponde(pcb->pid);
 			pushearAColaCPUS(socket);
 			executeProcess();
 			break;
 		case 4:
 			pcb = recibirPCB(mensaje);
-			log_info(logFile,"PROGRAMA ABORTADO POR EXCEPCION MEMORIA");
+			log_error(logFile,"[PLANIFICACION]: PROCESO PID %i ABORTADO - EXCEPCION MEMORIA", pcb->pid);
 			cpuReturnsProcessTo(pcb, 9);
 			killProcess(pcb->pid, -5);
 			pushearAColaCPUS(socket);
@@ -681,7 +689,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			break;
 		case 5:
 			pcb = recibirPCB(mensaje);
-			log_info(logFile,"PROGRAMA ABORTADO POR PROBLEMAS EN SYSCALL");
+			log_error(logFile,"[PLANIFICACION]: PROCESO PID %i ABORTADO - ERROR EN SYSCALL U OTRA RAZON (VER EXIT CODE)");
 			cpuReturnsProcessTo(pcb, 9);
 			matarSiCorresponde(pcb->pid);
 			pushearAColaCPUS(socket);
@@ -689,7 +697,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			break;
 		case 6: // EL CPU DEVUELVE PCB POR FIN DE Q PERO A SU VEZ SE DESCONECTA EL CPU (SIGUSR1)
 			pcb = recibirPCB(mensaje);
-			log_info(logFile,"VUELVE PCB POR FIN DE Q [SIGUSR1]");
+			log_warning(logFile,"[PLANIFICACION]: VUELVE PROCESO PID %i POR FIN DE QUANTUM  [SIGUSR1]");
 			cpuReturnsProcessTo(pcb,1);
 			matarSiCorresponde(pcb->pid);
 			executeProcess();
@@ -697,12 +705,12 @@ void recibirDeCPU(int socket, connHandle* master)
 		case 200:
 		{
 			//obtener valor variable compartida
-			log_info(logFile,"CPU PIDE VALOR DE VARIABLE");
 			int pid, len;
 			memcpy(&pid, mensaje->data, sizeof(int));
 			memcpy(&len, mensaje->data+sizeof(int), sizeof(int));
 			char* nombre= malloc(len);
 			memcpy(nombre,mensaje->data+sizeof(int)*2,len);
+			log_info(logFile,"[VAR GLOBAL]: PROCESO PID %i PIDE VALOR DE VARIABLE %s", pid, nombre);
 			sumarSyscall(pid);
 			GlobalVariable * gb= findGlobalVariable(nombre);
 			lSend(socket,&gb->value,104,sizeof(int));
@@ -712,7 +720,6 @@ void recibirDeCPU(int socket, connHandle* master)
 		case 201:
 		{
 			//asignar valor variable compartida
-			log_info(logFile,"CPU QUIERE ASIGNAR VARIABLE");
 			int len=0, pid;
 			memcpy(&len,mensaje->data,sizeof(int));
 			char* nombre= malloc(len);
@@ -720,6 +727,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			int newValue= 0;
 			memcpy(&newValue,mensaje->data+sizeof(int) + len,sizeof(int));
 			memcpy(&pid, mensaje->data+sizeof(int)*2 + len, sizeof(int));
+			log_info(logFile,"[VAR GLOBAL]: PROCESO PID %i QUIERE ASIGNAR VARIABLE %s", pid, nombre);
 			sumarSyscall(pid);
 			GlobalVariable * gb= findGlobalVariable(nombre);
 			gb->value= newValue;
@@ -729,21 +737,21 @@ void recibirDeCPU(int socket, connHandle* master)
 		case 204:
 		{
 			// RESERVAR HEAP
-			log_info(logFile,"CPU PIDE HEAP");
 			MemoryRequest mr = deserializeMemReq(mensaje->data);
 			sumarSyscall(mr.pid);
 			PageOwnership* po= malloc(sizeof(PageOwnership));
 			int* offset = malloc(sizeof(int));
+			log_info(logFile,"[HEAP]: PROCESO PID %i PIDE %i BYTES", mr.pid, mr.size);
 			int res= memoryRequest(mr,offset,po);
 			if( res== -1){
-				log_info(logFile,"PEDIDO MAYOR QUE EL TAMAÑO DE UNA PAGINA");
+				log_error(logFile,"[HEAP]: PID %i - PEDIDO MAYOR QUE EL TAMAÑO DE UNA PAGINA", mr.pid);
 				matarCuandoCorresponda(mr.pid,-8);
 				lSend(socket, NULL, -2, 0);
 				//free(po);
 				break;
 			}
 			else if (res == -2){
-				log_info(logFile,"NO HAY ESPACIO DEBE FINALIZAR PROCESO");
+				log_error(logFile,"[HEAP]: PID %i - NO HAY ESPACIO EN MEMORIA", mr.pid);
 				matarCuandoCorresponda(mr.pid,-9);
 				lSend(socket, NULL, -2, 0);
 				//free(po);
@@ -764,11 +772,12 @@ void recibirDeCPU(int socket, connHandle* master)
 		case 205:
 		{
 			// LIBERAR HEAP
-			log_info(logFile,"CPU QUIERE LIBERAR HEAP");
+
 			int pid, page, offset;
 			memcpy(&pid,mensaje->data,sizeof(int));
 			memcpy(&page,mensaje->data+sizeof(int),sizeof(int));
 			memcpy(&offset,mensaje->data+sizeof(int)*2,sizeof(int));
+			log_info(logFile,"[HEAP]: PROCESO PID: %i QUIERE LIBERAR BYTES PAG %i | OFFSET %i", pid, page, offset);
 			sumarSyscall(pid);
 			if(freeMemory(pid,page,offset) == -1)
 				lSend(socket, NULL, -5, 0);
@@ -782,28 +791,28 @@ void recibirDeCPU(int socket, connHandle* master)
 			// WAIT
 
 			int len;
-			int* pid = malloc(sizeof(int));
-			memcpy(pid, mensaje->data, sizeof(int));
+			int pid;
+			memcpy(&pid, mensaje->data, sizeof(int));
 			memcpy(&len, mensaje->data+sizeof(int), sizeof(int));
 			char* sem = malloc(len);
 			memcpy(sem, mensaje->data+sizeof(int)*2,len);
-			log_info(logFile,"[SEMAFORO]: PID: %i UTILIZA WAIT EN: %s", *pid, sem);
-			sumarSyscall(*pid);
+			log_info(logFile,"[SEMAFORO]: PID: %i UTILIZA WAIT EN: %s", pid, sem);
+			sumarSyscall(pid);
 			int valorActual = obtenerValorSemaforo(sem);
 			log_info(logFile, "[SEMAFORO]: EL VALOR ACTUAL DE %s ES: %i", sem, valorActual);
 			if(valorActual <= 0) {
 
 				//Aviso a CPU que hay bloqueo
 				lSend(socket, mensaje->data, 3, sizeof(int));
-				//CPU me envia el pid a bloquearse
 				//Envio el pid a la cola del semaforo
-				log_info(logFile, "[SEMAFORO]: SE BLOQUEA EL PROCESO PID: %i",*pid);
-				enviarAColaDelSemaforo(sem, pid);
+				log_info(logFile, "[SEMAFORO]: SE BLOQUEA EL PROCESO PID: %i",pid);
+				int* pidPuntero = malloc(sizeof(int));
+				memcpy(pidPuntero, &pid, sizeof(int));
+				enviarAColaDelSemaforo(sem, pidPuntero);
 			} else {
 				//Aviso a CPU que no hay bloqueo
 				log_info(logFile, "[SEMAFORO]: NO HAY BLOQUEO");
 				lSend(socket, mensaje->data, 0, sizeof(int));
-
 
 			}
 			waitSemaforo(sem);
@@ -822,24 +831,23 @@ void recibirDeCPU(int socket, connHandle* master)
 			char* sem = malloc(len);
 			memcpy(sem, mensaje->data+sizeof(int)*2,len);
 			log_info(logFile,"[SEMAFORO]: PID %i UTILIZA SIGNAL EN: %s", pid, sem);
-			int pos = obtenerPosicionSemaforo(sem);
 			sumarSyscall(pid);
 			int valorActual = obtenerValorSemaforo(sem);
 			log_info(logFile, "[SEMAFORO]: EL VALOR ACTUAL DE %s ES: %i", sem, valorActual);
-			if(laColaDelSemaforoEstaVacia(pos))
+			if(laColaDelSemaforoEstaVacia(sem))
 			{
 				log_info(logFile,"[SEMAFORO]: LA COLA DE %s ESTA VACIA", sem);
+
 
 			}
 			else {
 				int pidDesbloq = quitarDeColaDelSemaforo(sem);
 				log_info(logFile, "[SEMAFORO]: SEMAFORO %s DESBLOQUEA EL PID: %i", sem, pidDesbloq);
-				pthread_mutex_lock(&mListaBlocked);
-				list_iterate(blockedList, mostrarPID);
-				pthread_mutex_unlock(&mListaBlocked);
-				fromBlockedToReady(pidDesbloq);
+				desbloquearCuandoCorresponda(pidDesbloq);
+
 
 			}
+
 			signalSemaforo(sem);
 			int nuevoValor = obtenerValorSemaforo(sem);
 			log_info(logFile, "[SEMAFORO]: NUEVO VALOR DE %s: %i", sem, nuevoValor);
@@ -851,12 +859,13 @@ void recibirDeCPU(int socket, connHandle* master)
 
 			rutayPermisos rp = deserializarRutaPermisos(mensaje->data);
 			int fd = abrirArchivo(rp.pid,rp.ruta, rp.permisos);
+			log_info(logFile, "[ARCHIVOS]: EL PROCESO PID %i QUIERE ABRIR EL ARCHIVO %s PERMISOS: %s", rp.pid, rp.ruta, rp.permisos);
 			sumarSyscall(rp.pid);
 			if(fd != -1)
 				lSend(socket, &fd, 104, sizeof(int));
 			else
 			{
-				log_info(logFile,"EL PROGRAMA QUISO ABRIR UN ARCHIVO QUE NO EXISTE SIN FLAG 'C'");
+				log_error(logFile,"[ARCHIVOS]: EL PROCESO PID %i QUISO ABRIR UN ARCHIVO QUE NO EXISTE SIN FLAG 'C'", rp.pid);
 				lSend(socket, NULL, -3, 0);
 				matarCuandoCorresponda(rp.pid, -2);
 			}
@@ -872,15 +881,16 @@ void recibirDeCPU(int socket, connHandle* master)
 			memcpy(&fd, mensaje->data+sizeof(int), sizeof(int));
 			sumarSyscall(pid);
 			int estado = borrarArchivo(pid,fd);
+			log_info(logFile,"[ARCHIVOS]: PROCESO PID %i QUIERE BORRAR ARCHIVO FD %i", pid, fd);
 			if(estado == -1)
 			{
-				log_info(logFile,"NO SE PUEDE BORRAR, HAY OTROS PROCESOS USANDOLO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				log_error(logFile,"[ARCHIVOS]: PID %i - NO SE PUEDE BORRAR FD %i, HAY OTROS PROCESOS USANDOLO", pid, fd);
 				matarCuandoCorresponda(pid, -20);
 				lSend(socket, NULL, -3, 0);
 			}
 			else if(estado == 0)
 			{
-				log_info(logFile,"CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				log_error(logFile,"[ARCHIVOS]: PID %i ENVIO FD %i INEXISTENTE", pid, fd);
 				lSend(socket, NULL, -3, 0);
 				matarCuandoCorresponda(pid, -2);
 			}
@@ -897,9 +907,10 @@ void recibirDeCPU(int socket, connHandle* master)
 			memcpy(&pid, mensaje->data, sizeof(int));
 			memcpy(&fd, mensaje->data+sizeof(int), sizeof(int));
 			sumarSyscall(pid);
+			log_info(logFile, "[ARCHIVOS]: PROCESO PID %i CIERRA ARCHIVO FD %i", pid, fd);
 			if(!cerrarArchivo(pid, fd))
 			{
-				log_info(logFile,"CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				log_error(logFile,"[ARCHIVOS]: PID %i ENVIO FD %i INEXISTENTE", pid, fd);
 				lSend(socket, NULL, -3, 0);
 				matarCuandoCorresponda(pid, -2);
 			}
@@ -914,9 +925,10 @@ void recibirDeCPU(int socket, connHandle* master)
 			fileInfo info;
 			memcpy(&info, mensaje->data, sizeof(fileInfo));
 			sumarSyscall(info.pid);
+			log_info(logFile, "[ARCHIVOS]: PID %i MUEVE EL CURSOR AL BYTE %i EN EL FD %i", info.pid, info.cursor, info.fd);
 			if(!moverCursorArchivo(info))
 			{
-				log_info(logFile,"CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				log_error(logFile,"[ARCHIVOS]: PID %i ENVIO FD %i INEXISTENTE", info.pid, info.fd);
 				lSend(socket, NULL, -3, 0);
 				matarCuandoCorresponda(info.pid, -2);
 			}
@@ -931,24 +943,24 @@ void recibirDeCPU(int socket, connHandle* master)
 			fileInfo info;
 			char* data = deserializarPedidoEscritura(mensaje->data,&info);
 			sumarSyscall(info.pid);
-			log_info(logFile,"[ESCRITURA]: PID: %i | FD: %i | TAMANIO: %i\n", info.pid, info.fd, info.tamanio);
+			log_info(logFile,"[ARCHIVOS]: PROCESO PID: %i ESCRIBE EN FD: %i - TAMANIO: %i\n", info.pid, info.fd, info.tamanio);
 			int estado = escribirArchivo(info, data);
 			if(estado == -1)
 			{
-				log_info(logFile,"CPU NO TIENE PERMISO DE ESCRITURA DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				log_error(logFile,"[ARCHIVOS]: PROCESO PID %i NO TIENE PERMISO DE ESCRITURA EN FD %", info.pid, info.fd);
 				lSend(socket, NULL, -3 ,0);
 				matarCuandoCorresponda(info.pid, -4);
 
 			}
 			else if(estado == 0)
 			{
-				log_info(logFile,"CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				log_error(logFile,"[ARCHIVOS]: PID %i ENVIO FD %i INEXISTENTE", info.pid, info.fd);
 				lSend(socket, NULL, -3 ,0);
 				matarCuandoCorresponda(info.pid, -2);
 			}
 			else if(estado == -4)
 			{
-				log_info(logFile,"EL FILESYSTEM TUVO UN ERROR (POSIBLEMENTE NO TIENE ESPACIO)");
+				log_error(logFile,"[ARCHIVOS]: EL FILESYSTEM TUVO UN ERROR (POSIBLEMENTE NO TIENE ESPACIO)");
 				lSend(socket, NULL, -3, 0);
 				matarCuandoCorresponda(info.pid, -20);
 			}
@@ -960,27 +972,26 @@ void recibirDeCPU(int socket, connHandle* master)
 
 		case 211: // LEER ARCHIVO
 		{
-			log_info(logFile,"CPU QUIERE LEER");
-
 			fileInfo info;
 			memcpy(&info, mensaje->data, sizeof(fileInfo));
 			sumarSyscall(info.pid);
+			log_info(logFile,"[ARCHIVOS]: PROCESO PID %i LEE FD %i", info.pid, info.fd);
 			char* data = leerArchivo(info);
 			if(data == NULL)
 			{
-				log_info(logFile,"CPU NO PUEDE LEER, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				log_error(logFile,"[ARCHIVOS]: PROCESO PID %i NO TIENE PERMISO DE LEECTURA FD %i", info.pid, info.fd);
 				lSend(socket, NULL, -3 ,0);
 				matarCuandoCorresponda(info.pid, -3);
 			}
 			else if(data == -1)
 			{
-				log_info(logFile,"CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
+				log_info(logFile,"[ARCHIVOS]: CPU ENVIO FD SIN SENTIDO, DEBE MORIR EL CPU, ENVIAR AVISO A CPU");
 				lSend(socket, NULL, -3 ,0);
 				matarCuandoCorresponda(info.pid, -2);
 			}
 			else if(data == -2)
 			{
-				log_info(logFile,"EL FILESYSTEM TUVO UN ERROR (POSIBLEMENTE NO TIENE ESPACIO)");
+				log_error(logFile,"[ARCHIVOS]: EL FILESYSTEM TUVO UN ERROR (POSIBLEMENTE NO TIENE ESPACIO)");
 				lSend(socket, NULL, -3, 0);
 				matarCuandoCorresponda(info.pid, -20);
 			}
@@ -994,6 +1005,15 @@ void recibirDeCPU(int socket, connHandle* master)
 	}
 	destruirMensaje(mensaje);
 
+}
+
+void desbloquearCuandoCorresponda(int pid)
+{
+	if(fromBlockedToReady(pid) == NULL)
+	{
+		ProcessControl* pc = PIDFind(pid);
+		pc->toBeSignaled = 1;
+	}
 }
 
 void mostrarPID(PCB* pcb)
@@ -1052,10 +1072,9 @@ char* deserializarPedidoEscritura(char* serializado, fileInfo* info)
 
 void aceptarNuevoCPU(int unCPU)
 {
-	log_info(logFile,"NUEVO CPU");
 	queue_push(colaCPUS, (int*)unCPU);
 	enviarInformacion(unCPU);
-	log_info(logFile,"AGREGADO CPU A COLA");
+	log_warning(logFile,"[PLANIFICACION]: AGREGADO CPU SOCKET %i A COLA", unCPU);
 	executeProcess();
 
 }
@@ -1097,7 +1116,7 @@ PCB* recibirPCB(Mensaje* mensaje){
 	PCB* pcb = deserializarPCB(mensaje->data);
 	ProcessControl* pc = PIDFind(pcb->pid);
 	pc->rafagasEj = pcb->rafagasTotales;
-	log_info(logFile,"RECIBIDO PCB: PID: %i\n", pcb->pid);
+	log_warning(logFile,"[PLANIFICACION]: RECIBIDO PCB: PID: %i\n", pcb->pid);
 	return pcb;
 }
 
@@ -1152,48 +1171,65 @@ GlobalVariable* findGlobalVariable(char* nombre){
 
 //---------------------------------------------------Para semaforos----------------------------------------------------//
 
-//Obtiene la posicion en SEM_IDS a partir del nombre del semaforo
-int obtenerPosicionSemaforo(char* c) {
-	int i;
-	for(i=0; !sonIguales(c, config->SEM_IDS[i]); i++);
-	return i;
+void crearListaDeColasSemaforos()
+{
+	listaDeColasSemaforos = list_create();
+	int i = 0;
+	while(config->SEM_IDS[i] != NULL)
+	{
+		Semaforo* sem = malloc(sizeof(Semaforo));
+		sem->cola = queue_create();
+		int size = strlen(config->SEM_IDS[i])+1;
+		sem->nombre = malloc(size);
+		memcpy(sem->nombre, config->SEM_IDS[i], size);
+		sem->valor = atoi(config->SEM_INIT[i]);
+		list_add(listaDeColasSemaforos, sem);
+		i++;
+
+	}
 }
 
-int obtenerValorSemaforo(char* c) {
-	int pos = obtenerPosicionSemaforo(c);
-	char* valor = config->SEM_INIT[pos];
-	//Convierto el string a int
-	return atoi(valor);
+Semaforo* encontrarSemaforo(char* semaforo)
+{
+	bool mismoSemaforo(Semaforo* unSem)
+	{
+		return sonIguales(unSem->nombre, semaforo);
+	}
+	Semaforo* sem = list_find(listaDeColasSemaforos, mismoSemaforo);
+	return sem;
 }
 
-void enviarAColaDelSemaforo(char* c, int* pid) {
-	int pos = obtenerPosicionSemaforo(c);
-	t_queue* colaDelSemaforo = (t_queue*)list_get(listaDeColasSemaforos, pos);
-	queue_push(colaDelSemaforo, pid);
+void enviarAColaDelSemaforo(char* semaforo, int* pid)
+{
+	Semaforo* sem = encontrarSemaforo(semaforo);
+	queue_push(sem->cola, pid);
 }
 
-int quitarDeColaDelSemaforo(char* c) {
-	int pos = obtenerPosicionSemaforo(c);
-	//int* pid = queue_peek(list_get(listaDeColasSemaforos, pos));
-	int* punteroPid = queue_pop(list_get(listaDeColasSemaforos, pos));
+bool laColaDelSemaforoEstaVacia(char* semaforo)
+{
+	Semaforo* sem = encontrarSemaforo(semaforo);
+	return queue_is_empty(sem->cola);
+}
+
+int obtenerValorSemaforo(char* semaforo)
+{
+	Semaforo* sem = encontrarSemaforo(semaforo);
+	return sem->valor;
+}
+
+int quitarDeColaDelSemaforo(char* semaforo)
+{
+	Semaforo* sem = encontrarSemaforo(semaforo);
+	int* punteroPid = queue_pop(sem->cola);
 	int pid = *punteroPid;
-	log_info(logFile,"EL SEMAFORO %s DESBLOQUEO EL PROCESO %i\n",config->SEM_IDS[pos], pid);
 	free(punteroPid);
 	return pid;
 }
 
-//Para aumentar o disminuir el valor del semaforo
-void operarSemaforo(char* c, int num) {
-	int pos = obtenerPosicionSemaforo(c);
-	char* valor = config->SEM_INIT[pos];
-	char* semaforo = config->SEM_IDS[pos];
-	//Como en SEM_INIT los valores son string lo convierto int y le sumo o resto 1
-	int nuevoValor = atoi(valor)+num ;
-	//Lo guardo en su posicion pero antes lo vuelvo a convertir a string que trucazo no
-	config->SEM_INIT[pos] = string_itoa(nuevoValor);
-	char* nV= string_itoa(nuevoValor);
-	log_info(logFile,"SEMAFORO %s CAMBIO SU VALOR A: %s\n",semaforo, nV);
-	free(nV);
+void operarSemaforo(char* semaforo, int valor)
+{
+	Semaforo* sem = encontrarSemaforo(semaforo);
+	sem->valor += valor;
 }
 
 void waitSemaforo(char* c) {
@@ -1204,61 +1240,39 @@ void signalSemaforo(char* c) {
 	operarSemaforo(c, 1);
 }
 
-//Me dice cuantos elementos hay en SEM_INIT
-int cantidadSemaforos() {
-	int i = 0;
-	while(config->SEM_INIT[i] != NULL)
-		i++;
-	return i;
+t_list* buscarSemaforosDondeEstaElPID(int pid)
+{
+	bool elPIDEstaEnLaCola(Semaforo* sem)
+	{
+		bool mismoPID(int* punteroPID)
+		{
+			return *punteroPID == pid;
+		}
+		int* punteroPID = list_find(sem->cola->elements, &mismoPID);
+		return punteroPID != NULL;
+	}
+	return list_filter(listaDeColasSemaforos, &elPIDEstaEnLaCola);
 }
 
-//Inicio la lista y las colas
-void crearListaDeColasSemaforos() {
-	listaDeColasSemaforos = list_create();
-	int i;
-	for (i = 0; i < cantidadSemaforos(); i++) {
-		//Cada semaforo tiene su cola de bloqueados
-		t_queue* cola = queue_create();
-		list_add(listaDeColasSemaforos, cola);
+void quitarDeSemaforosPorKill(int pid)
+{
+	t_list* semaforosDondeEstaElPid = buscarSemaforosDondeEstaElPID(pid);
+	void actualizarValor(Semaforo* sem)
+	{
+		sem->valor++;
 	}
-}
-
-int laColaDelSemaforoEstaVacia(int posicionSemaforo) {
-	return queue_is_empty(list_get(listaDeColasSemaforos, posicionSemaforo));
-}
-
-//Funciones locas basicamente son para buscar un pid en listaDeColasSemaforos y removerlo, en caso que se mate un proceso bloqueado
-
-//Busca en la cola del semaforo el pid
-int* buscarEnCola(int pos, int pid) {
-	bool buscarPorPID(void* pidProceso){
-		return (*(int*)pidProceso)==pid;
+	list_iterate(semaforosDondeEstaElPid, actualizarValor);
+	void sacarDeLaCola(Semaforo* sem)
+	{
+		bool mismoPID(int* punteroPID)
+		{
+			return *punteroPID == pid;
+		}
+		list_remove_and_destroy_by_condition(sem->cola->elements, mismoPID, free);
 	}
-	int* p = list_find(   ((t_queue*)list_get(listaDeColasSemaforos, pos))->elements  , buscarPorPID);
-	return p;
-}
-
-//Busca en la lista de semaforos la cola del semaforo donde se encuentra el pid
-t_queue* buscarColaContenedora(int pid) {
-	int i;
-	for(i=0; i<list_size(listaDeColasSemaforos) && buscarEnCola(i, pid) == NULL; i++);
-	if(i==list_size(listaDeColasSemaforos)) {
-		return NULL; //No encontro la cola
-	}
-	else {
-		//Encontro la cola
-		return list_get(listaDeColasSemaforos,i);
-	}
-}
-
-void quitarDeColaDelSemaforoPorKill(int pid) {
-	bool buscarPorPID(void* pidProceso){
-		return (*(int*)pidProceso)==pid;
-	}
-	t_queue* cola  = buscarColaContenedora(pid);
-	if(cola != NULL) {
-		log_info(logFile,"QUITANDO EL PROCESO% i DE LA COLA DEL SEMAFORO POR KILL\n", *(int*)(list_remove_by_condition(cola->elements, buscarPorPID)));
-	}
+	list_iterate(semaforosDondeEstaElPid, sacarDeLaCola);
+	log_warning(logFile,"[KILL]: QUITANDO EL PROCESO %i DE LOS SEMAFOROS CORRESPONDIENTES POR KILL\n", pid);
+	list_destroy(semaforosDondeEstaElPid);
 }
 
 //La expresividad no se mancha

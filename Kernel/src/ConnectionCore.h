@@ -82,10 +82,10 @@ void operarSemaforo(char* c, int num);
 void waitSemaforo(char* c);
 void signalSemaforo(char* c);
 void crearListaDeColasSemaforos();
-int laColaDelSemaforoEstaVacia(int posicionSemaforo);
+bool laColaDelSemaforoEstaVacia(char* semaforo);
 void quitarDeColaDelSemaforoPorKill(int);
-
-
+t_list* buscarSemaforosDondeEstaElPID(int pid);
+void desbloquearCuandoCorresponda(int pidDesbloq);
 #endif
 
 
