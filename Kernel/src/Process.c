@@ -271,10 +271,6 @@ PCB* fromNewToReady(){
 PCB* fromBlockedToReady(int pid){
 //	pthread_mutex_lock(&mListaBlocked);
 //	pthread_mutex_lock(&mColaReady);
-	pthread_mutex_lock(&mTogglePlanif);
-	bool toggle= togglePlanif;
-	pthread_mutex_unlock(&mTogglePlanif);
-	if(toggle)return NULL;
 	log_warning(logFile, "[PLANIFICACION]: PID %i DE BLOCKED A READY",pid);
 	return _fromListToQueue(blockedList,colaReady,pid,1);
 //	pthread_mutex_unlock(&mColaReady);
@@ -308,7 +304,7 @@ PCB* fromReadyToExecute(){
 	pthread_mutex_unlock(&mTogglePlanif);
 
 	if(toggle)return NULL;
-	log_warning(logFile, "[PLANIFICACION]: SE ENVIA UN PROCESO NEW A EJECUTAR");
+	log_warning(logFile, "[PLANIFICACION]: SE ENVIA UN PROCESO READY A EJECUTAR");
 //	pthread_mutex_lock(&mColaReady);
 //	pthread_mutex_lock(&mListaExec);
 	return _fromQueueToList(colaReady,executeList,2);

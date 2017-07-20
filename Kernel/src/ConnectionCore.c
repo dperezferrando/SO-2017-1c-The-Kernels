@@ -113,7 +113,7 @@ void matarDesdeProcessControl(ProcessControl* pc)
 void matarCuandoCorresponda(int pid, int exitCode)
 {
 	ProcessControl* pc = PIDFind(pid);
-	if(pc->state == 2)
+	if(pc->state == 2 || togglePlanif == 1)
 		pc->toBeKilled = exitCode;
 	else
 		killProcess(pc->pid,exitCode);

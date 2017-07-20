@@ -163,9 +163,14 @@ void recibir_comandos()
 			else if(!strcmp(comando[0], "kill"))
 			{
 				if(comando[1]!=NULL){
-					int pid = atoi(comando[1]);
-					matarCuandoCorresponda(pid,-7);
-					printf("SE ENVIO A AJUSTICIAR EL PROCESO PID: %i. SE AJUSTICIARA CUANDO CORRESPONDA.\n", pid);
+				//	if(togglePlanif == 0)
+				//	{
+						int pid = atoi(comando[1]);
+						matarCuandoCorresponda(pid,-7);
+						printf("SE ENVIO A AJUSTICIAR EL PROCESO PID: %i. SE AJUSTICIARA CUANDO CORRESPONDA.\n", pid);
+			//		}
+			//		else
+			//			log_error(logFile, "[PLANIFICACION]: NO SE PUEDE MATAR A NADIE. PLANIFICACION DESACTIVADA, NO HAY MOVIMIENTO DE COLAS");
 				}
 				else{
 					puts("Argumento no puede ser null\n");
@@ -173,17 +178,25 @@ void recibir_comandos()
 			}
 			else if(!strcmp(comando[0], "togglePlanif"))
 			{
+
 				pthread_mutex_lock(&mTogglePlanif);
-				togglePlanif=1;
-				pthread_mutex_unlock(&mTogglePlanif);
-			}
-			else if(!strcmp(comando[0], "untogglePlanif"))
-			{
-				pthread_mutex_lock(&mTogglePlanif);
-				togglePlanif=0;
-				pthread_mutex_unlock(&mTogglePlanif);
-				enviarTodosLosNewAReady();
-				enviarTodosLosReadyAExecute();
+				if(togglePlanif == 0)
+				{
+					log_error(logFile, "[PLANIFICACION]: DETIENDO PLANIFICACION");
+					togglePlanif = 1;
+					pthread_mutex_unlock(&mTogglePlanif);
+				}
+				else
+				{
+					log_error(logFile, "[PLANIFICACION]: REANUDANDO PLANIFICACION");
+					togglePlanif = 0;
+					pthread_mutex_unlock(&mTogglePlanif);
+					matarTodosLosQueCorresponda();
+					enviarTodosLosNewAReady();
+					enviarTodosLosReadyAExecute();
+
+				}
+
 			}
 			else if(!strcmp(comando[0], "exit"))
 			{
@@ -201,11 +214,26 @@ void recibir_comandos()
 
 }
 
+void matarTodosLosQueCorresponda()
+{
+	bool paraMatar(ProcessControl* pc)
+	{
+		return pc->toBeKilled != 0;
+	}
+	t_list* ajusticiados = list_filter(process, paraMatar);
+	void matar(ProcessControl* pc)
+	{
+		matarSiCorresponde(pc->pid);
+	}
+	list_iterate(ajusticiados, matar);
+	list_destroy(ajusticiados);
+}
+
 void mostrarPCB(PCB* pcb)
 {
 	puts("----------------PCB----------------");
-	printf("PID: %i | EXIT CODE: %i\n", pcb->pid, pcb->exitCode);
 	mostrarIndiceDeStack(pcb->indiceStack, pcb->nivelDelStack);
+	printf("PID: %i | EXIT CODE: %i\n", pcb->pid, pcb->exitCode);
 	puts("----------------PCB----------------");
 }
 
