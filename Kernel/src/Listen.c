@@ -8,6 +8,7 @@ int max(int a, int b)
 }
 
 void handler(){
+
 	connHandle handleMaster= initializeConnectionHandler();
 	socketHandler result;
 	initialize(config, &handleMaster);

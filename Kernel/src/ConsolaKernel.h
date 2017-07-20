@@ -2,6 +2,7 @@
 #define __CONSOLA__
 #include <commons/collections/list.h>
 #include "globales.h"
+#include "Process.h"
 
 
 void recibir_comandos();

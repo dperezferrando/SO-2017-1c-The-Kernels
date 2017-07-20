@@ -15,6 +15,7 @@
 ProcessControl* PIDFind(int);
 ProcessControl* PIDFindAndRemove(int);
 
+PCB* fromNewToFinished(int pid);
 PCB* fromNewToReady();
 PCB* fromReadyToExecute();
 PCB* fromReadyToFinished();

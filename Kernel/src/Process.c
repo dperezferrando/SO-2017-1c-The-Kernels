@@ -53,6 +53,7 @@ void killProcess(int PID,int exitCode){
 	switch (pc->state){
 	case 0:
 		queue= colaNew;
+		fromNewToFinished(PID);
 		break;
 	case 1:
 		fromReadyToFinished(PID);
@@ -68,9 +69,10 @@ void killProcess(int PID,int exitCode){
 		lSend(pc->consola, &PID, -2, sizeof(int));
 	else // Si murio por otra razon le aviso tambien a memoria
 	{
-		if(exitCode != -6)
+		if(exitCode != -6 && pc->state != 0)
 			lSend(pc->consola, &PID, 9, sizeof(int));
-		lSend(conexionMemoria, &PID, 9, sizeof(int));
+		if(pc->state != 0)
+			lSend(conexionMemoria, &PID, 9, sizeof(int));
 	}
 	//Verifica si esta en alguna de cola de algun semaoforo
 	quitarDeSemaforosPorKill(PID);
@@ -348,6 +350,12 @@ PCB* fromBlockedToFinished(int pid){
 	return _fromListToQueue(blockedList,colaFinished,pid,9);
 //	pthread_mutex_unlock(&mListaBlocked);
 //	pthread_mutex_unlock(&mColaFinished);
+}
+
+
+PCB* fromNewToFinished(int pid){
+	log_warning(logFile, "[PLANIFICACION]: PID %i DE NEW A FINISHED", pid);
+	return _fromListToQueue(colaNew->elements, colaFinished, pid, 9);
 }
 
 
