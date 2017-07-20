@@ -30,10 +30,10 @@ void handleSockets(connHandle* master, socketHandler result){
 			{
 				recibirDeCPU(p, master);
 			}
-		/*	else if(p == master->inotify)
+			else if(p == master->inotify)
 			{
 				inotifyStuff();
-			}*/
+			}
 		}
 
 	}
@@ -1181,7 +1181,7 @@ int checkMultiprog(){
 
 
 bool isListener(int p, connHandle master){
-	return ( p==master.listenCPU || p== master.listenConsola);// || p == master.inotify);
+	return ( p==master.listenCPU || p== master.listenConsola || p == master.inotify);
 }
 
 bool viableRequest(int requestSize){
@@ -1320,37 +1320,28 @@ int sonIguales(char* s1, char* s2) {
 void inotifyStuff(int p)
 {
 	char buffer[BUF_LEN];
-		puts("SE MODIFICO EL ARCHIVO DE CONFIGURACION");
 		int length = read(p, buffer, BUF_LEN);
 		int offset = 0;
-		// Luego del read buffer es un array de n posiciones donde cada posición contiene
-		// un eventos ( inotify_event ) junto con el nombre de este.
 		while (offset < length) {
-			// El buffer es de tipo array de char, o array de bytes. Esto es porque como los
-			// nombres pueden tener nombres mas cortos que 24 caracteres el tamaño va a ser menor
-			// a sizeof( struct inotify_event ) + 24.
 			struct inotify_event *event = (struct inotify_event *) &buffer[offset];
-				// El campo "len" nos indica la longitud del tamaño del nombre
 			if (event->len) {
-				// Dentro de "mask" tenemos el evento que ocurrio y sobre donde ocurrio
-				// sea un archivo o un directorio
-				printf("AYY %s\n", event->name);
-				if (event->mask & IN_CLOSE_WRITE)
+				if (event->mask & IN_MODIFY)
 				{
-					if (event->mask & IN_ISDIR)
-					{
-						printf("The directory %s was modified.\n", event->name);
-					}
-					else
+					if (!(event->mask & IN_ISDIR))
 					{
 						if(strcmp(event->name, "config.conf"))
 							break;
-						printf("The file %s was modified.\n", event->name);
 						t_config* conf = config_create(RUTA);
-						puts("A");
-						config->QUANTUM_SLEEP = config_get_int_value(conf, "QUANTUM_SLEEP");
-						puts("B");
-						printf("NUEVO QUANTUM SLEEP: %i\n", config->QUANTUM_SLEEP);
+						if(config_has_property(conf, "QUANTUM_SLEEP"))
+						{
+							int nuevoQS = config_get_int_value(conf, "QUANTUM_SLEEP");
+							if(nuevoQS != config->QUANTUM_SLEEP)
+							{
+								log_info(logFile, "[CONFIG]: SE MODIFICO EL ARCHIVO DE CONFIGURACION");
+								config->QUANTUM_SLEEP = nuevoQS;
+								log_info(logFile, "[CONFIG]: NUEVO QUANTUM SLEEP: %i\n", config->QUANTUM_SLEEP);
+							}
+						}
 						config_destroy(conf);
 					}
 				}

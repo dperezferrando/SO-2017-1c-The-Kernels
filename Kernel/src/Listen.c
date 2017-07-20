@@ -63,7 +63,7 @@ void initialize(configFile* config,connHandle* handleMaster){
 	handleMaster->listenConsola= conexionConsola;
 	handleMaster->listenCPU= conexionCPU;
 	int inotify = inotify_init();
-	int watch_inotify = inotify_add_watch(inotify, "/home/utnso/Escritorio/tp-2017-1c-The-Kernels/Kernel/Debug/", IN_CLOSE_WRITE);
+	int watch_inotify = inotify_add_watch(inotify, "/home/utnso/Escritorio/tp-2017-1c-The-Kernels/Kernel/Debug/", IN_MODIFY);
 	handleMaster->inotify = inotify;
 
 }
