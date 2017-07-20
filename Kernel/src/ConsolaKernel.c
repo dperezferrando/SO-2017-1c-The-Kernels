@@ -67,10 +67,9 @@ void recibir_comandos()
 				{
 					int pid = atoi(comando[1]);
 					ProcessControl* pc = PIDFind(pid); // ADENTRO TIENE MUTEX
-					printf("PROCESO PID: %i LLEVA %i RAFAGAS EJECUTADAS\n", pc->pid, pc->rafagasEj);
+					printf("[KERNEL]: PROCESO PID: %i LLEVA %i RAFAGAS EJECUTADAS\n", pc->pid, pc->rafagasEj);
 				}
 			}
-			// FALTAN VARIOS CMDS QUE TODAVIA NO ESTA IMPLEMENTADO DONDE SE GUARDA ESA INFO
 			else if(!strcmp(comando[0], "tablaArchivos"))
 			{
 				if(comando[1]!=NULL){
@@ -96,7 +95,7 @@ void recibir_comandos()
 					}
 				}
 				else{
-					puts("Argumento no puede ser null\n");
+					puts("[KERNEL]: Argumento no puede ser null\n");
 				}
 			}
 			else if(!strcmp(comando[0], "multiprog"))
@@ -105,18 +104,19 @@ void recibir_comandos()
 				{
 					int multiprog = atoi(comando[1]);
 					if(multiprog <= 0)
-						puts("NO ES NU NUMERO VALIDO");
+						puts("[CONFIG]: NO ES NU NUMERO VALIDO");
 					else
 					{
 						pthread_mutex_lock(&mMultiprog);
 						config->GRADO_MULTIPROG = multiprog;
 						pthread_mutex_unlock(&mMultiprog);
-						printf("NUEVO GRADO DE MULTIPROGRAMACION: %i\n", config->GRADO_MULTIPROG);
+						printf("[CONFIG]: NUEVO GRADO DE MULTIPROGRAMACION: %i\n", config->GRADO_MULTIPROG);
+						log_info(logFile, "[CONFIG]: NUEVO GRADO DE MULTIPROGRAMACION: %i\n", config->GRADO_MULTIPROG);
 						enviarTodosLosNewAReady();
 					}
 				}
 				else{
-					puts("Argumento no puede ser null\n");
+					puts("[KERNEL]: Argumento no puede ser null\n");
 				}
 			}
 			else if(!strcmp(comando[0], "syscalls"))
@@ -124,7 +124,7 @@ void recibir_comandos()
 				if(comando[1]!=NULL){
 					int pid = atoi(comando[1]);
 					ProcessControl* pc = PIDFind(pid);
-					printf("SYSCALLS PID: %i: %i\n", pc->pid, pc->syscalls);
+					printf("[KERNEL]: SYSCALLS PID: %i: %i\n", pc->pid, pc->syscalls);
 				}
 			}
 			else if(!strcmp(comando[0], "heapInfo"))
@@ -152,7 +152,6 @@ void recibir_comandos()
 						pthread_mutex_lock(&mColaFinished);
 						PCB* pcb = list_find(colaFinished->elements, mismoPID);
 						pthread_mutex_unlock(&mColaFinished);
-						// SOLO LOS EXIT PARA SALIR DEL PASO
 						if(pcb == NULL)
 							puts("NO ESTA EN FINISHED");
 						else
@@ -163,17 +162,13 @@ void recibir_comandos()
 			else if(!strcmp(comando[0], "kill"))
 			{
 				if(comando[1]!=NULL){
-				//	if(togglePlanif == 0)
-				//	{
-						int pid = atoi(comando[1]);
-						matarCuandoCorresponda(pid,-7);
-						printf("SE ENVIO A AJUSTICIAR EL PROCESO PID: %i. SE AJUSTICIARA CUANDO CORRESPONDA.\n", pid);
-			//		}
-			//		else
-			//			log_error(logFile, "[PLANIFICACION]: NO SE PUEDE MATAR A NADIE. PLANIFICACION DESACTIVADA, NO HAY MOVIMIENTO DE COLAS");
+					int pid = atoi(comando[1]);
+					matarCuandoCorresponda(pid,-7);
+					printf("SE ENVIO A AJUSTICIAR EL PROCESO PID: %i. SE AJUSTICIARA CUANDO CORRESPONDA.\n", pid);
+
 				}
 				else{
-					puts("Argumento no puede ser null\n");
+					puts("[KERNEL]: Argumento no puede ser null\n");
 				}
 			}
 			else if(!strcmp(comando[0], "togglePlanif"))
@@ -203,8 +198,19 @@ void recibir_comandos()
 				morir = 1;
 				getConnectedSocket(config->IP_PROPIA, config->PUERTO_PROG, CONSOLA_ID);
 			}
+			else if(!strcmp(comando[0], "help"))
+			{
+
+				puts("---------------COMANDOS---------------");
+				puts("cola [exit] [ready] [blocked] [new] [execute] [vacio]");
+				puts("rafagasEj [PID] | tablaArchivos [global] [PID]");
+				puts("multiprog [numero] | syscalls [PID] | heapInfo [PID]");
+				puts("mostrarPCB [PIDEnExit] | kill [PID] | togglePlanif");
+				puts("exit");
+				puts("---------------COMANDOS---------------");
+			}
 			else
-				puts("COMANDO INVALIDO");
+				puts("[KERNEL]: COMANDO INVALIDO");
 			free(comando[0]);
 			free(comando[1]);
 			free(comando);

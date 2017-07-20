@@ -1,0 +1,13 @@
+begin
+variables f,g,h,i, j
+abrir f LC /trolito.bin
+abrir g LC /archivo.bin
+abrir h LC /putito.bin
+abrir i LC /test.bin
+abrir j LC /test2.bin
+borrar f
+borrar g
+borrar h
+borrar i
+borrar j
+end

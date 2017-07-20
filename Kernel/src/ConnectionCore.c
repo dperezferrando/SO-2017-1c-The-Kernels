@@ -894,14 +894,20 @@ void recibirDeCPU(int socket, connHandle* master)
 			int fd = abrirArchivo(rp.pid,rp.ruta, rp.permisos);
 			log_info(logFile, "[ARCHIVOS]: EL PROCESO PID %i QUIERE ABRIR EL ARCHIVO %s PERMISOS: %s", rp.pid, rp.ruta, rp.permisos);
 			sumarSyscall(rp.pid);
-			if(fd != -1)
-				lSend(socket, &fd, 104, sizeof(int));
-			else
+			if(fd == -1)
 			{
 				log_error(logFile,"[ARCHIVOS]: EL PROCESO PID %i QUISO ABRIR UN ARCHIVO QUE NO EXISTE SIN FLAG 'C'", rp.pid);
 				lSend(socket, NULL, -3, 0);
 				matarCuandoCorresponda(rp.pid, -2);
 			}
+			else if(fd == -2)
+			{
+				log_error(logFile,"[ARCHIVOS]: EL PROCESO PID %i QUISO CREAR UN ARCHIVO PERO NO HAY ESPACIO", rp.pid);
+				lSend(socket, NULL, -3, 0);
+				matarCuandoCorresponda(rp.pid, -20);
+			}
+			else
+				lSend(socket, &fd, 104, sizeof(int));
 			break;
 		}
 
@@ -980,7 +986,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			int estado = escribirArchivo(info, data);
 			if(estado == -1)
 			{
-				log_error(logFile,"[ARCHIVOS]: PROCESO PID %i NO TIENE PERMISO DE ESCRITURA EN FD %", info.pid, info.fd);
+				log_error(logFile,"[ARCHIVOS]: PROCESO PID %i NO TIENE PERMISO DE ESCRITURA EN FD %i", info.pid, info.fd);
 				lSend(socket, NULL, -3 ,0);
 				matarCuandoCorresponda(info.pid, -4);
 

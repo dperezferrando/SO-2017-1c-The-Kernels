@@ -54,6 +54,8 @@ int abrirArchivo(int pid, char* ruta, char* permisos)
 		entradaBuscada = agregarEntradaGlobal(ruta, permisos);
 		if(entradaBuscada == NULL) // NO EXISTE EN EL FILESYSTEM EL ARCHIVO QUE SE QUIERE ABRIR
 			return -1;
+		if(entradaBuscada == -1)
+			return -2;
 	}
 	int fd = agregarEntradaTablaProceso(entradaBuscada, pid, permisos);
 	return fd;
@@ -84,7 +86,7 @@ entradaTablaGlobalFS* agregarEntradaGlobal(char* ruta, char* permisos)
 				if(respuesta->header.tipoOperacion == -4)
 				{
 					destruirMensaje(respuesta);
-					return NULL;
+					return -1;
 				}
 				destruirMensaje(respuesta);
 

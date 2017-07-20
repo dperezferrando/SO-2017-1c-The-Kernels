@@ -12,11 +12,38 @@ void imprimirConfig(configFile* config)
 	printf("IP MEMORIA: %s | PUERTO MEMORIA: %s \n", config->IP_MEMORIA, config->PUERTO_MEMORIA);
 	printf("IP FILE SYSTEM: %s | PUERTO FILE SYSTEM: %s \n", config->IP_FS, config->PUERTO_FS);
 	printf("QUANTUM: %i | QUANTUM SLEEP: %i | ALGORITMO: %s \n", config->QUANTUM, config->QUANTUM_SLEEP,config->ALGORITMO);
-	printf("GRADO MULTIPGROG: %i | SEM IDS: %i | SEM INIT: %i \n", config->GRADO_MULTIPROG, config->SEM_IDS,config->SEM_INIT);
-	printf("SHARED VARS: %i | STACK_SIZE: %i | PAG_SIZE: %i\n", config->SHARED_VARS, config->STACK_SIZE);
+	printf("GRADO MULTIPGROG: %i\n", config->GRADO_MULTIPROG);
+	mostrarSemaforos(config);
+	mostrarVarsGlobales(config);
+	printf("STACK_SIZE: %i\n", config->STACK_SIZE);
 	printf("IP PROPIA: %s\n", config->IP_PROPIA);
 	puts("--------PROCESO KERNEL--------");
 }
+
+void mostrarSemaforos(configFile* config)
+{
+	int i = 0;
+	printf("SEMAFOROS:");
+	while(config->SEM_IDS[i] != NULL)
+	{
+		printf(" %s [%s] |", config->SEM_IDS[i], config->SEM_INIT[i]);
+		i++;
+	}
+	puts("");
+}
+
+void mostrarVarsGlobales(configFile* config)
+{
+	int i = 0;
+	printf("VARS GLOBALES:");
+	while(config->SHARED_VARS[i] != NULL)
+	{
+		printf(" %s |", config->SHARED_VARS[i]);
+		i++;
+	}
+	puts("");
+}
+
 
 void destruirArray(char** arr)
 {
