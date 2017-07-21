@@ -11,9 +11,13 @@
 #include <commons/config.h>
 #include <commons/bitarray.h>
 #include <commons/collections/list.h>
+#include <commons/log.h>
 #include <math.h>
 #include "../../ConfigLibrary/src/Configuration.c"
 #include "../../SocketLibrary/src/SocketLibrary.c"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 int kernelvive = 1;
 int kernel;
@@ -38,7 +42,7 @@ int tamRuta_BitM;
 int tamRuta_CMeta;
 int tamRuta_Blqs;
 int tamRuta_Arch;
-const char* keys[4] = {"PUERTO", "PUNTO_MONTAJE" ,"IP_PROPIA", "NULL"};
+const char* keys[5] = {"PUERTO", "PUNTO_MONTAJE" ,"IP_PROPIA","LOG" ,"NULL"};
 const char* metaKeys[4]={"TAMANIO_BLOQUES","CANTIDAD_BLOQUES","MAGIC_NUMBER","NULL"};
 const char* archKeys[3] = {"TAMANIO", "BLOQUES" , "NULL"};
 
@@ -46,6 +50,7 @@ typedef struct {
 	char* puerto;
 	char* punto_montaje;
 	char ip_propia[16];
+	char log[100];
 } configFile;
 
 typedef struct {

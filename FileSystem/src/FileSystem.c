@@ -3,14 +3,17 @@
 configFile* config;
 metadata* metad;
 t_config* configHandler;
+t_log* logFile;
 
 int main(int argc, char** argsv){
 	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/FileSystem/Debug/filesystem.conf", leerArchivoConfig, keys);
+	levantarLog();
 	levantarPaths();
 	levantarBitmap();
-	puts("bitmap levantado");
+	log_info(logFile, "[BITMAP] BITMAP LEVANTADO");
 	levantarBloquesEnUso();
-	puts("bitmap al dia");
+	log_info(logFile, "[BITMAP] BITMAP AL DIA");
+	mostrarBitmap();
 	//testxd();
 	//testxd2();
 	//testxd3();
@@ -19,7 +22,7 @@ int main(int argc, char** argsv){
 	//testllenarbitmap2();
 	kernel = getBindedSocket(config->ip_propia, config->puerto);
 	lListen(kernel, 5);
-	puts("ESPERANDO AL KERNEL");
+	log_info(logFile, "[FILE SYSTEM]: ESPERANDO AL KERNEL");
 	conexion = lAccept(kernel, KERNEL_ID);
 	esperarOperacion();
 	close(kernel);
@@ -29,8 +32,31 @@ int main(int argc, char** argsv){
 	//config_destroy(configHandler);
 	//free(configHandler);
 	destruirBitmap();
-	puts("fin");
+	log_info(logFile, "[FILE SYSTEM]: SALIENDO");
 	return EXIT_SUCCESS;
+}
+
+void mostrarBitmap()
+{
+	int size = bitarray_get_max_bit(Ebitarray);
+	puts("------------BITMAP------------");
+	int i;
+	for(i = 0;i<size;i++)
+	{
+		printf("%i", bitarray_test_bit(Ebitarray, i));
+		if(((i+1) % 8) == 0)
+			printf(" - ");
+	}
+	puts("");
+	puts("------------BITMAP------------");
+
+}
+
+void levantarLog()
+{
+	if(fopen(config->log, "r") != NULL)
+		remove(config->log);
+	logFile = log_create(config->log, "FILE SYSTEM", 1, 1);
 }
 
 void levantarPaths()
@@ -49,16 +75,27 @@ void levantarPaths()
 	metad = configurate(ruta_Meta, leerArchivoMetadata, metaKeys);
 	cantBloq= metad->cantidad_Bloques;
 	tamBloq= metad->tamanio_Bloques;
+	chequearDir(ruta_Blqs);
+	chequearDir(ruta_Arch);
+}
+
+void chequearDir(char* unaRuta)
+{
+	struct stat st = {0};
+
+	if (stat(unaRuta, &st) == -1) {
+		log_error(logFile, "[FILE SYSTEM]: NO EXISTE EL DIRECTORIO %s, CREANDO...", unaRuta);
+	    mkdir(unaRuta, 0777);
+	}
 }
 
 
 void esperarOperacion()
 {
-	puts("Esperando Operacion");
+	log_info(logFile, "[FILE SYSTEM]: ESPERANDO OPERACION");
 	while(kernelvive==1)
 	{
 		Mensaje* mensaje = lRecv(conexion);
-		puts("Operacion recibida");
 		//char* path;
 		int offset;
 		int  size;
@@ -66,63 +103,29 @@ void esperarOperacion()
 		//char* buffer;
 		switch(mensaje->header.tipoOperacion){
 			case -1:
-				puts("MURIO EL KERNEL /FF");
+				log_error(logFile, "[FILE SYSTEM]: MURIO EL KERNEL /FF");
 				kernelvive=0;
 				break;
 			case 1:
 			{
 				// verificar archivo
-				puts("VERIFICAR ARCHIVO");
-				char* path = agregarBarraCero(mensaje->data, mensaje->header.tamanio);
-				// LO QUE HAYA QUE HACER PARA VALIDAR EL ARCHIVO
-				// DEVOLVER CON lSend OPERACION 104 y EL ARCHIVO ES VALIDO, SINO
-				// NUMERO NEGATIVO QUE NO SEA -1
 
+				char* path = agregarBarraCero(mensaje->data, mensaje->header.tamanio);
+				log_info(logFile, "[FILE SYSTEM]: KERNEL PIDE VERFICAR ARCHIVO %s", path);
 				int retorno = validarArchivo(path);
 				if(retorno==-1)
+				{
 					lSend(conexion, NULL, -5,0);
+					log_info(logFile, "[VERIFICAR ARCHIVO]: EL ARCHIVO NO EXISTE");
+				}
 				else
+				{
 					lSend(conexion, NULL, 104, 0);
+					log_info(logFile, "[VERIFICAR ARCHIVO]: EL ARCHIVO EXISTE");
+				}
 				free(path);
 				break;
 			}
-
-
-			/*case 2:{
-				//Op.abrir
-				memcpy(flagC,mensaje->data,sizeof(int));
-				memcpy(flagR,mensaje->data + sizeof(int),sizeof(int));
-				memcpy(flagW,mensaje->data + sizeof(int)*2,sizeof(int));
-				memcpy(sizePath, mensaje->data + sizeof(int)*3, sizeof(int));
-				memcpy(path, mensaje->data + sizeof(int)*4, sizePath);
-				int retorno = validarArchivo(path);
-				if(retorno==0){
-					retornoDePath(path);
-				}
-				if(retorno==-1){
-					if(flagC==1){
-						int result = crearArchivo(path);
-						if(result==-1){
-							lSend(kernel, 0, 1, sizeof(int));
-						}
-						retornoDePath(path);
-					}
-					else{
-						lSend(kernel, 0, 1, sizeof(int));
-					}
-				}
-				break;
-			}*/
-			/*case 1:{
-				//Op.crear
-				memcpy(flagC,mensaje->data,sizeof(int));
-				memcpy(flagR,mensaje->data + sizeof(int),sizeof(int));
-				memcpy(flagW,mensaje->data + sizeof(int)*2,sizeof(int));
-				memcpy(sizePath, mensaje->data + sizeof(int)*3, sizeof(int));
-				memcpy(path, mensaje->data + sizeof(int)*4, sizePath);
-				crearArchivo(path);
-				break;
-			}*/
 			case 2:{
 				//Op.leer
 				char* path;
@@ -131,17 +134,11 @@ void esperarOperacion()
 				path = agregarBarraCero(mensaje->data + sizeof(int), sizePath);
 				memcpy(&offset, mensaje->data+ sizeof(int) +sizePath, sizeof(int));
 				memcpy(&size, mensaje->data + sizeof(int)*2 + sizePath, sizeof(int));
-				// NO SE VALIDA, SE VALIDO CUANDO SE ABRIO EL ARCHIVO, SI EL PEDIDO ES INCORRECTO YA LO CHEQUEO EL KERNEL
-			/*	int retorno = validarArchivo(path);
-				if(retorno==-1){
-					lSend(kernel, 0, 1, sizeof(int));
-					break;
-				}*/
 				char* buffer = leerArchivo(path,offset,size);
-				// ESTE CHEQUEO NO SE QUE ES PERO CAPAZ NO ES NECESARIO, POR AHORA EL KERNEL LO IGNORA
+				log_info(logFile, "[FILE SYSTEM] EL KERNEL PIDE LEER: %s | OFFSET: %i | SIZE: %i", path, offset, size);
 				if(buffer=="-1"){
 					lSend(conexion, NULL, -4, 0);
-					puts("LECTURA FALLO");
+					log_error(logFile, "[LEER]: HUBO UN ERROR AL LEER");
 					free(buffer);
 					break;
 				}
@@ -160,39 +157,24 @@ void esperarOperacion()
 				memcpy(&size, mensaje->data + sizeof(int)*2 +sizePath, sizeof(int));
 				buffer = malloc(size);
 				memcpy(buffer, mensaje->data + sizeof(int)*3 + sizePath, size);
-				// IDEM LEER
-			/*	int retorno = validarArchivo(path);
-				if(retorno==-1){
-					lSend(kernel, 0, 1, sizeof(int));validarArchivo
-					break;
-				}*/
-				// IDEM LEER, PUEDE NO SER NECESARIO
+				log_info(logFile, "[FILE SYSTEM] EL KERNEL PIDE ESCRIBIR: %s | OFFSET: %i | SIZE: %i", path, offset, size);
 				int result = escribirArchivo(path,offset,size,buffer);
 				free(buffer);
 				if(result==-1){
 					lSend(conexion, NULL, -4, 0);
-					puts("ESCRITURA FALLO");
+					log_error(logFile, "[ESCRIBIR]: HUBO UN ERROR AL ESCRIBIR. POSIBLEMENTE YA NO HAYA ESPACIO");
 					break;
 				}
 				else
 					lSend(conexion, NULL, 104, 0);
-				// WHY? EL KERNEL YA CONOCE EL PATH
-				//retornoDePath(path);
-
 				break;
 			}
 			case 5:{
 				//Op.borrar
-				puts("BORRAR");
 				int sizePath;
 				memcpy(&sizePath, mensaje->data, sizeof(int));
 				char* path = agregarBarraCero(mensaje->data+sizeof(int), sizePath);
-				// IDEM
-			/*	int retorno = validarArchivo(path);
-				if(retorno==-1){
-					lSend(kernel, 0, 1, sizeof(int));
-					break;
-				}*/
+				log_info(logFile, "[FILE SYSTEM]: EL KERNEL BORRA EL ARCHIVO %s", path);
 				int result = borrarArchivo(path);
 				// IDEM
 				/*if(result==-1){
@@ -207,11 +189,11 @@ void esperarOperacion()
 			case 4:
 			{
 				// CREAR ARCHIVO
-				puts("CREAR ARCHIVO");
 				char* path = agregarBarraCero(mensaje->data, mensaje->header.tamanio);
+				log_info(logFile, "[FILE SYSTEM]: EL KERNEL QUIERE CREAR EL ARCHIVO %s", path);
 				if(crearArchivo(path) == -1){
 					lSend(conexion, NULL, -4, 0);
-					puts("CREACION FALLO");
+					log_error(logFile, "[CREAR ARCHIVO]: HUBO UN ERROR. POSIBLEMENTE NO HAYA ESPACIO.");
 				}
 				else
 					lSend(conexion, NULL, 104, 0);
@@ -1019,7 +1001,7 @@ int levantarBitmap(){
 	fclose(arch0);
 	bM = fopen(ruta_BitM,"w+");
 	if(bM == NULL){
-		puts("Error ruta bitmap");
+		log_error(logFile, "[BITMAP]: ERROR RUTA BITMAP");
 		return -1;
 	}
 	int i;
@@ -1081,7 +1063,7 @@ int levantarBloquesEnUso(){
 	  FILE *bM;
 	  bM = open(ruta_BitM, O_RDWR);
 	  if(bM == NULL){
-		  puts("FALLO CREACION BITMAP");
+		  log_error(logFile, "[BITMAP]: FALLO CREACION BITMAP");
 		fclose(dp);
 	  	return -1;
 	  }
@@ -1212,9 +1194,9 @@ retornoDePath(path){
 configFile* leerArchivoConfig(t_config* configHandler){
 	configFile* config= malloc(sizeof(configFile));
 	config->puerto = config_get_string_value(configHandler, "PUERTO");
-	printf("FFSFASFAS: %s\n", config->puerto);
 	config->punto_montaje = config_get_string_value(configHandler, "PUNTO_MONTAJE");
 	strcpy(config->ip_propia, config_get_string_value(configHandler, "IP_PROPIA"));
+	strcpy(config->log, config_get_string_value(configHandler, "LOG"));
 	//config_destroy(configHandler);
 	imprimirConfig(config);
 	return config;

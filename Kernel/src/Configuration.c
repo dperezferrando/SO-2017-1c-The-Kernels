@@ -44,7 +44,7 @@ bool archivoConfigValido(t_config* configHandler, char* keys[])
 void* configurate(char* ruta, void*(*handleConfigFile)(t_config*), char* keys[]) {
 	t_config* configHandler = config_create(ruta);
 	if(!archivoConfigValido(configHandler,keys))
-		abort();
+		exit(EXIT_FAILURE);
 	return handleConfigFile(configHandler);
 
 }
