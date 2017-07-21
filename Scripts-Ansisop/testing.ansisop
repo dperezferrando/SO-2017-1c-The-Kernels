@@ -1,5 +1,6 @@
 begin
-variables f,g,h,i, j
+variables f,g,h,i,j,k
+abrir k L /largeFile.bin
 abrir f LC /trolito.bin
 abrir g LC /archivo.bin
 abrir h LC /putito.bin
@@ -10,4 +11,5 @@ borrar g
 borrar h
 borrar i
 borrar j
+borrar k
 end

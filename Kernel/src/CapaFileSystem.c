@@ -134,9 +134,17 @@ int agregarEntradaTablaProceso(entradaTablaGlobalFS* entradaGlobal, int pid, cha
 	tablaDeProceso* tablaDelProceso = encontrarTablaDelProceso(pid);
 	if(tablaDelProceso == NULL)
 		puts("ESTO NO DEBERIA PASAR NUNCA, SI VES ESTE MENSAJE GET READY FOR SEG FAULT");
+	if(list_is_empty(tablaDelProceso->entradasTablaProceo))
+		entrada->fd = 3;
+	else
+	{
+		int pos = list_size(tablaDelProceso->entradasTablaProceo)-1;
+		entradaTablaFSProceso* ultimaEntrada = list_get(tablaDelProceso->entradasTablaProceo, pos);
+		entrada->fd = ultimaEntrada->fd + 1;
+	}
 	list_add(tablaDelProceso->entradasTablaProceo, entrada);
-	int fd = list_size(tablaDelProceso->entradasTablaProceo) + 2;
-	return fd;
+
+	return entrada->fd;
 }
 
 bool moverCursorArchivo(fileInfo info)
@@ -151,7 +159,11 @@ bool moverCursorArchivo(fileInfo info)
 entradaTablaFSProceso* buscarEnTablaDelProceso(int pid, int fd)
 {
 	tablaDeProceso* tabla = encontrarTablaDelProceso(pid);
-	entradaTablaFSProceso* entrada = list_get(tabla->entradasTablaProceo, fd-3);
+	bool mismoFD(entradaTablaFSProceso* entrada)
+	{
+		return entrada->fd == fd;
+	}
+	entradaTablaFSProceso* entrada = list_find(tabla->entradasTablaProceo, mismoFD);
 	return entrada;
 }
 
@@ -202,9 +214,12 @@ bool cerrarArchivo(int pid, int fd)
 	entradaTablaFSProceso* entrada = buscarEnTablaDelProceso(pid, fd);
 	if(entrada == NULL)
 		return 0;
-
+	bool mismoFD(entradaTablaFSProceso* entrada)
+	{
+		return entrada->fd == fd;
+	}
 	cerrarArchivoEnTablaGlobal(entrada->entradaGlobal);
-	list_remove_and_destroy_element(tabla->entradasTablaProceo, fd-3, &destruirEntradaTablaProceso);
+	list_remove_and_destroy_by_condition(tabla->entradasTablaProceo, mismoFD, &destruirEntradaTablaProceso);
 	return 1;
 
 }
@@ -282,8 +297,13 @@ void eliminarEntradasTabla(int pid)
 
 void eliminarEntradasDelProceso(int pid)
 {
-	int fd = 3;
-	while(cerrarArchivo(pid, fd));
+	tablaDeProceso* tabla = encontrarTablaDelProceso(pid);
+	void cerrar(entradaTablaFSProceso* entrada)
+	{
+		cerrarArchivoEnTablaGlobal(entrada->entradaGlobal);
+	}
+	list_iterate(tabla->entradasTablaProceo, cerrar);
+	list_clean_and_destroy_elements(tabla->entradasTablaProceo, &destruirEntradaTablaProceso);
 }
 
 

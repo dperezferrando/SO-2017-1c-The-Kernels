@@ -68,6 +68,7 @@ struct entradaTablaGlobalFS
 
 struct entradaTablaFSProceso
 {
+	int fd;
 	char* flags;
 	entradaTablaGlobalFS* entradaGlobal;
 	int cursor; // offset

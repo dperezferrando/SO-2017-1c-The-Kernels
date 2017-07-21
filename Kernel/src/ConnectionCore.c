@@ -997,9 +997,9 @@ void recibirDeCPU(int socket, connHandle* master)
 				lSend(socket, NULL, -3 ,0);
 				matarCuandoCorresponda(info.pid, -2);
 			}
-			else if(estado == -4)
+			else if(estado == -2)
 			{
-				log_error(logFile,"[ARCHIVOS]: EL FILESYSTEM TUVO UN ERROR (POSIBLEMENTE NO TIENE ESPACIO)");
+				log_error(logFile,"[ARCHIVOS]: EL FILESYSTEM TUVO UN ERROR (POSIBLEMENTE YA NO HAYA ESPACIO PARA ESCRIBIR)");
 				lSend(socket, NULL, -3, 0);
 				matarCuandoCorresponda(info.pid, -20);
 			}
@@ -1030,7 +1030,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			}
 			else if(data == -2)
 			{
-				log_error(logFile,"[ARCHIVOS]: EL FILESYSTEM TUVO UN ERROR (POSIBLEMENTE NO TIENE ESPACIO)");
+				log_error(logFile,"[ARCHIVOS]: EL FILESYSTEM TUVO UN ERROR");
 				lSend(socket, NULL, -3, 0);
 				matarCuandoCorresponda(info.pid, -20);
 			}
