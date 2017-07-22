@@ -47,8 +47,12 @@ int main(int argc, char** argsv) {
 
 void levantarLog()
 {
-	if(fopen(config->log, "r") != NULL)
+	FILE* f = fopen(config->log, "r");
+	if( f != NULL)
+	{
 		remove(config->log);
+		fclose(f);
+	}
 	logFile = log_create(config->log, "KERNEL", 1, 1);
 }
 

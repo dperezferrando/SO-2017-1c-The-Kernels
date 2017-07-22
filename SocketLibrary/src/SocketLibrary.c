@@ -66,7 +66,10 @@ void lListen(int socket,int backlog){//hay que cambiarle el nombre
 int lAccept(int sockListener, int idEsperada){
 	int newSocket,size=sizeof(struct sockaddr);
 	struct sockaddr_storage* addr;
-	errorIfEqual(newSocket= accept(sockListener,&addr,&size),-1,"Accept");
+	newSocket= accept(sockListener,&addr,&size);
+	if(newSocket == -1)
+		return newSocket;
+//	errorIfEqual(newSocket,-1,"Accept");
 	if(!recibirHandShake(newSocket, idEsperada))
 		newSocket = -1;
 	if(newSocket<0)errorIfEqual(0,0,"Accept - Proceso equivocado u otro error");

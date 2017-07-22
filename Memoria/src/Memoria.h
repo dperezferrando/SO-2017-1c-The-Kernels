@@ -9,6 +9,7 @@
 #include <commons/log.h>
 #include "../../ConfigLibrary/src/Configuration.c"
 #include "../../SocketLibrary/src/SocketLibrary.c"
+#include <signal.h>
 
 #define CONFIG_FILE "memoria.conf"
 const char* keys[11] = {"PUERTO_KERNEL", "PUERTO_CPU", "MARCOS", "MARCO_SIZE", "ENTRADAS_CACHE", "CACHE_X_PROC", "REEMPLAZO_CACHE", "RETARDO_MEMORIA","IP_PROPIA", "LOG" ,"NULL"};
@@ -44,7 +45,7 @@ typedef struct __attribute__ ((packed)) pedidoEscrituraDelKernel {
 	char* data;
 } pedidoEscrituraDelKernel;
 
-
+void sigHandler();
 void imprimirConfigFile(configFile*);
 configFile* leerArchivoConfig(t_config*);
 void conexion_kernel();

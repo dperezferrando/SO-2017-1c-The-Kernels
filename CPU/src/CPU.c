@@ -32,7 +32,7 @@ int main(int argc, char** argsv) {
 			char* linea = pedirInstruccionAMemoria(pcb, tamanioPagina);
 			if(linea == NULL)
 			{
-				log_error(logFile, "[PEDIR INSTRUCCION NRO %i]: ALGO SALIO MAL. PUEDE QUE MEMORIA HAYA MUERTO", pcb->programCounter);
+				log_error(logFile, "[PEDIR INSTRUCCION NRO %i]: ALGO SALIO MAL. PUEDE QUE MEMORIA HAYA MUERTO. SALIENDO.", pcb->programCounter);
 				toBeKilled = 1;
 				break;
 			}

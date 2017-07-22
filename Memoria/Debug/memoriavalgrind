@@ -1,0 +1,24 @@
+==5504== Memcheck, a memory error detector
+==5504== Copyright (C) 2002-2013, and GNU GPL'd, by Julian Seward et al.
+==5504== Using Valgrind-3.10.0.SVN and LibVEX; rerun with -h for copyright info
+==5504== Command: ./Memoria
+==5504== Parent PID: 2374
+==5504== 
+==5504== Thread 2:
+==5504== Conditional jump or move depends on uninitialised value(s)
+==5504==    at 0x402B39B: free (in /usr/lib/valgrind/vgpreload_memcheck-x86-linux.so)
+==5504==    by 0x804C3A0: recibir_comandos (Memoria.c:506)
+==5504==    by 0x40A1F6F: start_thread (pthread_create.c:312)
+==5504==    by 0x41A350D: clone (clone.S:129)
+==5504==  Uninitialised value was created by a stack allocation
+==5504==    at 0x804BF92: recibir_comandos (Memoria.c:413)
+==5504== 
+==5504== 
+==5504== HEAP SUMMARY:
+==5504==     in use at exit: 0 bytes in 0 blocks
+==5504==   total heap usage: 181 allocs, 181 frees, 31,690 bytes allocated
+==5504== 
+==5504== All heap blocks were freed -- no leaks are possible
+==5504== 
+==5504== For counts of detected and suppressed errors, rerun with: -v
+==5504== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 0 from 0)

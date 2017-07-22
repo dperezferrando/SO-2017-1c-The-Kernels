@@ -14,6 +14,7 @@
 int kernel, cpu; // SOCKETS
 char* memoria; // CACHO DE MEMORIA
 t_list* cache; // CACHO DE CACHE
+t_list* cpus;
 char* memoriaUtilizable;
 int cantPaginasAdmin; // PAGINAS OCUPADAS POR LA TABLA
 configFile* config;
@@ -22,7 +23,8 @@ pthread_mutex_t memoriaSem;
 pthread_mutex_t cacheSem;
 pthread_mutex_t retardoSem;
 t_log* logFile;
-
+int morir = 0;
+int conexion;
 
 
 
@@ -32,23 +34,36 @@ int main(int argc, char** argsv) {
 	levantarLog();
 	arrancarMemoria();
 	levantarSockets();
+	pthread_create(&consolaMemoria, NULL, (void*) recibir_comandos, NULL);
 	puts("[MEMORIA]: ESPERANDO AL KERNEL");
-	int conexion = lAccept(kernel, KERNEL_ID);
+	conexion = lAccept(kernel, KERNEL_ID);
 	lSend(conexion, &config->marco_size, 104, sizeof(int));
 	pthread_create(&conexionKernel, NULL, (void *) conexion_kernel, conexion);
 	pthread_create(&esperarCPUS, NULL, (void *) esperar_cpus, NULL);
-	pthread_create(&consolaMemoria, NULL, (void*) recibir_comandos, NULL);
+	signal(SIGINT, sigHandler);
 	pthread_join(consolaMemoria, NULL);
 	pthread_join(conexionKernel, NULL);
 	pthread_join(esperarCPUS, NULL);
-//	morirElegantemente();
+	morirElegantemente();
 	return EXIT_SUCCESS;
+}
+
+void sigHandler()
+{
+	morir = 1;
+	shutdown(conexion, SHUT_RDWR);
+	shutdown(cpu, SHUT_RDWR);
+	puts("ABORTASTE EL PROCESO MOSTRO - APRETA ENTER PARA SALIR");
 }
 
 void levantarLog()
 {
-	if(fopen(config->log, "r") != NULL)
+	FILE* f = fopen(config->log, "r");
+	if( f != NULL)
+	{
 		remove(config->log);
+		fclose(f);
+	}
 	logFile = log_create(config->log, "MEMORIA", 0, 1);
 }
 
@@ -89,6 +104,7 @@ void arrancarMemoria()
 		pthread_mutex_init(&cacheSem, NULL);
 	}
 	pthread_mutex_init(&memoriaSem, NULL);
+	cpus = list_create();
 
 }
 
@@ -115,16 +131,21 @@ void levantarSockets()
 void conexion_kernel(int conexion)
 {
 	puts("[MEMORIA]: KERNEL CONECTADO - ESPERANDO MENSAJES <3");
-	while(1)
+	while(morir == 0)
 	{
 		Mensaje* mensaje = lRecv(conexion);
 		switch(mensaje->header.tipoOperacion)
 		{
 			case -1:
 				// MURIO LA CONEXION
-				puts("MURIO EL KERNEL /FF");
-				morirElegantemente();
-				exit(EXIT_FAILURE);
+				if(morir != 1)
+				{
+					puts("MURIO EL KERNEL /FF");
+					morir = 1;
+					shutdown(conexion, SHUT_RDWR);
+					shutdown(cpu, SHUT_RDWR);
+					puts("APRETA ENTER PARA SALIR");
+				}
 				break;
 			case 1:
 			{
@@ -390,67 +411,100 @@ char* leerCaracteresEntrantes() {
 
 void recibir_comandos()
 {
-	while(1)
+	while(morir == 0)
 	{
 		char* entrada = leerCaracteresEntrantes();
-		char** comando = string_split(entrada, " ");
-		log_info(logFile,"COMANDO: %s ARG: %s\n", comando[0], comando[1]);
-		if(!strcmp(comando[0], "dump"))
+		char** comando;
+		if(entrada[0] != '\0')
 		{
-			if(comando[1] == NULL)
-				puts("COMANDO INVALIDO");
-			else if(!strcmp(comando[1], "estructuras"))
-				mostrarTablaPaginas();
-			else if(!strcmp(comando[1], "cache"))
-			{
-				if(config->entradas_cache == 0)
-					puts("[CACHE]: LA CACHE ESTA DESACTIVADA");
-				else
-				{
-					puts("----------------DUMP CACHE----------------");
-					printf("ENTRADAS MAXIMA CACHE: %i | ENTRADAS MAXIMAS POR PROCESO: %i\n", config->entradas_cache, config->cache_x_proc);
-					pthread_mutex_lock(&cacheSem);
-					list_iterate(cache, mostrarEntradaCache);
-					pthread_mutex_unlock(&cacheSem);
-					puts("----------------DUMP CACHE----------------");
-				}
-			}
-			else if(!strcmp(comando[1], "contenido"))
-				mostrarDatosProcesos();
-		}
-		else if(!strcmp(comando[0], "retardo"))
-		{
+			 comando = string_split(entrada, " ");
+			 log_info(logFile,"COMANDO: %s ARG: %s\n", comando[0], comando[1]);
 
-			pthread_mutex_lock(&retardoSem);
-			config->retardo_memoria = atoi(comando[1]);
-			pthread_mutex_unlock(&retardoSem);
-			printf("[MEMORIA]: NUEVO RETARDO SETEADO: %ims\n", config->retardo_memoria);
-		}
-		else if(!strcmp(comando[0], "flush"))
-		{
-			pthread_mutex_lock(&cacheSem);
-			list_clean_and_destroy_elements(cache, destruirEntradaCache);
-			pthread_mutex_unlock(&cacheSem);
-		}
-		else if(!strcmp(comando[0], "size"))
-		{
-			if(!strcmp(comando[1], "memory"))
+			if(comando[0] != NULL)
 			{
-				printf("[MEMORIA]: CANTIDAD TOTAL DE FRAMES: %i | OCUPADOS: %i (%i ADMIN) | LIBRES: %i\n", config->marcos, cantidadFramesOcupados(), cantPaginasAdmin, cantidadFramesLibres());
+				if(!strcmp(comando[0], "dump"))
+				{
+					if(comando[1] == NULL)
+						puts("COMANDO INVALIDO");
+					else if(!strcmp(comando[1], "estructuras"))
+						mostrarTablaPaginas();
+					else if(!strcmp(comando[1], "cache"))
+					{
+						if(config->entradas_cache == 0)
+							puts("[CACHE]: LA CACHE ESTA DESACTIVADA");
+						else
+						{
+							puts("----------------DUMP CACHE----------------");
+							printf("ENTRADAS MAXIMA CACHE: %i | ENTRADAS MAXIMAS POR PROCESO: %i\n", config->entradas_cache, config->cache_x_proc);
+							pthread_mutex_lock(&cacheSem);
+							list_iterate(cache, mostrarEntradaCache);
+							pthread_mutex_unlock(&cacheSem);
+							puts("----------------DUMP CACHE----------------");
+						}
+					}
+					else if(!strcmp(comando[1], "contenido"))
+						mostrarDatosProcesos();
+				}
+				else if(!strcmp(comando[0], "retardo"))
+				{
+
+					if(comando[1] != NULL)
+					{
+						pthread_mutex_lock(&retardoSem);
+						config->retardo_memoria = atoi(comando[1]);
+						pthread_mutex_unlock(&retardoSem);
+						printf("[MEMORIA]: NUEVO RETARDO SETEADO: %ims\n", config->retardo_memoria);
+					}
+				}
+				else if(!strcmp(comando[0], "flush"))
+				{
+					pthread_mutex_lock(&cacheSem);
+					list_clean_and_destroy_elements(cache, destruirEntradaCache);
+					pthread_mutex_unlock(&cacheSem);
+				}
+				else if(!strcmp(comando[0], "size"))
+				{
+					if(comando[1] != NULL)
+					{
+						if(!strcmp(comando[1], "memory"))
+						{
+							printf("[MEMORIA]: CANTIDAD TOTAL DE FRAMES: %i | OCUPADOS: %i (%i ADMIN) | LIBRES: %i\n", config->marcos, cantidadFramesOcupados(), cantPaginasAdmin, cantidadFramesLibres());
+						}
+						else
+						{
+							int pid = atoi(comando[1]);
+							int cantPaginas = tamanioProceso(pid);
+							printf("[TAMANIO PROCESO]: PID %i: %i\n", pid, cantPaginas);
+						}
+					}
+				}
+				else if(!strcmp(comando[0], "help"))
+				{
+					puts("-----------COMANDOS-----------");
+					puts("dump [cache] [estructuras] [contenido]");
+					puts("retardo [numero] | flush | size [memory] [pid]");
+					puts("-----------COMANDOS-----------");
+
+				}
+				else if(!strcmp(comando[0], "exit"))
+				{
+					morir = 1;
+					shutdown(conexion, SHUT_RDWR);
+					shutdown(cpu, SHUT_RDWR);
+
+				}
+				else
+					puts("COMANDO INVALIDO");
+				free(comando[0]);
+				free(comando[1]);
+
 			}
 			else
-			{
-				int pid = atoi(comando[1]);
-				int cantPaginas = tamanioProceso(pid);
-				printf("[TAMANIO PROCESO]: PID %i: %i\n", pid, cantPaginas);
-			}
+				puts("COMANDO INVALIDO");
 		}
-		else
-			puts("COMANDO INVALIDO");
-		free(comando[0]);
-		free(comando[1]);
-		free(comando);
 		free(entrada);
+		free(comando);
+
 		//pthread_exit(NULL);
 
 	}
@@ -528,9 +582,24 @@ char* deserializarScript(void* data, int* pid, int* paginasTotales, int* tamanio
 
 void esperar_cpus()
 {
-	while(1)
+	while(morir == 0)
 	{
 		int conexion = lAccept(cpu, CPU_ID);
+		if(conexion == -1)
+		{
+			log_info(logFile, "[MEMORIA]: ERROR AL ACEPTAR CPU, SE SE USO EXIT ESTA TODO OK");
+			if(morir == 1)
+			{
+				void cerrarConexion(int socket)
+				{
+					shutdown(socket, SHUT_RDWR);
+				}
+				list_iterate(cpus, cerrarConexion);
+			}
+			sleep(1);
+			break;
+		}
+		list_add(cpus, conexion);
 		log_info(logFile,"[MEMORIA]: NUEVA CONEXION CPU\n");
 		pthread_t conexionCPU;
 		pthread_create(&conexionCPU, NULL, (void *) conexion_cpu, conexion);
@@ -540,7 +609,7 @@ void esperar_cpus()
 
 void conexion_cpu(int conexion)
 {
-
+	pthread_detach(pthread_self());
 	int conectado = 1;
 	while(conectado)
 	{
@@ -552,6 +621,11 @@ void conexion_cpu(int conexion)
 			case -1:
 				log_info(logFile,"[CPU %i]: DESCONEXION ABRUPTA\n", conexion);
 				conectado = 0;
+				bool mismoSocket(int socket)
+				{
+					return socket == conexion;
+				}
+				list_remove_by_condition(cpus, mismoSocket);
 				break;
 
 			case 1:
@@ -606,8 +680,8 @@ void conexion_cpu(int conexion)
 		}
 		destruirMensaje(mensaje);
 	}
-	close(conexion);
-	pthread_exit(NULL);
+	//close(conexion);
+
 
 }
 
@@ -850,6 +924,8 @@ void morirElegantemente()
 {
 	free(config);
 	free(memoria);
+	list_destroy(cpus);
+	log_destroy(logFile);
 	pthread_mutex_lock(&cacheSem);
 	list_destroy_and_destroy_elements(cache, destruirEntradaCache);
 	pthread_mutex_unlock(&cacheSem);

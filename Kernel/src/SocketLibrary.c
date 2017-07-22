@@ -66,7 +66,10 @@ void lListen(int socket,int backlog){//hay que cambiarle el nombre
 int lAccept(int sockListener, int idEsperada){
 	int newSocket,size=sizeof(struct sockaddr);
 	struct sockaddr_storage* addr;
-	errorIfEqual(newSocket= accept(sockListener,&addr,&size),-1,"Accept");
+	newSocket= accept(sockListener,&addr,&size);
+	if(newSocket == -1)
+		return newSocket;
+//	errorIfEqual(newSocket,-1,"Accept");
 	if(!recibirHandShake(newSocket, idEsperada))
 		newSocket = -1;
 	if(newSocket<0)errorIfEqual(0,0,"Accept - Proceso equivocado u otro error");
@@ -247,7 +250,6 @@ int internalSocket(char* ip, char* port,int (*action)(int,const struct sockaddr 
 int _getFirstSocket(addrInfo* addr, int (*action)(int,const struct sockaddr *,socklen_t)){
 	int s=NULL;
 	addrInfo* p;
-
 	for	(p=addr; (p != NULL) ; p= p->ai_next){
 
 		if((s=socket(p->ai_family,p->ai_socktype,p->ai_protocol))<0)continue;
