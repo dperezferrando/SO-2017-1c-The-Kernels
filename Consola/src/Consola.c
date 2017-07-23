@@ -23,7 +23,8 @@ int main(void) {
 void handleExit(int sig)
 {
 	desconectar();
-	puts("\nAbortaste la consola papu...apreta enter para salir");
+	sem_wait(&finalizacionHiloReceptor);
+	puts("\nApreta enter para salir");
 }
 
 void atenderPedidos() {
@@ -49,7 +50,7 @@ void atenderInstrucciones() {
 		switch(instruccion.comando) {
 			case RUN: iniciar(instruccion.argumento); break;
 			case CLOSE: cerrar(instruccion.argumento); break;
-			case EXIT: desconectar(); break;
+			case EXIT: desconectar(); sem_wait(&finalizacionHiloReceptor);break;
 			case CLEAR: limpiar(); break;
 			case LIST: mostrarLista(); break;
 			case HELP: mensajeAyuda(); break;
@@ -90,7 +91,6 @@ void desbloquearHilos() {
 void desconectar() {
 	morir = 1;
 	enviarAlKernel(&nada, ABORTAR_PROCESO);
-	sem_wait(&finalizacionHiloReceptor);
 }
 
 
@@ -232,7 +232,7 @@ void escuchandoKernel() {
 		case SIN_ESPACIO: sem_post(&nuevoMensaje); break;
 		case LIMITE_MULTIPROGRAMACION : mensajeMultiprogramacion(); sem_post(&destruccionMensaje); break;
 		case FINALIZAR: estado = DESACTIVADO; sem_post(&destruccionMensaje) ;break;
-		case ERROR: finalizarPorDesconexion();
+		case ERROR: finalizarPorDesconexion(); estado = DESACTIVADO; sem_post(&destruccionMensaje); break;
 		}
 		sem_post(&mutexMensaje);
 		sem_wait(&destruccionMensaje);
@@ -410,7 +410,10 @@ void iniciarSemaforosDeControl() {
 void finalizarPorDesconexion(mensaje) {
 	cancelarHilosPrograma();
 	mensajeErrorConexion();
-	exit(EXIT_FAILURE);
+	puts("\nApreta enter para salir");
+	desconectar();
+	//sleep(1);
+	//exit(EXIT_FAILURE);
 }
 
 void conectarConKernel() {

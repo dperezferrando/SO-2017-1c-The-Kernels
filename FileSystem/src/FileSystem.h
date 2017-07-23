@@ -47,8 +47,8 @@ const char* metaKeys[4]={"TAMANIO_BLOQUES","CANTIDAD_BLOQUES","MAGIC_NUMBER","NU
 const char* archKeys[3] = {"TAMANIO", "BLOQUES" , "NULL"};
 
 typedef struct {
-	char* puerto;
-	char* punto_montaje;
+	char puerto[5];
+	char punto_montaje[100];
 	char ip_propia[16];
 	char log[100];
 } configFile;

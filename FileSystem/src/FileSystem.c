@@ -26,13 +26,15 @@ int main(int argc, char** argsv){
 	conexion = lAccept(kernel, KERNEL_ID);
 	esperarOperacion();
 	close(kernel);
-	free(config);
-	free(metad);
 	//free(bloquesGG);
 	//config_destroy(configHandler);
+	free(config);
+	free(metad);
 	//free(configHandler);
 	destruirBitmap();
+	destruirPaths();
 	log_info(logFile, "[FILE SYSTEM]: SALIENDO");
+	log_destroy(logFile);
 	return EXIT_SUCCESS;
 }
 
@@ -82,7 +84,14 @@ void levantarPaths()
 	chequearDir(ruta_Blqs);
 	chequearDir(ruta_Arch);
 }
-
+void destruirPaths()
+{
+	free(ruta_CMeta);
+	free(ruta_Meta);
+	free(ruta_BitM);
+	free(ruta_Arch);
+	free(ruta_Blqs);
+}
 void chequearDir(char* unaRuta)
 {
 	struct stat st = {0};
@@ -149,6 +158,7 @@ void esperarOperacion()
 				//enviar el buffer
 				lSend(conexion, buffer, 2, sizeof(char)*size);
 				free(buffer);
+				free(path);
 				break;
 			}
 			case 3:{
@@ -171,6 +181,7 @@ void esperarOperacion()
 				}
 				else
 					lSend(conexion, NULL, 104, 0);
+				free(path);
 				break;
 			}
 			case 5:{
@@ -396,7 +407,7 @@ int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
 		cantBloquesSig=0;
 	}
 	if (bloquesDelArchivo->tamanio < bloqueLogico + 1){
-		free(bloquesDelArchivo);
+		liberarBloques(bloquesDelArchivo);
 		//free(bloquesGG);
 		int res =addbloque(path);
 		if (res==-1){
@@ -431,7 +442,7 @@ int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
 	free(rutaBloqueFisico);
 	while(falta==1){
 		if(cantBloquesSig==0){
-			free(bloquesDelArchivo);
+			liberarBloques(bloquesDelArchivo);
 			//free(bloquesGG);
 			int res =addbloque(path);
 			if (res==-1){
@@ -456,11 +467,17 @@ int escribirArchivo(char* pathRelativa, int offset, int size, char* buffer){
 	    fclose(bloque);
 	    free(rutaBloqueFisico);
 	}
-	free(bloquesDelArchivo);
+	liberarBloques(bloquesDelArchivo);
 	//free(bloquesGG);
 	cambiarTamanio(path,tamanioArchivo + sizeASumar);
 	free(path);
 	return 1;
+}
+
+void liberarBloques(bloques* bloques)
+{
+	free(bloques->bloques);
+	free(bloques);
 }
 
 /*int escribirArchivoV(char* pathRelativa, int offset, int size, char* buffer){
@@ -1197,11 +1214,11 @@ retornoDePath(path){
 
 configFile* leerArchivoConfig(t_config* configHandler){
 	configFile* config= malloc(sizeof(configFile));
-	config->puerto = config_get_string_value(configHandler, "PUERTO");
-	config->punto_montaje = config_get_string_value(configHandler, "PUNTO_MONTAJE");
+	strcpy(config->puerto, config_get_string_value(configHandler, "PUERTO"));
+	strcpy(config->punto_montaje, config_get_string_value(configHandler, "PUNTO_MONTAJE"));
 	strcpy(config->ip_propia, config_get_string_value(configHandler, "IP_PROPIA"));
 	strcpy(config->log, config_get_string_value(configHandler, "LOG"));
-	//config_destroy(configHandler);
+	config_destroy(configHandler);
 	imprimirConfig(config);
 	return config;
 }

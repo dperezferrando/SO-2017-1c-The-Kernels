@@ -247,11 +247,15 @@ void destruirEntradaTablaProceso(entradaTablaFSProceso* entrada)
 {
 	/*if(entrada->entradaGlobal->instancias == 1)
 		free(entrada->entradaGlobal);*/
+	free(entrada->flags);
 	free(entrada);
 }
 
 void imprimirPorPantalla(fileInfo info, char* data)
 {
+	ProcessControl* pc= PIDFind(info.pid);
+	if(pc->toBeKilled != 0)
+		return;
 	int len = info.tamanio;
 	int size = len+sizeof(int)*2;
 	char* impresion = malloc(size);
@@ -260,7 +264,6 @@ void imprimirPorPantalla(fileInfo info, char* data)
 	memcpy(impresion+sizeof(int), &len, sizeof(int));
 	memcpy(impresion+sizeof(int)*2, data, len);
 
-	ProcessControl* pc= PIDFind(info.pid);
 	log_info(logFile,"[IMPRIMIR]: PID %i IMPRIMIE: %s\n", pc->pid, data);
 	lSend(pc->consola, impresion, 1, size);
 	free(impresion);

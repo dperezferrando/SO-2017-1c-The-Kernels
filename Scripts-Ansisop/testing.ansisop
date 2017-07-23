@@ -1,15 +1,4 @@
 begin
-variables f,g,h,i,j,k
-abrir k L /largeFile.bin
-abrir f LC /trolito.bin
-abrir g LC /archivo.bin
-abrir h LC /putito.bin
-abrir i LC /test.bin
-abrir j LC /test2.bin
-borrar f
-borrar g
-borrar h
-borrar i
-borrar j
-borrar k
+variables a
+alocar a 100
 end

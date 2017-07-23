@@ -73,8 +73,12 @@ void sig_handler(int signo)
 
 void levantarLog()
 {
-	if(fopen(config->log, "r") != NULL)
+	FILE* f = fopen(config->log, "r");
+	if( f != NULL)
+	{
 		remove(config->log);
+		fclose(f);
+	}
 	logFile = log_create(config->log, "CPU", 1, 1);
 }
 void iniciarConexiones()
@@ -99,7 +103,10 @@ int esperarPCB()
 	log_info(logFile, "[ESPERANDO PCB]");
 	Mensaje* mensaje = lRecv(kernel);
 	if(mensaje->header.tipoOperacion == -1)
-		return mensaje->header.tipoOperacion;
+	{
+		destruirMensaje(mensaje);
+		return -1;
+	}
 	pcb = deserializarPCB(mensaje->data+sizeof(int));
 	memcpy(&quantumSleep, mensaje->data, sizeof(int));
 	log_warning(logFile, "[PCB RECIBIDO]: PID: %i | QUANTUM SLEEP: %i\n", pcb->pid, quantumSleep);
@@ -663,6 +670,7 @@ t_puntero reservar(t_valor_variable nroBytes){
 	if(respuesta->header.tipoOperacion == -2)
 	{
 		free(pedido.data);
+		destruirMensaje(respuesta);
 		log_error(logFile, "[HEAP]: NO HAY ESPACIO DISPONIBLE O SE SUPERO EL TAMANIO MAXIMO");
 		estado = ABORTADO;
 		return 0;
@@ -799,6 +807,7 @@ t_descriptor_archivo abrir(t_direccion_archivo ruta , t_banderas flags){
 		log_info(logFile, "[ABRIR ARCHIVO] FD: %i", fileDescriptor);
 	}
 	free(cadenaFlags);
+	free(ruta);
 	free(rutaYFlagsSerializados.data);
 	destruirMensaje(mensaje);
 	return fileDescriptor;

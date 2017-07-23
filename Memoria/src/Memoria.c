@@ -177,7 +177,7 @@ void conexion_kernel(int conexion)
 				memcpy(pedido->data, mensaje->data+(sizeof(int)*4),pedido->posicion.size);
 				log_info(logFile,"[HEAP]: KERNEL PIDE ESCRIBIR PID: %i | PAG: %i | OFFSET: %i | SIZE: %i\n", pid, pedido->posicion.pagina, pedido->posicion.offset, pedido->posicion.size);
 				escribirDondeCorresponda(pid, pedido);
-
+				free(pedido->data);
 				free(pedido);
 				break;
 			}
@@ -501,9 +501,10 @@ void recibir_comandos()
 			}
 			else
 				puts("COMANDO INVALIDO");
+			free(comando);
 		}
 		free(entrada);
-		free(comando);
+
 
 		//pthread_exit(NULL);
 
@@ -922,15 +923,16 @@ void crearEntradas(int pid, int cantidadPaginas, int paginaInicial)
 
 void morirElegantemente()
 {
-	free(config);
 	free(memoria);
 	list_destroy(cpus);
 	log_destroy(logFile);
 	pthread_mutex_lock(&cacheSem);
-	list_destroy_and_destroy_elements(cache, destruirEntradaCache);
+	if(config->entradas_cache != 0)
+		list_destroy_and_destroy_elements(cache, destruirEntradaCache);
 	pthread_mutex_unlock(&cacheSem);
 	close(kernel);
 	close(cpu);
+	free(config);
 
 }
 

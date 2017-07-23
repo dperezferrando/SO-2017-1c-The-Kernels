@@ -179,6 +179,7 @@ int memoryRequest(MemoryRequest mr, int* offset, PageOwnership* po){
 		list_iterate(po->occSpaces, mostrarMetadata); // debug
 		return memreq;
 	}
+	return operation;
 }
 
 
@@ -250,7 +251,15 @@ int grabarPedido(PageOwnership* po, MemoryRequest mr, int* offset){
 	PageOwnership* paginaExistente = pageToStore(mr);//busco la pagina para guardarlo, si no hay -1
 	if (paginaExistente == NULL){//el pedido se grabo en pagina nueva
 		po->pid = mr.pid;
-		if(!test)if(getNewPage(po)==-2)return -2;//pido nueva pagina
+		if(!test)
+		{
+			if(getNewPage(po)==-2)//pido nueva pagina
+			{
+				free(hm);
+				return -2;
+			}
+
+		}
 		initializePageOwnership(po);//aca queda el PageOwnership con la estructura que marca el espacio libre
 		*offset= occupyPageSize(po,hm);
 		list_add(ownedPages,po);
@@ -789,6 +798,8 @@ void recibirDeCPU(int socket, connHandle* master)
 
 			free(msg);
 			free(offset);
+			if(res == 0)
+				free(po);
 
 			break;
 		}
@@ -908,6 +919,8 @@ void recibirDeCPU(int socket, connHandle* master)
 			}
 			else
 				lSend(socket, &fd, 104, sizeof(int));
+			free(rp.permisos);
+			free(rp.ruta);
 			break;
 		}
 
