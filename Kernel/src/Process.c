@@ -71,7 +71,7 @@ void killProcess(int PID,int exitCode){
 	{
 		if(exitCode != -6 && pc->state != 0)
 			lSend(pc->consola, &PID, 9, sizeof(int));
-		if(pc->state != 0)
+		if(pc->state != 0 && pc->toBeKilled != -9)
 			lSend(conexionMemoria, &PID, 9, sizeof(int));
 	}
 	//Verifica si esta en alguna de cola de algun semaoforo

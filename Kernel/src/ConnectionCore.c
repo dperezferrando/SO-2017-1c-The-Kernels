@@ -784,6 +784,7 @@ void recibirDeCPU(int socket, connHandle* master)
 			else if (res == -2){
 				log_error(logFile,"[HEAP]: PID %i - NO HAY ESPACIO EN MEMORIA", mr.pid);
 				matarCuandoCorresponda(mr.pid,-9);
+				lSend(conexionMemoria, &mr.pid, 9, sizeof(int));
 				lSend(socket, NULL, -2, 0);
 				free(offset);
 				free(po);
