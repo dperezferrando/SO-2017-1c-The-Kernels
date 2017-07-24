@@ -28,6 +28,7 @@ PCB* createProcess(char* script, int tamanioScript){
 	pcb->rafagasTotales = 0;
 	crearEstructurasFSProceso(pcb->pid);
 	metadata_destruir(metadata);
+	log_warning(logFile, "[PLANIFICACION]: NUEVO PCB LISTO PID: %i", pcb->pid);
 	return pcb;
 }
 

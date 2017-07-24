@@ -60,7 +60,7 @@ int getConnectedSocket(char* ip, char* port, int idPropia){
 }
 
 void lListen(int socket,int backlog){//hay que cambiarle el nombre
-	errorIfEqual(listen(socket,backlog),-1,"Listen");//cantidad de conexiones que acepta, osea de sockets que voy a manejar
+	errorIfEqual(listen(socket,backlog),-1,"Error al querer hacer un Listen. Saliendo...");//cantidad de conexiones que acepta, osea de sockets que voy a manejar
 }
 
 int lAccept(int sockListener, int idEsperada){
@@ -72,7 +72,7 @@ int lAccept(int sockListener, int idEsperada){
 //	errorIfEqual(newSocket,-1,"Accept");
 	if(!recibirHandShake(newSocket, idEsperada))
 		newSocket = -1;
-	if(newSocket<0)errorIfEqual(0,0,"Accept - Proceso equivocado u otro error");
+	if(newSocket<0)errorIfEqual(0,0,"Accept - Proceso equivocado (Handshake)");
 	return newSocket;
 }
 
@@ -235,14 +235,14 @@ addrInfo* getaddrinfocall(char* ip, char* port) {
 	hints.ai_family= AF_UNSPEC;
 	hints.ai_socktype= SOCK_STREAM;
 	hints.ai_flags=AI_PASSIVE;
-	errorIfNotEqual(getaddrinfo(ip,port,&hints,&servinfo),0,"getaddrinfo");
+	errorIfNotEqual(getaddrinfo(ip,port,&hints,&servinfo),0,"Error en el lugar mas recondito de los sockets (getaddrinfo). Saliendo...");
 	return servinfo;
 }
 
 int internalSocket(char* ip, char* port,int (*action)(int,const struct sockaddr *,socklen_t)){
 	addrInfo* addr= getaddrinfocall(ip,port);
 	int s= _getFirstSocket(addr,action);
-	errorIfEqual(s,NULL,"socket");
+	errorIfEqual(s,NULL,"Error al obtener un socket. Saliendo...");
 	freeaddrinfo(addr);
 	return s;
 }
@@ -262,7 +262,7 @@ int _getFirstSocket(addrInfo* addr, int (*action)(int,const struct sockaddr *,so
 	}
 
 	if(p==NULL){
-		fprintf(stderr, "selectserver: failed to bind or connect");
+		fprintf(stderr, "No se pudo conectar o bindear. Saliendo...");
 		close(s);
 		exit(2);
 	}
@@ -272,12 +272,12 @@ int _getFirstSocket(addrInfo* addr, int (*action)(int,const struct sockaddr *,so
 
 int internalRecv(int reciever, void* buf, int size){
 	int status;
-	errorIfEqual(status=recv(reciever,buf,size,MSG_WAITALL),-1,"recv");
+	errorIfEqual(status=recv(reciever,buf,size,MSG_WAITALL),-1,"Se desconecto el proceso del cual estaba recibiendo. Saliendo...");
 	return status;
 }
 
 void internalSend(int s, void* msg, int len){
-	errorIfEqual(send(s,msg,len,0),-1,"Send");//flags harcodeado en 0 pero se puede agregar de ser necesario
+	errorIfEqual(send(s,msg,len,0),-1,"El proceso al cual estaba enviando se desconecto. Saliendo...");//flags harcodeado en 0 pero se puede agregar de ser necesario
 }
 
 void _errorIf(int (*criteria)(int,int), int value, int test, char* toPrint){

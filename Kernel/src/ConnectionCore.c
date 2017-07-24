@@ -58,6 +58,7 @@ void recibirDeConsola(int socket, connHandle* master)
 			break;
 		case 1:
 		{
+			log_info(logFile,"[KERNEL]: CONSOLA %i QUIERE CREAR UN NUEVO PROCESO", socket);
 			int tamanioScript = mensaje->header.tamanio + 1;
 			char* script = malloc(tamanioScript);
 			memcpy(script, mensaje->data, mensaje->header.tamanio);
@@ -79,11 +80,11 @@ void recibirDeConsola(int socket, connHandle* master)
 			{
 				return pc->consola == socket && pc->state != 9;
 			}
+			log_info(logFile,"[KERNEL]: SE DECONECTA CONSOLA SOCKET %i", socket);
 			t_list* procesosDeLaConsola = list_filter(process, mismaConsola);
 			list_iterate(procesosDeLaConsola, matarDesdeProcessControl);
 			lSend(socket, mensaje->data, 3, sizeof(int));
 			list_destroy(procesosDeLaConsola);
-			log_info(logFile,"[KERNEL]: SE DECONECTA CONSOLA SOCKET %i", socket);
 			closeHandle(socket, master);
 			break;
 		}
@@ -96,6 +97,7 @@ void recibirDeConsola(int socket, connHandle* master)
 		case 9:
 		{
 			int pid = *(int*)mensaje->data;
+			log_info(logFile,"[KERNEL]: CONSOLA %i ENVIA A MATAR PID %i", socket, pid);
 			matarCuandoCorresponda(pid,-7);
 			break;
 		}
