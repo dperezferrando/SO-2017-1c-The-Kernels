@@ -91,6 +91,12 @@ void iniciarConexiones()
 void recibirInformacion()
 {
 	Mensaje* informacion = lRecv(kernel);
+	if(informacion->header.tipoOperacion == -1)
+	{
+		toBeKilled = 1;
+		log_error(logFile, "[MURIO EL KERNEL]");
+		destruirMensaje(informacion);
+	}
 	memcpy(&stackSize, informacion->data, sizeof(int));
 	memcpy(&tamanioPagina, informacion->data+sizeof(int), sizeof(int));
 	memcpy(&quantum, informacion->data+sizeof(int)*2, sizeof(int));
@@ -224,6 +230,14 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 	lSend(kernel, data, ASIGNARCOMPARTIDA, size);
 	free(data);
 	Mensaje* respuesta = lRecv(kernel);
+	if(respuesta->header.tipoOperacion == -1)
+	{
+		toBeKilled = 1;
+		estado = ABORTADO;
+		log_error(logFile, "[MURIO EL KERNEL]");
+		destruirMensaje(respuesta);
+		return 0;
+	}
 	if(respuesta->header.tipoOperacion == -3)
 	{
 		log_error(logFile, "[VALOR COMPARTIDA]: NO EXISTE LA VARIABLE %s", variable);
@@ -249,6 +263,14 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida nombre){
 	lSend(kernel, data, OBTENERCOMPARTIDA, size);
 	free(data);
 	Mensaje* respuesta = lRecv(kernel);
+	if(respuesta->header.tipoOperacion == -1)
+	{
+		toBeKilled = 1;
+		estado = ABORTADO;
+		log_error(logFile, "[MURIO EL KERNEL]");
+		destruirMensaje(respuesta);
+		return 0;
+	}
 	if(respuesta->header.tipoOperacion == -3)
 	{
 		log_error(logFile, "[VALOR COMPARTIDA]: NO EXISTE LA VARIABLE %s", nombre);
@@ -612,6 +634,14 @@ void wait(t_nombre_semaforo nombre){
 	//El kernel me responde si tengo que bloquear
 	Mensaje *m = lRecv(kernel);
 	//Bloqueado = 3, No bloqueado = 0
+	if(m->header.tipoOperacion == -1)
+	{
+		toBeKilled = 1;
+		estado = ABORTADO;
+		log_error(logFile, "[MURIO EL KERNEL]");
+		destruirMensaje(m);
+		return;
+	}
 	if(m->header.tipoOperacion == -3)
 	{
 		log_error(logFile, "[WAIT] SEMAFORO INVALIDO");
@@ -637,6 +667,14 @@ void signalSem(t_nombre_semaforo nombre){
 	lSend(kernel, sem.data, SIGNAL, sem.size);
 	free(sem.data);
 	Mensaje* m = lRecv(kernel);
+	if(m->header.tipoOperacion == -1)
+	{
+		toBeKilled = 1;
+		estado = ABORTADO;
+		log_error(logFile, "[MURIO EL KERNEL]");
+		destruirMensaje(m);
+		return;
+	}
 	if(m->header.tipoOperacion == -3)
 	{
 		log_error(logFile, "[SIGNAL] SEMAFORO INVALIDO");
@@ -667,6 +705,14 @@ t_puntero reservar(t_valor_variable nroBytes){
 	serializado pedido = serializarPedido(nroBytes);
 	lSend(kernel, pedido.data, RESERVAR_MEMORIA_HEAP, pedido.size);
 	Mensaje* respuesta = lRecv(kernel);
+	if(respuesta->header.tipoOperacion == -1)
+	{
+		toBeKilled = 1;
+		estado = ABORTADO;
+		log_error(logFile, "[MURIO EL KERNEL]");
+		destruirMensaje(respuesta);
+		return 0;
+	}
 	if(respuesta->header.tipoOperacion == -2)
 	{
 		free(pedido.data);
@@ -711,6 +757,14 @@ void liberar(t_puntero puntero ){
 	memcpy(data+sizeof(int)*2, &posicion.offset, sizeof(int));
 	lSend(kernel, data, LIBERAR_PUNTERO, size);
 	Mensaje* respuesta = lRecv(kernel);
+	if(respuesta->header.tipoOperacion == -1)
+	{
+		toBeKilled = 1;
+		estado = ABORTADO;
+		log_error(logFile, "[MURIO EL KERNEL]");
+		destruirMensaje(respuesta);
+		return;
+	}
 	if(respuesta->header.tipoOperacion == -5)
 	{
 		estado = STKOF;
@@ -797,6 +851,14 @@ t_descriptor_archivo abrir(t_direccion_archivo ruta , t_banderas flags){
 	rutaYFlagsSerializados = serializarRutaPermisos(ruta,cadenaFlags);
 	lSend(kernel, rutaYFlagsSerializados.data, ABRIR_ARCHIVO, rutaYFlagsSerializados.size);
 	Mensaje* mensaje = lRecv(kernel);
+	if(mensaje->header.tipoOperacion == -1)
+	{
+		toBeKilled = 1;
+		estado = ABORTADO;
+		log_error(logFile, "[MURIO EL KERNEL]");
+		destruirMensaje(mensaje);
+		return 0;
+	}
 	if (mensaje->header.tipoOperacion == -3) {
 		log_error(logFile, "[ABRIR ARCHIVO]: NO EXISTE ARCHIVO Y/O NO HAY ESPACIO EN DISCO");
 		estado = ABORTADO;
@@ -823,6 +885,14 @@ void borrar(t_descriptor_archivo fileDescriptor){
 	lSend(kernel, &fi, BORRAR_ARCHIVO, sizeof(fileInfo));
 	log_info(logFile, "[BORRAR ARCHIVO]: FD: %i", fileDescriptor);
 	Mensaje* m = lRecv(kernel);
+	if(m->header.tipoOperacion == -1)
+	{
+		toBeKilled = 1;
+		estado = ABORTADO;
+		log_error(logFile, "[MURIO EL KERNEL]");
+		destruirMensaje(m);
+		return;
+	}
 	if(m->header.tipoOperacion == -3)
 	{
 		log_error(logFile, "[BORRAR ARCHIVO]: NO EXISTE ARCHIVO O ALGUIEN MAS LO ESTA USANDO");
@@ -840,6 +910,14 @@ void cerrar(t_descriptor_archivo fileDescriptor) {
 	lSend(kernel, &fi, CERRAR_ARCHIVO, sizeof(fileInfo));
 	log_info(logFile, "[CERRAR ARCHIVO] FD: %i", fileDescriptor);
 	Mensaje* m = lRecv(kernel);
+	if(m->header.tipoOperacion == -1)
+	{
+		toBeKilled = 1;
+		estado = ABORTADO;
+		log_error(logFile, "[MURIO EL KERNEL]");
+		destruirMensaje(m);
+		return;
+	}
 	if(m->header.tipoOperacion == -3)
 	{
 		estado = ABORTADO;
@@ -858,6 +936,14 @@ void moverCursor(t_descriptor_archivo fileDescriptor, t_valor_variable cursor){
 	lSend(kernel, &fi, MOVER_CURSOR_ARCHIVO, sizeof(fileInfo));
 	log_info(logFile, "[MOVER CURSOR]: FD: %i | OFFSET: %i\n", fileDescriptor, cursor);
 	Mensaje* m = lRecv(kernel);
+	if(m->header.tipoOperacion == -1)
+	{
+		toBeKilled = 1;
+		estado = ABORTADO;
+		log_error(logFile, "[MURIO EL KERNEL]");
+		destruirMensaje(m);
+		return;
+	}
 	if(m->header.tipoOperacion == -3)
 	{
 		estado = ABORTADO;
@@ -880,6 +966,14 @@ void escribir(t_descriptor_archivo fileDescriptor, void* info, t_valor_variable 
  	 serializado escrituraSerializada = serializarPedidoEscrituraFS((char*)info, fi);
  	 lSend(kernel, escrituraSerializada.data, ESCRIBIR_ARCHIVO, escrituraSerializada.size);
  	 Mensaje* m = lRecv(kernel);
+ 	if(m->header.tipoOperacion == -1)
+ 	{
+ 		toBeKilled = 1;
+ 		estado = ABORTADO;
+ 		log_error(logFile, "[MURIO EL KERNEL]");
+ 		destruirMensaje(m);
+ 		return;
+ 	}
  	if(m->header.tipoOperacion == -3)
  	{
  		estado = ABORTADO;
@@ -898,6 +992,14 @@ void leer(t_descriptor_archivo fileDescriptor, t_puntero info, t_valor_variable 
 	fi.tamanio = tamanio;
 	lSend(kernel, &fi, LEER_ARCHIVO, sizeof(fileInfo));
 	Mensaje* m = lRecv(kernel);
+	if(m->header.tipoOperacion == -1)
+	{
+		toBeKilled = 1;
+		estado = ABORTADO;
+		log_error(logFile, "[MURIO EL KERNEL]");
+		destruirMensaje(m);
+		return;
+	}
 	if(m->header.tipoOperacion == -3)
 	{
 		estado = ABORTADO;

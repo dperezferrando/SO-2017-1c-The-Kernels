@@ -208,6 +208,7 @@ void conexion_kernel(int conexion)
 				int pid, pagina;
 				memcpy(&pid, mensaje->data, sizeof(int));
 				memcpy(&pagina, mensaje->data+sizeof(int), sizeof(int));
+				log_info(logFile, "[HEAP]: KERNEL PIDE LIBERAR PID %i | PAGINA %i", pid, pagina);
 				entradaTabla* pointer;
 				pointer = obtenerEntradaDe(pid, pagina);
 				pointer->pagina = -1;
@@ -223,6 +224,7 @@ void conexion_kernel(int conexion)
 				memcpy(&posicion->pagina,mensaje->data+sizeof(int),sizeof(int));
 				memcpy(&posicion->offset,mensaje->data+(sizeof(int)*2),sizeof(int));
 				memcpy(&posicion->size,mensaje->data+(sizeof(int)*3),sizeof(int));
+				log_info(logFile, "[HEAP]: EL KERNEL PIDE LEER PID %i | PAG %i | OFFSET %i | SIZE: %i", pid, posicion->pagina, posicion->offset, posicion->size);
 				char* lectura = leerDondeCorresponda(pid, posicion);
 				lSend(conexion, lectura, 104, posicion->size);
 				free(posicion);

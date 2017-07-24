@@ -271,9 +271,19 @@ int grabarPedido(PageOwnership* po, MemoryRequest mr, int* offset){
 	}
 	else{
 		//
-
+		int size = sizeof(int)*4;
+		char* msg = malloc(size);
+		memcpy(msg, &paginaExistente->pid, sizeof(int));
+		memcpy(msg + sizeof(int), &paginaExistente->idpage, sizeof(int));
+		int cero = 0;
+		memcpy(msg + sizeof(int)*2, &cero, sizeof(int));
+		memcpy(msg + sizeof(int)*3, &config->PAG_SIZE, sizeof(int));
+		lSend(conexionMemoria, msg, 5, size);
+		free(msg);
+		Mensaje* respuesta = lRecv(conexionMemoria);
 		*offset= occupyPageSize(paginaExistente,hm);//guarda el heapMetadata correspondiente en el PageOwnership
 		memcpy(po, paginaExistente, sizeof(PageOwnership));
+		destruirMensaje(respuesta);
 		return 0;
 	}
 
