@@ -8,7 +8,6 @@ void recibir_comandos()
 		char* entrada = leerCaracteresEntrantes();
 		if (*entrada!=NULL){
 			char** comando = string_split(entrada, " ");
-			printf("COMANDO: %s ARG: %s\n", comando[0], comando[1]);
 			if(!strcmp(comando[0], "cola"))
 			{
 				if(comando[1] == NULL)

@@ -282,7 +282,7 @@ void internalSend(int s, void* msg, int len){
 
 void _errorIf(int (*criteria)(int,int), int value, int test, char* toPrint){
 	if(criteria(value,test)) {
-			fprintf(stderr,"%s error: %s\n", toPrint, gai_strerror(value));
+			fprintf(stderr,"%s\n", toPrint);
 			exit(1);
 		}
 }

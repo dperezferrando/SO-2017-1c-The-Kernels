@@ -256,14 +256,22 @@ PCB* fromNewToReady(){
 		return NULL;
 	ProcessControl* pc = PIDFind(pcb->pid);
 	log_warning(logFile, "[PLANIFICACION]: PID %i DE NEW A READY", pcb->pid);
-	if(!enviarScriptAMemoria(pcb, pc->script, pc->tamanioScript))
+	int estado = enviarScriptAMemoria(pcb, pc->script, pc->tamanioScript);
+	if(estado == 0)
 	{
 		log_error(logFile,"[PLANIFICACION]: NO HAY ESPACIO PARA EL PROCESO PID %i", pcb->pid);
 		if(!test)lSend(pc->consola, &pcb->pid, -2, sizeof(int));
 		killProcess(pcb->pid, -1);
 	}
-	else
+	else if(estado == 1)
+	{
 		if(!test)lSend(pc->consola, &pcb->pid, 2, sizeof(int));
+	}
+	else
+	{
+		log_error(logFile, "[KERNEL]: SE DESCONECTO MEMORIA");
+		exit(1);
+	}
 
 	return pcb;
 }

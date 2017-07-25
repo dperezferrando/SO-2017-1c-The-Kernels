@@ -36,3 +36,5 @@ touch Metadata.bin
 echo "TAMANIO_BLOQUES=64" >> /home/utnso/FS_SADICA/Metadata/Metadata.bin
 echo "CANTIDAD_BLOQUES=24" >> /home/utnso/FS_SADICA/Metadata/Metadata.bin
 echo "MAGIC_NUMBER=SADICA" >> /home/utnso/FS_SADICA/Metadata/Metadata.bin
+cd /home/utnso/FS_SADICA
+chmod 0777 *

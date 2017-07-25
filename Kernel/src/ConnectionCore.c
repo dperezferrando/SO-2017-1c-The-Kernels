@@ -141,7 +141,12 @@ int enviarScriptAMemoria(PCB* pcb, char* script, int tamanioScript)
 		int to= respuesta->header.tipoOperacion;
 		destruirMensaje(respuesta);
 		free(buffer);
-		return to == 104;
+		if(to == 104)
+			return 1;
+		else if(to == -2)
+			return 0;
+		else
+			return -1;
 	}
 	free(buffer);
 	return 1;
@@ -677,7 +682,8 @@ void recibirDeCPU(int socket, connHandle* master)
 			pcb = recibirPCB(mensaje);
 			log_warning(logFile,"[PLANIFICACION]: SE TERMINO LA EJECUCION NORMAL DEL PROCESO %i.", pcb->pid);
 			cpuReturnsProcessTo(pcb, 9);
-			killProcess(pcb->pid,0);
+			//killProcess(pcb->pid,0);
+			matarSiCorresponde(pcb->pid);
 			pushearAColaCPUS(socket);
 			executeProcess();
 			break;

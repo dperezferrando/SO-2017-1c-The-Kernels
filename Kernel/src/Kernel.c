@@ -15,6 +15,7 @@ int main(int argc, char** argsv) {
 	puts("!!!Hello Kernel!!!\n"); /* prints !!!Hello World!!! */
 	config = configurate(RUTA, readConfigFile, keys);
 	levantarLog();
+	signal(SIGPIPE, SIG_IGN);
 	initializeGlobalVariables();
 	if(argc > 1 && strcmp(argsv[1],"-test")==0){
 		test=1;

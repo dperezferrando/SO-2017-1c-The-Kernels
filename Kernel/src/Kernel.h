@@ -6,6 +6,7 @@
 #include "KernelConfiguration.h"
 #include "ConsolaKernel.h"
 #include "KernelTest.h"
+#include <signal.h>
 const char* keys[17] = {"PUERTO_PROG", "PUERTO_CPU", "IP_MEMORIA", "PUERTO_MEMORIA", "IP_FS", "PUERTO_FS", "QUANTUM", "QUANTUM_SLEEP", "ALGORITMO", "GRADO_MULTIPROG", "SEM_IDS", "SEM_INIT", "SHARED_VARS", "STACK_SIZE","IP_PROPIA", "LOG","NULL"};
 
 

@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <signal.h>
 
 int kernelvive = 1;
 int kernel;
@@ -100,7 +101,7 @@ int cambiarTamanio(char*,int);
 char *rutabloque(int);
 char* IntToString(int);
 char* agregarBarraCero(char* data, int tamanio);
-
+void handleSignal();
 
 
 

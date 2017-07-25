@@ -51,8 +51,9 @@ int main(int argc, char** argsv) {
 void sigHandler()
 {
 	morir = 1;
-	shutdown(conexion, SHUT_RDWR);
-	shutdown(cpu, SHUT_RDWR);
+	//shutdown(conexion, SHUT_RDWR);
+	write(conexion, 0, sizeof(int));
+	write(cpu, 0, sizeof(int));
 	puts("ABORTASTE EL PROCESO MOSTRO - APRETA ENTER PARA SALIR");
 }
 
@@ -597,7 +598,7 @@ void esperar_cpus()
 				{
 					shutdown(socket, SHUT_RDWR);
 				}
-				list_iterate(cpus, cerrarConexion);
+				//list_iterate(cpus, cerrarConexion);
 			}
 			sleep(1);
 			break;
@@ -614,7 +615,7 @@ void conexion_cpu(int conexion)
 {
 	pthread_detach(pthread_self());
 	int conectado = 1;
-	while(conectado)
+	while(conectado && morir == 0)
 	{
 		log_info(logFile,"[MEMORIA]: PROCESANDO CPU SOCKET: %i\n", conexion);
 		Mensaje* mensaje = lRecv(conexion);

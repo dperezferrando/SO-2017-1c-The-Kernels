@@ -4,6 +4,7 @@ configFile* config;
 metadata* metad;
 t_config* configHandler;
 t_log* logFile;
+int morir = 0;
 
 int main(int argc, char** argsv){
 	config = configurate("/home/utnso/Escritorio/tp-2017-1c-The-Kernels/FileSystem/Debug/filesystem.conf", leerArchivoConfig, keys);
@@ -14,6 +15,7 @@ int main(int argc, char** argsv){
 	levantarBloquesEnUso();
 	log_info(logFile, "[BITMAP] BITMAP AL DIA");
 	mostrarBitmap();
+	signal(SIGINT, handleSignal);
 	//testxd();
 	//testxd2();
 	//testxd3();
@@ -25,6 +27,17 @@ int main(int argc, char** argsv){
 	log_info(logFile, "[FILE SYSTEM]: ESPERANDO AL KERNEL");
 	conexion = lAccept(kernel, KERNEL_ID);
 	esperarOperacion();
+	morirElegantemente();
+	return EXIT_SUCCESS;
+}
+
+void handleSignal()
+{
+	morir = 1;
+}
+
+void morirElegantemente()
+{
 	close(kernel);
 	//free(bloquesGG);
 	//config_destroy(configHandler);
@@ -35,7 +48,6 @@ int main(int argc, char** argsv){
 	destruirPaths();
 	log_info(logFile, "[FILE SYSTEM]: SALIENDO");
 	log_destroy(logFile);
-	return EXIT_SUCCESS;
 }
 
 void mostrarBitmap()
@@ -106,7 +118,7 @@ void chequearDir(char* unaRuta)
 void esperarOperacion()
 {
 	log_info(logFile, "[FILE SYSTEM]: ESPERANDO OPERACION");
-	while(kernelvive==1)
+	while(kernelvive==1 && morir == 0)
 	{
 		Mensaje* mensaje = lRecv(conexion);
 		//char* path;
