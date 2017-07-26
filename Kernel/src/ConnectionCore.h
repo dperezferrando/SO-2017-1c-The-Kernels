@@ -20,7 +20,7 @@ typedef struct connectionHandler{
 
 
 PCB* recibirPCB(Mensaje*, int);
-
+char* pedirPaginaAMemoria(int pid, int pagina);
 int PIDFindPO(int);
 int readyProcess();
 int executeProcess();

@@ -185,7 +185,7 @@ int memoryRequest(MemoryRequest mr, int* offset, PageOwnership* po){
 	if((operation = grabarPedido(po,mr,offset)) < 0)
 		return operation;
 	int memreq;
-	if((memreq=sendMemoryRequest(mr,po,*offset))!=1)
+	if((memreq=enviarEstructurasAMemoria(po))!=1)
 	{
 		list_iterate(po->occSpaces, mostrarMetadata); // debug
 		return memreq;
@@ -195,10 +195,17 @@ int memoryRequest(MemoryRequest mr, int* offset, PageOwnership* po){
 
 
 int freeMemory(int pid, int page, int offset){
+	char* pagina = pedirPaginaAMemoria(pid, page);
 	ProcessControl* pc;
 	if(!test)pc = PIDFind(pid);
 	if(!test)pc->cantFree++;
 	PageOwnership* po= findPage(pid,page);
+	if(!chequearIntegridadEstructuras(po, pagina))
+	{
+		free(pagina);
+		return -1;
+	}
+	free(pagina);
 	if(po==NULL)return -1;
 	int acc=0,i=0;
 	HeapMetadata* hm;
@@ -280,24 +287,15 @@ int grabarPedido(PageOwnership* po, MemoryRequest mr, int* offset){
 	}
 	else{
 		//
-		int size = sizeof(int)*4;
-		char* msg = malloc(size);
-		memcpy(msg, &paginaExistente->pid, sizeof(int));
-		memcpy(msg + sizeof(int), &paginaExistente->idpage, sizeof(int));
-		int cero = 0;
-		memcpy(msg + sizeof(int)*2, &cero, sizeof(int));
-		memcpy(msg + sizeof(int)*3, &config->PAG_SIZE, sizeof(int));
-		lSend(conexionMemoria, msg, 5, size);
-		free(msg);
-		Mensaje* respuesta = lRecv(conexionMemoria);
-		if(respuesta->header.tipoOperacion == -1)
+		char* pagina = pedirPaginaAMemoria(paginaExistente->pid, paginaExistente->idpage);
+		if(!chequearIntegridadEstructuras(paginaExistente, pagina))
 		{
-			log_error(logFile, "[KERNEL]: SE DESCONECTO MEMORIA");
-			exit(1);
+			free(pagina);
+			return -3;
 		}
 		*offset= occupyPageSize(paginaExistente,hm);//guarda el heapMetadata correspondiente en el PageOwnership
 		memcpy(po, paginaExistente, sizeof(PageOwnership));
-		destruirMensaje(respuesta);
+		free(pagina);
 		return 0;
 	}
 
@@ -307,6 +305,55 @@ int grabarPedido(PageOwnership* po, MemoryRequest mr, int* offset){
 	}*/
 
 
+}
+
+char* pedirPaginaAMemoria(int pid, int pagina)
+{
+	int size = sizeof(int)*4;
+	char* msg = malloc(size);
+	memcpy(msg, &pid, sizeof(int));
+	memcpy(msg + sizeof(int), &pagina, sizeof(int));
+	int cero = 0;
+	memcpy(msg + sizeof(int)*2, &cero, sizeof(int));
+	memcpy(msg + sizeof(int)*3, &config->PAG_SIZE, sizeof(int));
+	lSend(conexionMemoria, msg, 5, size);
+	free(msg);
+	Mensaje* respuesta = lRecv(conexionMemoria);
+	if(respuesta->header.tipoOperacion == -1)
+	{
+		log_error(logFile, "[KERNEL]: SE DESCONECTO MEMORIA");
+		exit(1);
+	}
+	pagina = malloc(respuesta->header.tamanio);
+	memcpy(pagina, respuesta->data, respuesta->header.tamanio);
+	destruirMensaje(respuesta);
+	return pagina;
+}
+
+int chequearIntegridadEstructuras(PageOwnership* paginaKernel, char* pagina)
+{
+	int i = 0;
+	HeapMetadata* hm;
+	int offset = 0;
+	int estado = 1;
+	int isFree;
+	do
+	{
+		hm = malloc(sizeof(HeapMetadata));
+		memcpy(hm, pagina+ offset, sizeof(HeapMetadata));
+		HeapMetadata* hmKernel = list_get(paginaKernel->occSpaces, i);
+		if(hm->isFree == hmKernel->isFree && hm->size == hmKernel->size)
+		{
+			i++;
+			offset = offset + sizeof(HeapMetadata) + hm->size;
+
+		}
+		else
+			estado = 0;
+		free(hm);
+	}
+	while(estado == 1 && offset != 256);
+	return estado;
 }
 
 int getNewPage(PageOwnership* po){
@@ -332,6 +379,32 @@ int sendMemoryRequest(MemoryRequest mr, PageOwnership* po, int offset){
 	void* serializedMSG= serializeMemReq(mr,po->idpage,offset);
 	if(!test) lSend(conexionMemoria,serializedMSG,2,sizeof(int)*4+sizeof(HeapMetadata));//envío el pedido de grabacion
 	free(serializedMSG);
+	return 1;
+}
+
+int enviarEstructurasAMemoria(PageOwnership* po)
+{
+	char* pagina = malloc(config->PAG_SIZE);
+	int i = 0;
+	char* puntero = pagina;
+	void copiarHM(HeapMetadata* hm)
+	{
+		memcpy(puntero, hm, sizeof(HeapMetadata));
+		puntero = puntero + hm->size + sizeof(HeapMetadata);
+		i++;
+	}
+	list_iterate(po->occSpaces, copiarHM);
+	int sizeTotal = config->PAG_SIZE + sizeof(int)*4;
+	char* data = malloc(sizeTotal);
+	memcpy(data, &po->pid, sizeof(int));
+	memcpy(data+sizeof(int), &po->idpage, sizeof(int));
+	int cero = 0;
+	memcpy(data+sizeof(int)*2, &cero, sizeof(int));
+	memcpy(data+sizeof(int)*3, &config->PAG_SIZE, sizeof(int));
+	memcpy(data+sizeof(int)*4, pagina, config->PAG_SIZE);
+	lSend(conexionMemoria, data, 2, sizeTotal);
+	free(data);
+	free(pagina);
 	return 1;
 }
 
@@ -698,13 +771,15 @@ void recibirDeCPU(int socket, connHandle* master)
 			readyProcess();
 			break;
 		case 1:
+		{
 			pcb = recibirPCB(mensaje, socket);
 			log_warning(logFile,"[PLANIFICACION]: SE TERMINO LA EJECUCION NORMAL DEL PROCESO %i.", pcb->pid);
 			cpuReturnsProcessTo(pcb, 9);
-			//killProcess(pcb->pid,0);
-			matarSiCorresponde(pcb->pid);
+			ProcessControl* pc = PIDFind(pcb->pid);
+			killProcess(pcb->pid, pc->toBeKilled);
 			executeProcess();
 			break;
+		}
 		case 2:
 			pcb = recibirPCB(mensaje, socket);
 			log_warning(logFile,"[PLANIFICACION]: VUELVE PCB PID %i POR FIN DE QUANTUM", pcb->pid);
@@ -815,6 +890,15 @@ void recibirDeCPU(int socket, connHandle* master)
 				free(po);
 				break;
 			}
+			else if(res == -3)
+			{
+				log_error(logFile, "[HEAP]: LAS ESTRUCTURAS EN MEMORIA ESTAN CORRUPTAS. ABORTANDO PROCESO PID %i", mr.pid);
+				matarCuandoCorresponda(mr.pid,-20);
+				lSend(socket, NULL, -2, 0);
+				free(offset);
+				free(po);
+				break;
+			}
 			*offset = (*offset)+sizeof(HeapMetadata);
 			void* msg = malloc(sizeof(int)*2);
 			memcpy(msg,&po->idpage,sizeof(int));
@@ -837,10 +921,13 @@ void recibirDeCPU(int socket, connHandle* master)
 			memcpy(&pid,mensaje->data,sizeof(int));
 			memcpy(&page,mensaje->data+sizeof(int),sizeof(int));
 			memcpy(&offset,mensaje->data+sizeof(int)*2,sizeof(int));
-			log_info(logFile,"[HEAP]: PROCESO PID: %i QUIERE LIBERAR BYTES PAG %i | OFFSET %i", pid, page, offset);
+			log_info(logFile,"[HEAP]: PROCESO PID: %i LIBERA BYTES PAG %i | OFFSET %i", pid, page, offset);
 			sumarSyscall(pid);
 			if(freeMemory(pid,page,offset) == -1)
+			{
+				log_error(logFile, "[HEAP]: LA PAGINA %i PID %i NO EXISTE O LAS ESTRUCTURAS ESTAN CORRUPTAS", page, pid);
 				lSend(socket, NULL, -5, 0);
+			}
 			else
 				lSend(socket, NULL, 104, 0);
 			//memoryRequest(mr,mensaje->header.tamanio-sizeof(mr),mensaje->data+sizeof(mr)); funcion para eliminar
