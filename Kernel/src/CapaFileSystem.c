@@ -88,6 +88,11 @@ entradaTablaGlobalFS* agregarEntradaGlobal(char* ruta, char* permisos)
 					destruirMensaje(respuesta);
 					return -1;
 				}
+				else if(respuesta->header.tipoOperacion == -1)
+				{
+					log_error(logFile, "[KERNEL]: SE DESCONECTO FILE SYSTEM");
+					exit(1);
+				}
 				destruirMensaje(respuesta);
 
 			}
@@ -109,6 +114,11 @@ bool archivoValido(char* ruta)
 	lSend(conexionFS, ruta, 1, strlen(ruta));
 	Mensaje* respuesta = lRecv(conexionFS);
 	int op = respuesta->header.tipoOperacion;
+	if(op == -1)
+	{
+		log_error(logFile, "[KERNEL]: SE DESCONECTO FILE SYSTEM");
+		exit(1);
+	}
 	destruirMensaje(respuesta);
 	return op == 104;
 }
@@ -180,6 +190,11 @@ char* leerArchivo(fileInfo info)
 	Mensaje* respuesta = lRecv(conexionFS);
 	if(respuesta->header.tipoOperacion == -4)
 		return -2;
+	else if(respuesta->header.tipoOperacion == -1)
+	{
+		log_error(logFile, "[KERNEL]: SE DESCONECTO FILE SYSTEM");
+		exit(1);
+	}
 	char* data = malloc(respuesta->header.tamanio);
 	memcpy(data, respuesta->data, respuesta->header.tamanio);
 	destruirMensaje(respuesta);
@@ -202,6 +217,11 @@ int escribirArchivo(fileInfo info, char* data)
 		Mensaje* respuesta = lRecv(conexionFS);
 		if(respuesta->header.tipoOperacion == -4)
 			return -2;
+		else if(respuesta->header.tipoOperacion == -1)
+		{
+			log_error(logFile, "[KERNEL]: SE DESCONECTO FILE SYSTEM");
+			exit(1);
+		}
 		destruirMensaje(respuesta);
 		free(pedidoEscritura.data);
 	}

@@ -290,6 +290,11 @@ int grabarPedido(PageOwnership* po, MemoryRequest mr, int* offset){
 		lSend(conexionMemoria, msg, 5, size);
 		free(msg);
 		Mensaje* respuesta = lRecv(conexionMemoria);
+		if(respuesta->header.tipoOperacion == -1)
+		{
+			log_error(logFile, "[KERNEL]: SE DESCONECTO MEMORIA");
+			exit(1);
+		}
 		*offset= occupyPageSize(paginaExistente,hm);//guarda el heapMetadata correspondiente en el PageOwnership
 		memcpy(po, paginaExistente, sizeof(PageOwnership));
 		destruirMensaje(respuesta);
@@ -311,6 +316,11 @@ int getNewPage(PageOwnership* po){
 	{
 		destruirMensaje(msg);
 		return -2;
+	}
+	else if(msg->header.tipoOperacion == -1)
+	{
+		log_error(logFile, "[KERNEL]: SE DESCONECTO MEMORIA");
+		exit(1);
 	}
 	memcpy(&po->idpage,msg->data,sizeof(int));
 	destruirMensaje(msg);
@@ -458,6 +468,11 @@ void* getMemoryPage(int pid, int idPage){
 	}
 	free(msg);
 	Mensaje* mes= lRecv(conexionMemoria);
+	if(mes->header.tipoOperacion == -1)
+	{
+		log_error(logFile, "[KERNEL]: SE DESCONECTO MEMORIA");
+		exit(1);
+	}
 	char* mem = malloc(mes->header.tamanio);
 	memcpy(mem, mes->data, mes->header.tamanio);
 	destruirMensaje(mes);
