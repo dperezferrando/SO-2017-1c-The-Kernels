@@ -83,7 +83,7 @@ void recibirDeConsola(int socket, connHandle* master)
 			log_info(logFile,"[KERNEL]: SE DECONECTA CONSOLA SOCKET %i", socket);
 			t_list* procesosDeLaConsola = list_filter(process, mismaConsola);
 			list_iterate(procesosDeLaConsola, matarDesdeProcessControl);
-			lSend(socket, mensaje->data, 3, sizeof(int));
+	//		lSend(socket, mensaje->data, 3, sizeof(int));
 			list_destroy(procesosDeLaConsola);
 			closeHandle(socket, master);
 			break;
@@ -116,7 +116,11 @@ void matarCuandoCorresponda(int pid, int exitCode)
 {
 	ProcessControl* pc = PIDFind(pid);
 	if(pc->state == 2 || togglePlanif == 1)
+	{
+		if(pc->toBeKilled == -6)
+			return;
 		pc->toBeKilled = exitCode;
+	}
 	else
 		killProcess(pc->pid,exitCode);
 }
@@ -679,24 +683,22 @@ void recibirDeCPU(int socket, connHandle* master)
 			readyProcess();
 			break;
 		case 1:
-			pcb = recibirPCB(mensaje);
+			pcb = recibirPCB(mensaje, socket);
 			log_warning(logFile,"[PLANIFICACION]: SE TERMINO LA EJECUCION NORMAL DEL PROCESO %i.", pcb->pid);
 			cpuReturnsProcessTo(pcb, 9);
 			//killProcess(pcb->pid,0);
 			matarSiCorresponde(pcb->pid);
-			pushearAColaCPUS(socket);
 			executeProcess();
 			break;
 		case 2:
-			pcb = recibirPCB(mensaje);
+			pcb = recibirPCB(mensaje, socket);
 			log_warning(logFile,"[PLANIFICACION]: VUELVE PCB PID %i POR FIN DE QUANTUM", pcb->pid);
 			cpuReturnsProcessTo(pcb,1);
 			matarSiCorresponde(pcb->pid);
-			pushearAColaCPUS(socket);
 			executeProcess();
 			break;
 		case 3:
-			pcb = recibirPCB(mensaje);
+			pcb = recibirPCB(mensaje, socket);
 			log_warning(logFile,"[PLANIFICACION]: VUELVE PCB PID %i POR BLOQUEO", pcb->pid);
 			ProcessControl* pc = PIDFind(pcb->pid);
 			if(pc->toBeSignaled == 1)
@@ -707,29 +709,19 @@ void recibirDeCPU(int socket, connHandle* master)
 			else
 				cpuReturnsProcessTo(pcb,3);
 			matarSiCorresponde(pcb->pid);
-			pushearAColaCPUS(socket);
 			executeProcess();
 			break;
 		case 4:
-			pcb = recibirPCB(mensaje);
+			pcb = recibirPCB(mensaje, socket);
 			log_error(logFile,"[PLANIFICACION]: PROCESO PID %i ABORTADO - EXCEPCION MEMORIA", pcb->pid);
 			cpuReturnsProcessTo(pcb, 9);
 			killProcess(pcb->pid, -5);
-			pushearAColaCPUS(socket);
 			executeProcess();
 			break;
 		case 5:
-			pcb = recibirPCB(mensaje);
+			pcb = recibirPCB(mensaje, socket);
 			log_error(logFile,"[PLANIFICACION]: PROCESO PID %i ABORTADO - ERROR EN SYSCALL U OTRA RAZON (VER EXIT CODE)", pcb->pid);
 			cpuReturnsProcessTo(pcb, 9);
-			matarSiCorresponde(pcb->pid);
-			pushearAColaCPUS(socket);
-			executeProcess();
-			break;
-		case 6: // EL CPU DEVUELVE PCB POR FIN DE Q PERO A SU VEZ SE DESCONECTA EL CPU (SIGUSR1)
-			pcb = recibirPCB(mensaje);
-			log_warning(logFile,"[PLANIFICACION]: VUELVE PROCESO PID %i POR FIN DE QUANTUM  [SIGUSR1/CTRl + C]");
-			cpuReturnsProcessTo(pcb,1);
 			matarSiCorresponde(pcb->pid);
 			executeProcess();
 			break;
@@ -1183,11 +1175,20 @@ void* serializarScript(int pid, int tamanio, int paginasTotales, int* tamanioSer
 	return buffer;
 }
 
-PCB* recibirPCB(Mensaje* mensaje){
-	PCB* pcb = deserializarPCB(mensaje->data);
+PCB* recibirPCB(Mensaje* mensaje, int CPU){
+	int seVaCPU;
+	memcpy(&seVaCPU, mensaje->data, sizeof(int));
+	PCB* pcb = deserializarPCB(mensaje->data+sizeof(int));
 	ProcessControl* pc = PIDFind(pcb->pid);
 	pc->rafagasEj = pcb->rafagasTotales;
 	log_warning(logFile,"[PLANIFICACION]: RECIBIDO PCB: PID: %i\n", pcb->pid);
+	if(seVaCPU == 0)
+	{
+		pushearAColaCPUS(CPU);
+		log_warning(logFile,"[PLANIFICACION]: AGREGO CPU %i DE NUEVO A LA COLA\n", CPU);
+	}
+	else
+		log_warning(logFile,"[PLANIFICACION]: EL CPU %i SE DESCONECTA, NO LO AGREGO A LA COLA\n", CPU);
 	return pcb;
 }
 

@@ -23,7 +23,7 @@ int main(void) {
 void handleExit(int sig)
 {
 	desconectar();
-	sem_wait(&finalizacionHiloReceptor);
+	//sem_wait(&finalizacionHiloReceptor);
 	puts("\nApreta enter para salir");
 }
 
@@ -50,7 +50,7 @@ void atenderInstrucciones() {
 		switch(instruccion.comando) {
 			case RUN: iniciar(instruccion.argumento); break;
 			case CLOSE: cerrar(instruccion.argumento); break;
-			case EXIT: desconectar(); sem_wait(&finalizacionHiloReceptor);break;
+			case EXIT: desconectar(); break;
 			case CLEAR: limpiar(); break;
 			case LIST: mostrarLista(); break;
 			case HELP: mensajeAyuda(); break;

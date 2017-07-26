@@ -15,6 +15,7 @@ int main(int argc, char** argsv) {
 	toBeKilled = 0;
 	signal(SIGUSR1, sig_handler);
 	signal(SIGINT, sig_handler);
+	signal(SIGHUP, sig_handler);
 	iniciarConexiones();
 	while(toBeKilled == 0)
 	{
@@ -48,10 +49,13 @@ int main(int argc, char** argsv) {
 		}
 		log_info(logFile, "[PCB EXPULSADO]: PID: %i | ESTADO: %i\n", pcb->pid, estado);
 		serializado pcbSerializado = serializarPCB(pcb);
-		if(estado == EXPULSADO && toBeKilled == 1)
-			estado = KILLED;
-		lSend(kernel, pcbSerializado.data, estado, pcbSerializado.size);
+		int size = pcbSerializado.size + sizeof(int);
+		char* data = malloc(size);
+		memcpy(data, &toBeKilled, sizeof(int));
+		memcpy(data+sizeof(int), pcbSerializado.data, pcbSerializado.size);
+		lSend(kernel, data, estado, size);
 		free(pcbSerializado.data);
+		free(data);
 		destruirPCB(pcb);
 	}
 	free(config);

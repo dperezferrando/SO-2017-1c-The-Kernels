@@ -19,7 +19,7 @@ typedef struct connectionHandler{
 }connHandle;
 
 
-PCB* recibirPCB(Mensaje*);
+PCB* recibirPCB(Mensaje*, int);
 
 int PIDFindPO(int);
 int readyProcess();

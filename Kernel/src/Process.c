@@ -70,7 +70,7 @@ void killProcess(int PID,int exitCode){
 		lSend(pc->consola, &PID, -2, sizeof(int));
 	else // Si murio por otra razon le aviso tambien a memoria
 	{
-		if(exitCode != -6 && pc->state != 0)
+		if(exitCode != -6 && pc->toBeKilled != -6 && pc->state != 0)
 			lSend(pc->consola, &PID, 9, sizeof(int));
 		if(pc->state != 0 && pc->toBeKilled != -9)
 			lSend(conexionMemoria, &PID, 9, sizeof(int));
