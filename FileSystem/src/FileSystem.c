@@ -15,7 +15,7 @@ int main(int argc, char** argsv){
 	levantarBloquesEnUso();
 	log_info(logFile, "[BITMAP] BITMAP AL DIA");
 	mostrarBitmap();
-	signal(SIGINT, handleSignal);
+	//signal(SIGINT, handleSignal);
 	//testxd();
 	//testxd2();
 	//testxd3();
