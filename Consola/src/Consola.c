@@ -229,7 +229,7 @@ void escuchandoKernel() {
 			sem_post(&programa->semaforo);
 			break;
 		case ABORTAR_PROCESO: abortar(); estado =DESACTIVADO; break;
-		case SIN_ESPACIO: sem_post(&nuevoMensaje); break;
+		case SIN_ESPACIO: sem_post(&nuevoMensaje); sem_post(&destruccionMensaje); break;
 		case LIMITE_MULTIPROGRAMACION : mensajeMultiprogramacion(); sem_post(&destruccionMensaje); break;
 		case FINALIZAR: estado = DESACTIVADO; sem_post(&destruccionMensaje) ;break;
 		case ERROR: finalizarPorDesconexion(); estado = DESACTIVADO; sem_post(&destruccionMensaje); break;

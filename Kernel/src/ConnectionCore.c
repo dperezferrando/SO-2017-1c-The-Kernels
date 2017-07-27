@@ -324,10 +324,10 @@ char* pedirPaginaAMemoria(int pid, int pagina)
 		log_error(logFile, "[KERNEL]: SE DESCONECTO MEMORIA");
 		exit(1);
 	}
-	pagina = malloc(respuesta->header.tamanio);
-	memcpy(pagina, respuesta->data, respuesta->header.tamanio);
+	char* pag = malloc(respuesta->header.tamanio);
+	memcpy(pag, respuesta->data, respuesta->header.tamanio);
 	destruirMensaje(respuesta);
-	return pagina;
+	return pag;
 }
 
 int chequearIntegridadEstructuras(PageOwnership* paginaKernel, char* pagina)
@@ -336,7 +336,6 @@ int chequearIntegridadEstructuras(PageOwnership* paginaKernel, char* pagina)
 	HeapMetadata* hm;
 	int offset = 0;
 	int estado = 1;
-	int isFree;
 	do
 	{
 		hm = malloc(sizeof(HeapMetadata));
@@ -385,13 +384,19 @@ int sendMemoryRequest(MemoryRequest mr, PageOwnership* po, int offset){
 int enviarEstructurasAMemoria(PageOwnership* po)
 {
 	char* pagina = malloc(config->PAG_SIZE);
-	int i = 0;
+	int i;
+	char* aux = pagina;
+	for(i = 0;i<config->PAG_SIZE;i++)
+	{
+		char barraCero = '\0';
+		memcpy(aux, &barraCero, sizeof(char));
+		aux++;
+	}
 	char* puntero = pagina;
 	void copiarHM(HeapMetadata* hm)
 	{
 		memcpy(puntero, hm, sizeof(HeapMetadata));
 		puntero = puntero + hm->size + sizeof(HeapMetadata);
-		i++;
 	}
 	list_iterate(po->occSpaces, copiarHM);
 	int sizeTotal = config->PAG_SIZE + sizeof(int)*4;

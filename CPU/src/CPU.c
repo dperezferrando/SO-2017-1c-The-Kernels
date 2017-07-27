@@ -47,7 +47,7 @@ int main(int argc, char** argsv) {
 					estado = EXPULSADO;
 			usleep(quantumSleep*1000);
 		}
-		log_info(logFile, "[PCB EXPULSADO]: PID: %i | ESTADO: %i\n", pcb->pid, estado);
+		log_warning(logFile, "[PCB EXPULSADO]: PID: %i | ESTADO: %i\n", pcb->pid, estado);
 		serializado pcbSerializado = serializarPCB(pcb);
 		int size = pcbSerializado.size + sizeof(int);
 		char* data = malloc(size);
@@ -813,10 +813,14 @@ serializado serializarRutaPermisos(char* ruta, char* permisos) {
 serializado serializarPedidoEscrituraFS(char* data, fileInfo info)
 {
 	serializado pedido;
+	printf("SERIALIZAR: TAMANIOFILEINFO: %i | TAMANIO CRAP: %i\n", sizeof(fileInfo), info.tamanio);
 	pedido.size = sizeof(fileInfo) + info.tamanio;
 	pedido.data = malloc(pedido.size);
 	memcpy(pedido.data, &info, sizeof(fileInfo));
-	memcpy(pedido.data+sizeof(fileInfo), data, info.tamanio);
+	char* test = malloc(info.tamanio);
+	memcpy(test, data, info.tamanio);
+	memcpy(pedido.data+sizeof(fileInfo), test, info.tamanio);
+	free(test);
 	return pedido;
 }
 

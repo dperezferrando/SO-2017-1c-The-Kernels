@@ -541,7 +541,7 @@ int cantidadFramesOcupados()
 {
 	entradaTabla* puntero = (entradaTabla*)memoria+cantPaginasAdmin;
 	int contador = cantPaginasAdmin;
-	while(puntero->frame != (config->marcos-1))
+	while(frameValido(puntero->frame))
 	{
 		if(puntero->pid > -1)
 			contador++;
