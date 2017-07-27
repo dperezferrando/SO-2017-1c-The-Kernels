@@ -813,7 +813,6 @@ serializado serializarRutaPermisos(char* ruta, char* permisos) {
 serializado serializarPedidoEscrituraFS(char* data, fileInfo info)
 {
 	serializado pedido;
-	printf("SERIALIZAR: TAMANIOFILEINFO: %i | TAMANIO CRAP: %i\n", sizeof(fileInfo), info.tamanio);
 	pedido.size = sizeof(fileInfo) + info.tamanio;
 	pedido.data = malloc(pedido.size);
 	memcpy(pedido.data, &info, sizeof(fileInfo));
