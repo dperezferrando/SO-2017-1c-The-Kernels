@@ -85,6 +85,7 @@ void killProcess(int PID,int exitCode){
 		readyProcess();
 		//executeProcess(); no corresponde
 	}
+	pc->toBeKilled = 0;
 	log_warning(logFile, "[KILL]: EL PROCESO PID %i FUE AJUSTICIADO", PID);
 
 }

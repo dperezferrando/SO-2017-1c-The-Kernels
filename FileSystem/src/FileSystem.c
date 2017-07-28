@@ -164,7 +164,6 @@ void esperarOperacion()
 				if(buffer=="-1"){
 					lSend(conexion, NULL, -4, 0);
 					log_error(logFile, "[LEER]: HUBO UN ERROR AL LEER");
-					free(buffer);
 					break;
 				}
 				//enviar el buffer

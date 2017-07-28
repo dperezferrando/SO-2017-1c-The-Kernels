@@ -157,6 +157,7 @@ void conexion_kernel(int conexion)
 				{
 					log_error(logFile, "[ARRANCAR PROCESO]: PID %i | PAGINAS: %i NO HAY ESPACIO", pid, cantidadPaginas);
 					lSend(conexion, NULL,-2,0);
+					free(script);
 					break;
 				}
 				log_info(logFile,"[ARRANCAR PROCESO]: PID: %i | Paginas: %i\n", pid, cantidadPaginas);
@@ -788,14 +789,10 @@ entradaTabla* obtenerEntradaDe(int pid, int pagina)
 				return pointer;
 			pointer++;
 		}
-		printf("PID %i PAG %i FRAME %i\n", pid, pagina, pointer->frame);
 		return NULL;
 	}
 	else
-	{
-		printf("PID %i PAG %i FRAME %i\n", pid, pagina, pointer->frame);
 		return pointer;
-	}
 }
 
 char* obtenerPosicionAOperar(int pid, int pagina, int offset)
