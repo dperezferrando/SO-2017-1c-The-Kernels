@@ -304,7 +304,7 @@ int borrarArchivo(int pid, int fd)
 	memcpy(data+sizeof(int), entrada->entradaGlobal->ruta, sizeRuta);
 	lSend(conexionFS, data, 5, size);
 	free(data);
-	cerrarArchivo(pid, fd);
+	//cerrarArchivo(pid, fd);
 	return 1;
 }
 
