@@ -260,7 +260,7 @@ PCB* fromNewToReady(){
 	if(estado == 0)
 	{
 		log_error(logFile,"[PLANIFICACION]: NO HAY ESPACIO PARA EL PROCESO PID %i", pcb->pid);
-		if(!test)lSend(pc->consola, &pcb->pid, -2, sizeof(int));
+		//if(!test)lSend(pc->consola, &pcb->pid, -2, sizeof(int));
 		killProcess(pcb->pid, -1);
 	}
 	else if(estado == 1)

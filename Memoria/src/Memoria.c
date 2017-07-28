@@ -70,7 +70,7 @@ void levantarLog()
 
 void arrancarMemoria()
 {
-	memoria = malloc(config->marco_size*config->marcos);
+	memoria = calloc(config->marco_size*config->marcos, sizeof(char));// malloc(config->marco_size*config->marcos);
 	if(memoria == NULL)
 	{
 		log_info(logFile,"[ERROR]: CAPO, una cosa nomas queria decirte: tu pc no tiene RAM, malloc fallo, salu2");
@@ -155,6 +155,7 @@ void conexion_kernel(int conexion)
 				char* script = deserializarScript(mensaje->data, &pid, &cantidadPaginas, &(mensaje->header.tamanio));
 				if(!sePuedenAsignarPaginas(pid, cantidadPaginas))
 				{
+					log_error(logFile, "[ARRANCAR PROCESO]: PID %i | PAGINAS: %i NO HAY ESPACIO", pid, cantidadPaginas);
 					lSend(conexion, NULL,-2,0);
 					break;
 				}
@@ -787,10 +788,14 @@ entradaTabla* obtenerEntradaDe(int pid, int pagina)
 				return pointer;
 			pointer++;
 		}
+		printf("PID %i PAG %i FRAME %i\n", pid, pagina, pointer->frame);
 		return NULL;
 	}
 	else
+	{
+		printf("PID %i PAG %i FRAME %i\n", pid, pagina, pointer->frame);
 		return pointer;
+	}
 }
 
 char* obtenerPosicionAOperar(int pid, int pagina, int offset)

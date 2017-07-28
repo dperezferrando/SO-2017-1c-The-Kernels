@@ -53,9 +53,19 @@ void recibirDeConsola(int socket, connHandle* master)
 	switch(mensaje->header.tipoOperacion)
 	{
 		case -1:
+		{
+			bool mismaConsola(ProcessControl* pc)
+			{
+				return pc->consola == socket && pc->state != 9;
+			}
 			log_info(logFile,"[KERNEL]: SE DECONECTA CONSOLA SOCKET %i", socket);
+			t_list* procesosDeLaConsola = list_filter(process, mismaConsola);
+			list_iterate(procesosDeLaConsola, matarDesdeProcessControl);
+	//		lSend(socket, mensaje->data, 3, sizeof(int));
+			list_destroy(procesosDeLaConsola);
 			closeHandle(socket, master);
 			break;
+		}
 		case 1:
 		{
 			log_info(logFile,"[KERNEL]: CONSOLA %i QUIERE CREAR UN NUEVO PROCESO", socket);
@@ -383,7 +393,7 @@ int sendMemoryRequest(MemoryRequest mr, PageOwnership* po, int offset){
 
 int enviarEstructurasAMemoria(PageOwnership* po)
 {
-	char* pagina = malloc(config->PAG_SIZE);
+	char* pagina = calloc(config->PAG_SIZE, sizeof(char));
 	int i;
 	char* aux = pagina;
 	for(i = 0;i<config->PAG_SIZE;i++)
