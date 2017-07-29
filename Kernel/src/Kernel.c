@@ -54,7 +54,7 @@ void levantarLog()
 		remove(config->log);
 		fclose(f);
 	}
-	logFile = log_create(config->log, "KERNEL", 1, 1);
+	logFile = log_create(config->log, "KERNEL", 0, 1);
 }
 
 void morirDecentemente()

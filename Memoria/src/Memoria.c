@@ -407,7 +407,7 @@ void mostrarEntradaCache(entradaCache* entrada)
 
 char* leerCaracteresEntrantes() {
 	int i, caracterLeido;
-	char* cadena = malloc(30);
+	char* cadena = malloc(100);
 	for(i = 0; (caracterLeido= getchar()) != '\n'; i++)
 		cadena[i] = caracterLeido;
 	cadena[i] = '\0';
